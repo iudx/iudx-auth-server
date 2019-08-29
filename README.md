@@ -1,5 +1,4 @@
 # auth.iudx.org.in
-**NOTE:** **DO NOT make** this repo **PUBLIC !** 
 
 # Pre-requisites
 #. If the host OS is not Ubuntu then install the following dependencies manually
