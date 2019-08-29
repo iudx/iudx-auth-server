@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# create a directory for /var/empty
+#cp -r node_modules /var/empty
+#cp -r node-aperture /var/empty
+
+export NODE_ENV=production
+
+id=`id | cut -f1 -d'('`
+
+if [ $id != "uid=0" ]
+then
+	echo
+	echo "===> Usage: sudo $0"
+	echo
+	exit
+fi
+
+while :
+do
+	/usr/local/bin/node https.js
+	echo "================> Restarting ===================="
+done

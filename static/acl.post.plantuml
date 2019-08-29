@@ -1,0 +1,19 @@
+@startuml
+hide footbox
+
+autonumber "<b>[0]"
+
+actor "Provider" as p
+
+participant "IUDX Auth server" as auth
+
+
+p -[#green]> auth : HTTPS POST /iudx/1.0/acl\ncontent-type:application/x-www-form-urlencoded\nbody="policy=<provider-policy>"
+
+alt Valid policy
+    auth -[#green]> p : HTTP 200 OK
+else Invalid policy
+    auth -[#green]> p : HTTP 400 Bad request
+end
+
+@enduml

@@ -1,0 +1,17 @@
+@startuml
+hide footbox
+
+autonumber "<b>[0]"
+
+actor "Resource server manager" as rsm
+
+participant "Certificate authority" as ca
+participant "Resource server" as rs
+
+
+rsm -> ca: Request for a resource-server certificate
+ca -> rsm : Issue resource-server certificate
+
+rsm -> rs : Install resource-server certificate
+
+@enduml

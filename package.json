@@ -1,0 +1,52 @@
+{
+  "name": "auth.iudx.org.in",
+  "description": "DO NOT MAKE THIS repo PUBLIC !",
+  "version": "1.0.0",
+  "main": "https.js",
+  "dependencies": {
+    "assert-plus": "^1.0.0",
+    "chroot": "^1.0.10",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "geoip-lite": "^1.3.7",
+    "jshint": "^2.10.2",
+    "jsprim": "^2.0.0",
+    "logger": "0.0.1",
+    "node-color-log": "^2.2.0",
+    "node-pledge": "^1.0.5",
+    "openbsd-unveil": "^1.0.0",
+    "path": "^0.12.7",
+    "pg": "^7.11.0",
+    "pg-native": "^3.0.0",
+    "posix": "^4.1.2",
+    "sync-request": "^6.1.0",
+    "uuid": "^3.3.2",
+    "verror": "^1.10.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Test-Mode\" && nodejs https.js test",
+    "start": "echo \"Starting Server...\" && nodejs https.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rbccps-iisc/auth.iudx.org.in.git"
+  },
+  "keywords": [
+    "iudx",
+    "iudx",
+    "authenticator",
+    "auth",
+    "indian",
+    "urban",
+    "data",
+    "exchange",
+    "rbccps"
+  ],
+  "author": "Arun Babu P (arun-babu.com), Jishnu Jaykumar P (jishnujayakumar.github.io)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rbccps-iisc/auth.iudx.org.in/issues"
+  },
+  "homepage": "https://github.com/rbccps-iisc/auth.iudx.org.in#readme"
+}

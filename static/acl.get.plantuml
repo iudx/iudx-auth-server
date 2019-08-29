@@ -1,0 +1,15 @@
+@startuml
+hide footbox
+
+autonumber "<b>[0]"
+
+actor "Provider" as p
+
+participant "IUDX Auth server" as auth
+
+
+p -[#green]> auth : HTTPS GET /iudx/1.0/acl
+
+auth -[#green]> p : HTTP 200 OK\nbody=<provider-policy>
+
+@enduml

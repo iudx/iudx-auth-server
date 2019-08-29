@@ -1,0 +1,42 @@
+#!/bin/sh
+
+echo "=============================================BEGIN SETUP================================================"
+
+#Create auth network
+sudo docker network create auth-net || true
+
+#stop and remove existing containers
+sudo docker rm -f postgres swagger-ui
+
+#run postgres 
+sudo docker run -d --network auth-net --name postgres --hostname postgres -p 5432:5432 postgres:12-alpine
+
+#get pwd
+swgr=`echo $(pwd)/swagger`
+
+#echo $swgr
+
+#run swagger-ui
+sudo docker run -d --network auth-net --name swagger-ui --hostname swagger-ui -e "SWAGGER_JSON=/swg/swagger.json" -v $swgr:/swg  -p 8880:80 -p 8889:8080 swaggerapi/swagger-ui
+
+#sleep till postgres sets up
+sleep 3
+
+#change postgres password to auth
+sudo docker exec -d postgres psql -U postgres -c "alter user postgres with password auth" > /dev/null 2>&1 
+
+#copy db file for db schema generation in postgres sudo docker
+sudo docker cp ../db postgres:/db.sql
+
+
+echo ""
+echo "Creating DB Schema"
+echo ""
+
+
+#execute db.sql
+sudo docker exec -u postgres postgres psql postgres postgres -f /db.sql
+
+echo ""
+
+echo "=============================================END SETUP================================================"

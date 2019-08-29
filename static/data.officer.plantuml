@@ -1,0 +1,20 @@
+@startuml
+hide footbox
+
+autonumber "<b>[0]"
+
+actor "Data officer at\nprovider's organization" as d
+
+participant "Certificate authority" as ca
+participant "IUDX Catalog" as ic
+participant "IUDX Auth server" as auth
+
+
+d -> ca: Request for a certificate (with class >= 3)
+ca -> d : Issue certificate
+
+d -> ic : Manage catalog entries using certificate
+
+d -> auth : Set authorization rules using certificate
+
+@enduml

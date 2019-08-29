@@ -1,0 +1,20 @@
+@startuml
+hide footbox
+
+autonumber "<b>[0]"
+
+actor "Consumer" as c
+
+participant "IUDX Auth server" as auth
+
+
+c -[#green]> auth : HTTPS POST/iudx/1.0/token\ncontent-type: application/json\nbody=[{"id":<id>, "scopes":[<scope-1>, <scope-2>, ..., <scope-n>]}, ...]
+
+alt Consumer is authorized
+    auth -[#green]> c : HTTP 201 OK\ncontent-type: application/json\nbody={access_token:<access-token>, token_type: IUDX, token_expiry: <expiry-in-seconds>}
+
+else Consumer is NOT authorized
+    auth -[#green]> c : HTTP 403 Forbidden
+end
+
+@enduml
