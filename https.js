@@ -374,13 +374,18 @@ function has_iudx_certificate_been_revoked (socket, cert)
 		{
 			var ISSUERS = [];
 
-			// both sub-CA and CA
 			if (cert.issuerCertificate)
 			{
+				// both CA and sub-CA are the issuers
 				ISSUERS.push(cert.issuerCertificate);
 
 				if (cert.issuerCertificate.issuerCertificate)
 					ISSUERS.push(cert.issuerCertificate.issuerCertificate);
+			}
+			else
+			{
+				if (! socket.isSessionReused())
+					return true;
 			}
 
 			for (issuer of ISSUERS)
@@ -513,7 +518,7 @@ app.post('/auth/v1/token', async function (req, res) {
 			cert_class = parseInt(cert_class,10);
 		}
 		catch (x) {
-			cert_class = 0;
+			cert_class = 2;
 		}
 	}
 	else {
@@ -524,7 +529,7 @@ app.post('/auth/v1/token', async function (req, res) {
 			4. CP Class 3 2.16.356.100.2.3
 		*/
 
-		cert_class = 0; // certificate issued by some other CA
+		cert_class = 2; // certificate issued by some other CA
 	}
 
 	var token_rows = pg.querySync (
