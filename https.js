@@ -264,7 +264,13 @@ function is_secure (req,res,expected_content_type)
 
 	if (req.headers.referer)
 	{
-		var referer_domain = String(req.headers.referer.split(":")[1]);
+		// e.g https://www.iudx.org.in
+
+		var referer_domain = String(
+			req.headers.referer
+				.split("/")[2]
+				.split(":")[0]
+		);
 
 		if (! referer_domain.toLowerCase().endsWith('.iudx.org.in'))
 			return "Invalid 'referer' field in the header";
@@ -803,12 +809,16 @@ app.post('/auth/v1/token', async function (req, res) {
 				token_time = token_time_in_policy; // take the MIN of all policies
 		}
 
-		response_array.push ({
+		var out = {
 			"resource-id"	: resource, 
 			"methods"	: row.methods,
 			"apis"		: row.apis,
-			"body"		: row.body || {}
-		});
+		};
+
+		if (row.body)
+			out.body = row.body;
+
+		response_array.push (out);
 
 		resource_id_dict[resource] = true;
 
@@ -1226,14 +1236,14 @@ app.post('/auth/v1/acl', async function (req, res) {
 
 		await pool.query (q, p, (int_error, int_results) =>
 		{
-			if (int_error) {
-				END (res, 500, "Could not set policy");
+			if (int_error)
+			{
+				res.setHeader('content-type', 'application/json');
+				END (res, 500, "{\"error\":\"Could not set policy\"}");
 				return;
 			}
 
-			res.setHeader('content-type', 'application/json');
-
-			END (res,200,'');
+			END (res, 200, '');
 			return;
 		});
 	});
@@ -1368,12 +1378,13 @@ app.post('/auth/v1/append-acl', async function (req, res) {
 
 		await pool.query (q, p, (int_error, int_results) =>
 		{
-			if (int_error) {
-				END (res, 500, "Could not set policy");
+			if (int_error)
+			{
+				res.setHeader('content-type', 'application/json');
+				END (res, 500, "{\"error\":\"Could not set policy\"}");
 				return;
 			}
 
-			res.setHeader('content-type', 'application/json');
 			END (res, 200, "");
 			return;
 		});
