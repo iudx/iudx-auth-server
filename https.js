@@ -349,7 +349,16 @@ function has_iudx_certificate_been_revoked (socket, cert)
 				'https://ca.iudx.org.in/crl'
 			);
 
-			CRL = JSON.parse(response.getBody());
+			try
+			{
+				CRL = JSON.parse(response.getBody());
+				now = new Date();
+				CRL_last_accessed = now.getTime();
+			}
+			catch(x)
+			{
+				return true; // something went wrong!
+			}
 		}
 
 		var fingerprint	= cert.fingerprint.replace(/:/g,'').toLowerCase();
@@ -548,7 +557,7 @@ app.post('/auth/v1/token', async function (req, res) {
 
 	var tokens_rate_per_second = parseInt (token_rows[0].rate,10);
 
-	if (tokens_rate_per_second > 10) { // 10 tokens per second 
+	if (tokens_rate_per_second > 3) { // 3 tokens per second 
 
 		END (res, 429, "Too many requests"); // TODO report this!
 		return;
@@ -591,15 +600,26 @@ app.post('/auth/v1/token', async function (req, res) {
 		}
 	};
 
+	var token_time = 3600; 		// by default 1 hour token
+	var token_time_in_policy;	// as specified by the provider
+
+	if (req.headers['token-time'])
+	{
+		try
+		{
+			token_time = parseInt(req.headers['token-time'],10);
+		}
+		catch (x)
+		{
+			END (res, 403, "Invalid 'token-time' field");
+		}
+	}
 
 	var num_rules_passed = 0;
-	var resource;
-	var token_time; // TODO: take from the user !
-	var token_time_in_policy;
 
 	for (var row of request_array)
 	{
-		resource = row['resource-id'];
+		var resource = row['resource-id'];
 
 		if (! is_string_safe(resource)) {
 			END (res, 400, "Invalid 'resource-id (contains unsafe chars)' :" + resource);
@@ -669,7 +689,10 @@ app.post('/auth/v1/token', async function (req, res) {
 
 		if ((resource.match(/\//g) || []).length < 3) {
 
-			END (res, 400, "Invalid 'resource-id (must have atleast 3 '/')': " + resource);
+			END (res, 400, 
+				"Invalid 'resource-id' (it must have atleast 3 '/' chars): " +
+				resource
+			);
 
 			return;
 		}
@@ -801,13 +824,8 @@ app.post('/auth/v1/token', async function (req, res) {
 			}
 		}
 
-		if (! token_time)
-			token_time = token_time_in_policy;
-		else
-		{
-			if (token_time_in_policy < token_time)
-				token_time = token_time_in_policy; // take the MIN of all policies
-		}
+		if (token_time_in_policy < token_time)
+			token_time = token_time_in_policy; // take the MIN of all policies
 
 		var out = {
 			"resource-id"	: resource, 
@@ -829,16 +847,13 @@ app.post('/auth/v1/token', async function (req, res) {
 	{
 		var token = crypto.randomBytes(16).toString('hex'); 
 
-		// if token time is not defined by the provider, default is 1 hr
-		token_time = token_time || 3600;
-
 		var response = {
 
 			/* Token format: issued-by / issued-to / token */
 
 			"access_token"	: OUR_NAME + "/" + consumer_id + "/" + token,
 			"token_type"	: "IUDX",
-			"expires_in"	: token_time
+			"expires_in"	: token_time 
 		};
 
 		var token_hash		= crypto.createHash('sha1').update(token);
@@ -877,10 +892,12 @@ app.post('/auth/v1/token', async function (req, res) {
 
 		res.setHeader('content-type', 'application/json');
 		END (res, 201, JSON.stringify(response));
+		return;
 	}
 	else
 	{
 		END (res, 403, "Unauthorized!");
+		return;
 	}
 });
 
@@ -1238,8 +1255,7 @@ app.post('/auth/v1/acl', async function (req, res) {
 		{
 			if (int_error)
 			{
-				res.setHeader('content-type', 'application/json');
-				END (res, 500, "{\"error\":\"Could not set policy\"}");
+				END (res, 500, "Could not set policy");
 				return;
 			}
 
@@ -1380,8 +1396,7 @@ app.post('/auth/v1/append-acl', async function (req, res) {
 		{
 			if (int_error)
 			{
-				res.setHeader('content-type', 'application/json');
-				END (res, 500, "{\"error\":\"Could not set policy\"}");
+				END (res, 500, "Could not set policy");
 				return;
 			}
 
@@ -1536,7 +1551,6 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 		}
 
 		res.setHeader('content-type', 'application/json');
-
 		END (res, 200, JSON.stringify(output));
 		return;
 	});
