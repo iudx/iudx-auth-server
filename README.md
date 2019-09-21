@@ -24,7 +24,4 @@ sudo npm install -g apib2swagger --unsafe-perm=true --allow-root
 ```
 
 # Live
-The system will be live at **https://localhost:8888**
-
-# Documentation
-The swagger-ui will be live at **https://localhost:8889**
+The system will be live at **https://localhost:443**
