@@ -48,7 +48,7 @@ if (os.type() === 'OpenBSD') {
 
 const OUR_NAME		= 'auth.iudx.org.in';
 const URL_ENCODED	= 'application/x-www-form-urlencoded';
-const CRL_SCAN_TIME	= 30; // seconds
+const CRL_SCAN_TIME	= 300; // seconds
 
 const EUID = process.geteuid();
  
@@ -340,6 +340,7 @@ function has_iudx_certificate_been_revoked (socket, cert)
 	try
 	{
 		var now	 = new Date();
+
 		var diff = (now.getTime() - CRL_last_accessed.getTime())/1000.0;
 
 		if (diff > CRL_SCAN_TIME)
@@ -352,8 +353,7 @@ function has_iudx_certificate_been_revoked (socket, cert)
 			try
 			{
 				CRL = JSON.parse(response.getBody());
-				now = new Date();
-				CRL_last_accessed = now.getTime();
+				CRL_last_accessed = new Date(); 
 			}
 			catch(x)
 			{
@@ -498,6 +498,8 @@ app.post('/auth/v1/token', async function (req, res) {
 	var cert	= req.socket.getPeerCertificate();
 	var consumer_id	= cert.subject.emailAddress.toLowerCase();
 
+	var resource_server_token = {};
+
 	var request_array 	= [];
 	var resource_id_dict	= {};
 	var response_array 	= [];
@@ -548,7 +550,7 @@ app.post('/auth/v1/token', async function (req, res) {
 	}
 
 	var token_rows = pg.querySync (
-		'SELECT COUNT(*)/ (1 + EXTRACT(EPOCH FROM (NOW() - MIN(issued_at)))) AS rate '	+
+		'SELECT COUNT(*)/ (1 + EXTRACT(EPOCH FROM (NOW() - MAX(issued_at)))) AS rate '	+
 		'FROM token '									+ 
 		'WHERE id=$1::text '								+
 		'AND DATE_TRUNC(\'day\',issued_at) = DATE_TRUNC(\'day\',NOW())',
@@ -600,14 +602,15 @@ app.post('/auth/v1/token', async function (req, res) {
 		}
 	};
 
-	var token_time = 3600; 		// by default 1 hour token
-	var token_time_in_policy;	// as specified by the provider
+	var token_time;
+	var requested_token_time;		// as specified by the subscriber
+	var token_time_in_policy;		// as specified by the provider
 
 	if (req.headers['token-time'])
 	{
 		try
 		{
-			token_time = parseInt(req.headers['token-time'],10);
+			requested_token_time = parseInt(req.headers['token-time'],10);
 		}
 		catch (x)
 		{
@@ -712,7 +715,9 @@ app.post('/auth/v1/token', async function (req, res) {
 		var provider_id_in_db		= rid_split[1] + '@' + rid_split[0];
 		var resource_server		= rid_split[2];
 		var resource_name		= rid_split.slice(3).join("/");
-	
+
+		resource_server_token [resource_server] = true; // to be filled later
+
 		var p_rows = pg.querySync (
 			'SELECT policy_in_json FROM policy ' +
 			'WHERE id = $1::text',
@@ -806,6 +811,11 @@ app.post('/auth/v1/token', async function (req, res) {
 
 						return;
 					}
+
+					if (token_time)
+						token_time = Math.min(token_time, token_time_in_policy);
+					else
+						token_time = token_time_in_policy;
 				}
 				catch (x) {
 
@@ -824,8 +834,8 @@ app.post('/auth/v1/token', async function (req, res) {
 			}
 		}
 
-		if (token_time_in_policy < token_time)
-			token_time = token_time_in_policy; // take the MIN of all policies
+		if (requested_token_time)
+			token_time = Math.min (requested_token_time, token_time);
 
 		var out = {
 			"resource-id"	: resource, 
@@ -847,13 +857,19 @@ app.post('/auth/v1/token', async function (req, res) {
 	{
 		var token = crypto.randomBytes(16).toString('hex'); 
 
+		for (var k in resource_server_token)
+		{
+			resource_server_token[k] = crypto.randomBytes(16).toString('hex'); 
+		}
+
 		var response = {
 
 			/* Token format: issued-by / issued-to / token */
 
-			"access_token"	: OUR_NAME + "/" + consumer_id + "/" + token,
-			"token_type"	: "IUDX",
-			"expires_in"	: token_time 
+			"token"		: OUR_NAME + "/" + consumer_id + "/" + token,
+			"token-type"	: "IUDX",
+			"expires-in"	: token_time,
+			"server-token"	: resource_server_token
 		};
 
 		var token_hash		= crypto.createHash('sha1').update(token);
@@ -875,7 +891,8 @@ app.post('/auth/v1/token', async function (req, res) {
 				'$6,'						+
 				'$7,'						+
 				'$8,'						+
-				'$9'						+
+				'$9,'						+
+				'$10'						+
 			')',
 			[
 				consumer_id,
@@ -887,11 +904,12 @@ app.post('/auth/v1/token', async function (req, res) {
 				'false',	// token not yet introspected
 				'false',	// token not yet revoked 
 				cert_class,
+				JSON.stringify(resource_server_token),
 			]
 		);
 
 		res.setHeader('content-type', 'application/json');
-		END (res, 201, JSON.stringify(response));
+		END (res, 200, JSON.stringify(response));
 		return;
 	}
 	else
@@ -939,12 +957,23 @@ app.post('/auth/v1/introspect', async function (req, res) {
 	}
 
 	if ((! is_string_safe(token)) || (! token.startsWith(OUR_NAME + "/"))) {
-		END (res, 400, "Invalid token");
+		END (res, 400, "Invalid 'token' field");
 		return;
 	}
 
 	if ((token.match(/\//g) || []).length !== 2) {
-		END (res, 400, "Invalid token");
+		END (res, 400, "Invalid 'token' field");
+		return;
+	}
+
+	var server_token;
+	if (! (server_token = req.headers['server-token'])) {
+		END (res, 400, "No 'server-token' found in the header");
+		return;
+	}
+
+	if (! is_string_safe(server_token)) {
+		END (res, 400, "Invalid 'server-token' field");
 		return;
 	}
 
@@ -993,7 +1022,7 @@ app.post('/auth/v1/introspect', async function (req, res) {
 		}
 
 		await pool.query (
-				'SELECT expiry,request,cert_class FROM token '	+
+				'SELECT expiry,request,cert_class,server_token FROM token '	+
 				'WHERE token = $1::text '			+
 				'AND revoked = false '				+
 				'AND expiry > NOW()',
@@ -1010,6 +1039,12 @@ app.post('/auth/v1/introspect', async function (req, res) {
 				return;
 			}
 
+			if (server_token !== results.rows[0].server_token[resource_server_name_in_cert])
+			{
+				END (res, 500, "Invalid 'server-token'");
+				return;
+			}
+				
 			var request;
 			var request_for_resource_server = [];
 
@@ -1945,6 +1980,10 @@ app.post('/*', function (req, res) {
 	console.log("=>>> POST not found for :",pathname);
 	END (res, 405, "");
 	return;
+});
+
+app.on('error', function(e) { 
+	console.error(e); 
 });
 
 //////////////////////// RUN /////////////////////////////////
