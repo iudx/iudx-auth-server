@@ -1,0 +1,12 @@
+node-aperture/
+node_modules/
+all.apib
+doc/all.apib
+doc/result
+doc/result_
+doc/traces/
+server.pem
+key.pem
+postgres.password
+jp_private.pem
+ab_private.pem
