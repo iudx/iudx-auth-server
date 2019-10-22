@@ -1,0 +1,45 @@
+
+Get members of a group
+----------------------
+
+Endpoint:
+	https://<server>/auth/v1/group/list
+
+Methods:
+	POST
+
+Called by:
+	A resource-owner with a valid class-3 or above certificate.
+
+Headers:
+
+	content-type	: "application/json"
+
+Body:
+	group		: <a valid group name created by the user>	// optional
+
+Examples:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/group/list	\
+
+		--cert certificate.pem --key private-key.pem		\
+
+		-H 'content-type: application/json'			\
+
+		-d '{"group" : "confidential" }'
+
+	Response:
+
+	200 OK
+	[
+		{
+		    "consumer": "user-1@domain.org",
+		    "valid-till": "2019-09-30T10:44:33.527Z"
+		},
+		{
+			"consumer": "user-2@domain.com",
+			"valid-till": "2019-09-30T10:44:34.002Z"
+		}
+	]

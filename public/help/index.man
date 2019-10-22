@@ -1,0 +1,26 @@
+IUDX-Auth(APIs)                                                IUDX-Auth(APIs)
+
+LLiisstt ooff AAPPIIss
+     1.  /auth/v1/acl <./acl.html>
+
+     2.  /auth/v1/append-acl <./append-acl.html>
+
+     3.  /auth/v1/token <./token.html>
+
+     4.  /auth/v1/revoke <./revoke.html>
+
+     5.  /auth/v1/introspect <./introspect.html>
+
+     6.  /auth/v1/audit/tokens <./audit-tokens.html>
+
+     7.  /auth/v1/group/add-consumer <./group-add-consumer.html>
+
+     8.  /auth/v1/group/list <./group-list.html>
+
+     9.  /auth/v1/group/delete-consumer <./group-delete-consumer.html>
+
+
+SSeeee aallssoo
+     IUDX Certificate Authority <https://ca.iudx.org.in>
+
+

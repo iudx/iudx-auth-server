@@ -1,0 +1,57 @@
+
+Append access control policy
+----------------------------
+
+Endpoint:
+	https://<server>/auth/v1/acl/append
+
+Methods:
+	POST
+
+Description:
+	This API is used to append access control rules to existing rules.
+
+Called by:
+	A resource-owner with a valid class-3 or above certificate.
+
+Headers:
+
+	content-type: "application/json"
+
+Body:
+
+	policy:	"acl policy (a string) in aperture policy language"
+
+HTTP response code:
+
+	200
+		If the policy has been successfully appended.
+
+	400
+		If the policy contains syntax errors.
+
+Examples:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/acl/append		\
+
+			--cert certificate.pem --key private-key.pem		\
+
+			-H 'content-type: application/json'			\
+
+			-d '{"policy":"*@iisc.ac.in can access rs1.com/my-resource-name"}'
+
+	Response:
+
+		200 OK
+
+See also:
+	acl API:
+		https://auth.iudx.org.in/auth/v1/acl/help
+
+	acl/set API:
+		https://auth.iudx.org.in/auth/v1/acl/set/help
+
+	node-aperture at github.com:
+		https://github.com/rbccps-iisc/node-aperture

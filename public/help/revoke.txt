@@ -1,0 +1,61 @@
+
+Revoke a token
+--------------
+
+Endpoint:
+
+	https://<server>/auth/v1/revoke
+
+Methods:
+
+	POST
+
+Description:
+
+	This API is used to revoke a valid access token.
+
+Called by:
+
+	A user with a valid class-3 or above certificate.
+
+Headers:
+	content-type : "application/json"
+
+Body:
+
+	tokens		: <list of tokens to be revoked>	(to be used by a consumer)		// optional
+	token-hashes	: <list of token-hashes to be revoked>	(to be used by a resource-owner)	// optional
+
+	Note: a resource-owner may can token-hashes by using the "audit/tokens" API.
+
+HTTP response codes:
+
+	200
+		If token has been successfully revoked.
+
+	403
+		If token is invalid.
+
+	429
+		If the user makes too many requests.
+
+Examples:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/revoke		\
+
+		--cert certificate.pem --key private-key.pem			\
+
+		-H 'content-type: application/json'				\
+
+		-d '{tokens:["auth.iudx.org.in/email-id@domain.com/2204adcbc990ffff234689aaabcdef90"]}'
+
+
+	Response:
+
+		200 OK
+
+See also:
+	audit tokens API:
+		https://auth.iudx.org.in/auth/v1/audit/tokens/help

@@ -1,0 +1,90 @@
+
+Token introspection
+-------------------
+
+Endpoint:
+	https://<server>/auth/v1/introspect
+
+Methods:
+	POST
+
+Description:
+	This API is used to validate an access token provided by a consumer.
+
+Called by:
+	A "resource server" with a valid class-1 certificate.
+
+Note:
+	The "cn" of the resource server certificate should be valid hostname (FQDN) or IP address.
+	And it must be ensured that the IP address of the "cn" matches with the machine that makes
+	the introspect call.
+
+	This is to ensure that only the user who owns the resource server can introspect its tokens.
+
+Headers:
+	content-type	: "application/json"
+
+Body:
+	token		: <token presented by the consumer>
+	server-token	: <server token presented by the consumer>		// optional
+
+HTTP response code:
+
+	200
+		If the token is valid
+
+	403
+		If the token is invalid/expired
+
+	429
+		If the resource-server makes too many requests
+
+Examples
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/introspect	\
+
+			--cert rs-certificate.key --key rs-private.key	\
+
+			-H 'content-type: application/json'		\
+
+			-d '{"token": "auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90"}'
+
+	Response:
+
+		200 OK
+
+		{
+			"consumer"			: "arun.babu@rbccps.org",
+			"consumer-certificate-class"	: 3
+
+			"expiry"			: "2019-12-12T04:29:50.779Z",
+
+			"request" : [
+					{
+					  "resource-id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r3",
+					  "apis": ["/*"],
+					  "methods": ["*"]
+					}
+			],
+		}
+
+	Response fields:
+
+		1. consumer:
+			The consumer's email-id.
+
+		2. consumer-certificate-class
+			The class of certificate used by the consumer to get the token.
+
+		3. expiry:
+			Indicates till what time the token is valid.
+
+		4. request:
+			The list of resource-id's, methods, and APIs for which the token is valid.
+
+
+See also:
+	token API:
+		https://auth.iudx.org.in/auth/v1/token/help
