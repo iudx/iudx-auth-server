@@ -39,7 +39,7 @@ const pg		= new pgNativeClient();
 const TOKEN_LENGTH	= 16;
 const TOKEN_LENGTH_HEX	= 2*TOKEN_LENGTH;
 
-const is_openbsd	= os.type() === 'OpenBSD'; 
+const is_openbsd	= os.type() === 'OpenBSD';
 const WORKER_PLEDGE	= "stdio tty prot_exec inet dns recvfd rpath proc exec";
 
 var pledge;
@@ -423,7 +423,7 @@ function has_iudx_certificate_been_revoked (socket, cert)
 			else
 			{
 				/*
-					This should not happen	
+					This should not happen
 				*/
 
 				if (! socket.isSessionReused())
@@ -631,8 +631,8 @@ app.post('/auth/v1/token', async function (req, res) {
 	};
 
 	var token_time;
-	var requested_token_time;		// as specified by the consumer 
-	var token_time_in_policy;		// as specified by the resource-owner 
+	var requested_token_time;		// as specified by the consumer
+	var token_time_in_policy;		// as specified by the resource-owner
 
 	if (req.body['token-time'])
 	{
@@ -718,7 +718,6 @@ app.post('/auth/v1/token', async function (req, res) {
 						"/"			+
 					resource;
 		}
-
 
 		if ((resource.match(/\//g) || []).length < 3) {
 
@@ -1311,6 +1310,11 @@ app.post('/auth/v1/revoke', async function (req, res) {
 	{
 		// user is a consumer
 
+		if (! (tokens instanceof Array)) {
+			END_ERROR (res, 400, "Invalid 'tokens' field in body");
+			return;
+		}
+
 		for (var token of tokens)
 		{
 			if ((! is_string_safe(token)) || (! token.startsWith(OUR_NAME + "/"))) {
@@ -1370,6 +1374,11 @@ app.post('/auth/v1/revoke', async function (req, res) {
 	{
 		// user is a provider
 
+		if (! (token_hashes instanceof Array)) {
+			END_ERROR (res, 400, "Invalid 'token-hashes' field in body");
+			return;
+		}
+
 		var sha1_id 		= crypto.createHash('sha1')
 						.update(id)
 						.digest('hex');
@@ -1396,7 +1405,7 @@ app.post('/auth/v1/revoke', async function (req, res) {
 				}
 
 				if (results.rowCount === 0) {
-					END_ERROR (res, 400, "Token not found: "+token_hash);
+					END_ERROR (res, 400, "Token hash not found : "+token_hash);
 					return;
 				}
 
@@ -1478,8 +1487,8 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 		});
 	}
 	catch (x) {
-		x = String(x).replace(/\n/g," ");
-		END_ERROR (res, 400, "Syntax error in policy: " + x);
+		var err = String(x).replace(/\n/g," ");
+		END_ERROR (res, 400, "Syntax error in policy: " + err);
 		return;
 	}
 
@@ -1596,9 +1605,9 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 			return (parser.parse(t));
 		});
 	}
-	catch (x) {	
-		x = String(x).replace(/\n/g," ");
-		END_ERROR (res, 400, "Syntax error in policy :" + x);
+	catch (x) {
+		var err = String(x).replace(/\n/g," ");
+		END_ERROR (res, 400, "Syntax error in policy :" + err);
 		return;
 	}
 
@@ -1633,8 +1642,8 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 				});
 			}
 			catch (x) {
-				x = String(x).replace(/\n/g," ");
-				END_ERROR (res, 400, "Syntax error in policy: "+x);
+				var err = String(x).replace(/\n/g," ");
+				END_ERROR (res, 400, "Syntax error in policy: "+err);
 				return;
 			}
 
@@ -1733,7 +1742,6 @@ app.get('/auth/v1/acl', async function (req, res) {
 			END_ERROR (res, 400, "No policies have been set yet!");
 			return;
 		}
-
 
 		var out = {
 			'policy' : Buffer.from(results.rows[0].policy,'base64')
@@ -1850,7 +1858,7 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 
 		await pool.query (
 			"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,"+
-			"introspected,providers->'" + provider_id_in_db + "' AS is_revoked "	+ 
+			"introspected,providers->'" + provider_id_in_db + "' AS is_revoked "	+
 			'FROM token '								+
 			"WHERE providers->'"+ provider_id_in_db + "' IS NOT NULL "		+
 			'AND issued_at >= (NOW() + \'-'+ hours +' hours\')',
@@ -2200,7 +2208,7 @@ app.post('/auth/v1/group/delete', async function (req, res) {
 
 	var provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	var query = 
+	var query =
 		"DELETE FROM groups "		+
 		"WHERE id = $1::text "		+
 		"AND group_name = $2::text "	+
@@ -2332,8 +2340,6 @@ function drop_privilege ()
 		unveil(__dirname + '/public',		'r' );
 
 		unveil();
-
-		log('green', `Worker ${process.pid} unveiled`);
 	}
 	else
 	{
@@ -2347,7 +2353,6 @@ function drop_privilege ()
 		}
 	}
 
-
 	if (is_openbsd)
 		pledge.init (WORKER_PLEDGE);
 }
@@ -2355,7 +2360,10 @@ function drop_privilege ()
 if (cluster.isMaster)
 {
 	if (is_openbsd)
+	{
 		pledge.init (WORKER_PLEDGE + " unveil sendfd");
+
+	}
 
 	log('green',`Master ${process.pid} is running`);
 
