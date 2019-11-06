@@ -45,7 +45,8 @@ const WORKER_PLEDGE	= "stdio tty prot_exec inet dns recvfd rpath proc exec";
 var pledge;
 var unveil;
 
-if (is_openbsd) {
+if (is_openbsd)
+{
 	pledge	= require("node-pledge");
 	unveil	= require("openbsd-unveil");
 }
@@ -65,14 +66,16 @@ dns.setServers([
   '[2001:4860:4860::8888]',
 ]);
 
-function log(color, msg) {
+function log(color, msg)
+{
 	logger.color(color).log(new Date() + " | " + msg);
 }
 
 var do_drop_privilege = true;
 const argv = process.argv.slice(2);
 
-if (argv.length < 1) {
+if (argv.length < 1)
+{
 	log("green", "Starting Server in production mode");
 }
 else if (argv.length > 1)
@@ -114,9 +117,17 @@ pg.connectSync (
 );
 
 var app = express();
-
-app.use (cors());
+app.use (
+	cors ({
+		methods		: ['POST','GET'],
+		credentials	: true,
+		origin		: function (origin, callback) {
+			callback(null, true);
+		}
+	})
+);
 app.use(bodyParser.json());
+app.use(bodyParser.text());
 app.disable('x-powered-by');
 
 app.get('/', function (req, res) {
@@ -136,8 +147,9 @@ app.get('/doc', function (req, res) {
 });
 
 app.use("/assets", express.static(__dirname + "/public/hyperspace/assets"));
+app.use("/images", express.static(__dirname + "/public/hyperspace/images"));
 
-var apertureOpts = {
+const apertureOpts = {
 
     types: aperture.types,
     typeTable: {
@@ -178,8 +190,8 @@ var apertureOpts = {
     }
 };
 
-var parser	= aperture.createParser		(apertureOpts);
-var evaluator	= aperture.createEvaluator	(apertureOpts);
+const parser	= aperture.createParser		(apertureOpts);
+const evaluator	= aperture.createEvaluator	(apertureOpts);
 
 const https_options = {
 	key:			fs.readFileSync('key.pem'),
@@ -213,7 +225,7 @@ function is_valid_email (email)
 	var num_ats	= 0;
 	var num_dots	= 0;
 
-	for (var chr of email)
+	for (const chr of email)
 	{
 		if (
 			(chr >= 'a' && chr <= 'z') ||
@@ -262,19 +274,12 @@ function is_secure (req,res,expected_content_type)
 	res.header('x-frame-options', 'deny');
 	res.header('x-content-type-options','nosniff');
 
-	res.header('access-control-allow-headers','*');
-	res.header('access-control-allow-origin', '*');
+	res.header('access-control-allow-origin', req.headers.origin ? req.headers.origin : '*');
 
 	res.header(
 		'access-control-allow-methods',
-		'POST, GET, OPTIONS'
+		'POST,GET'
 	);
-/*
-	res.header(
-		'strict-transport-security',
-		'max-age=31536000; includeSubDomains'
-	);
-*/
 
 	res.header('connection','close');
 
@@ -282,7 +287,7 @@ function is_secure (req,res,expected_content_type)
 	{
 		// e.g https://www.iudx.org.in
 
-		var referer_domain = String(
+		const referer_domain = String(
 			req.headers.referer
 				.split("/")[2]
 				.split(":")[0]
@@ -296,7 +301,9 @@ function is_secure (req,res,expected_content_type)
 
 	if (expected_content_type)
 	{
-		if (req.headers['content-type'] !== expected_content_type)
+		const e = [expected_content_type, "text/plain"];
+
+		if (e.indexOf(req.headers['content-type']) === -1) 
 			return "content-type must be :" + expected_content_type;
 	}
 
@@ -309,7 +316,7 @@ function is_secure (req,res,expected_content_type)
 function is_certificate_ok (req)
 {
 	// get full certificate chain
-	var cert = req.socket.getPeerCertificate (true);
+	const cert = req.socket.getPeerCertificate (true);
 
 	if (! cert)
 		return false;
@@ -323,7 +330,7 @@ function is_certificate_ok (req)
 	if (! is_valid_email(cert.subject.emailAddress))
 		return false;
 
-	var issuer = cert.issuer;
+	const issuer = cert.issuer;
 
 	if ((! issuer) || (! issuer.emailAddress))
 		return false;
@@ -338,8 +345,8 @@ function is_certificate_ok (req)
 	}
 	else if (issuer.emailAddress.toLowerCase().startsWith("iudx.sub.ca@"))
 	{
-		var issued_to_domain	= cert.subject.emailAddress.split("@")[1];
-		var issuer_domain	= issuer.emailAddress.split("@")[1];
+		const issued_to_domain	= cert.subject.emailAddress.split("@")[1];
+		const issuer_domain	= issuer.emailAddress.split("@")[1];
 
 		if (issuer_domain.toLowerCase() !== issued_to_domain.toLowerCase())
 			return false;
@@ -362,13 +369,12 @@ function has_iudx_certificate_been_revoked (socket, cert)
 {
 	try
 	{
-		var now	 = new Date();
-
-		var diff = (now.getTime() - CRL_last_accessed.getTime())/1000.0;
+		const now  = new Date();
+		const diff = (now.getTime() - CRL_last_accessed.getTime())/1000.0;
 
 		if (diff > CRL_SCAN_TIME)
 		{
-			var response = http_sync_request (
+			const response = http_sync_request (
 				'GET',
 				'https://ca.iudx.org.in/crl'
 			);
@@ -377,6 +383,13 @@ function has_iudx_certificate_been_revoked (socket, cert)
 			{
 				CRL = JSON.parse(response.getBody());
 				CRL_last_accessed = new Date();
+
+				for (var i = 0; i < CRL.length; ++i)
+				{
+					CRL[i].issuer		= CRL[i].issuer.toLowerCase();	
+					CRL[i].serial		= CRL[i].serial.toLowerCase().replace(/^0+/,"");
+					CRL[i].fingerprint	= CRL[i].fingerprint.toLowerCase().replace(/:/g,"");
+				}
 			}
 			catch(x)
 			{
@@ -384,23 +397,21 @@ function has_iudx_certificate_been_revoked (socket, cert)
 			}
 		}
 
-		var fingerprint	= cert.fingerprint.replace(/:/g,'').toLowerCase();
+		const cert_fingerprint	= cert.fingerprint.replace(/:/g,'').toLowerCase();
+		const cert_serial	= cert.serialNumber
+						.toLowerCase()
+						.replace(/^0+/,"");
 
-		var serial	= cert.serialNumber
-					.toLowerCase()
-					.replace(/^0+/,"");
+		const cert_issuer	= cert.issuer.emailAddress.toLowerCase();
 
-		var issuer = cert.issuer.emailAddress.toLowerCase();
-		var entry; // in CRL
-
-		for (entry of CRL)
+		for (const entry of CRL)
 		{
-			if (entry.issuer === issuer)
+			if (
+				(entry.issuer		=== cert_issuer)	&&
+				(entry.serial		=== cert_serial)	&&
+				(entry.fingerprint	=== cert_fingerprint)
+			)
 			{
-				entry.serial = entry.serial.toLowerCase();
-				entry.serial = entry.serial.replace(/^0+/,"");
-
-				if (entry.serial === serial)
 					return true;
 			}
 		}
@@ -408,7 +419,7 @@ function has_iudx_certificate_been_revoked (socket, cert)
 		// If it was issued by a sub-CA then check the sub-CA's cert too
 		// Assuming depth is <= 3. ca@iudx.org.in -> sub-CA -> user
 
-		if (issuer !== 'ca@iudx.org.in')
+		if (cert_issuer !== 'ca@iudx.org.in')
 		{
 			var ISSUERS = [];
 
@@ -430,21 +441,26 @@ function has_iudx_certificate_been_revoked (socket, cert)
 					return true;
 			}
 
-			for (issuer of ISSUERS)
+			for (const issuer of ISSUERS)
 			{
 				if (issuer.fingerprint && issuer.serialNumber)
 				{
-					fingerprint	= issuer.fingerprint.replace(/:/g,'').toLowerCase();
-					serial		= issuer.serialNumber.toLowerCase();
+					const issuer_fingerprint	= issuer.fingerprint.replace(/:/g,'').toLowerCase();
+					const issuer_serial		= issuer.serialNumber.toLowerCase();
 
-					for (entry of CRL)
+					for (const entry of CRL)
 					{
 						if (entry.issuer === 'ca@iudx.org.in')
 						{
-							entry.serial = entry.serial.toLowerCase();
-							entry.serial = entry.serial.replace(/^0+/,"");
+							const entry_serial = entry.serial
+										.toLowerCase()
+										.replace(/^0+/,"");
 
-							if (entry.serial === serial)
+							const entry_fingerprint	= entry.fingerprint
+											.replace(/:/g,'')
+											.toLowerCase();
+
+							if (entry_serial === issuer_serial && entry_fingerprint == issuer_fingerprint)
 								return true;
 						}
 					}
@@ -472,7 +488,7 @@ function has_iudx_certificate_been_revoked (socket, cert)
 	}
 }
 
-function is_string_safe (str)
+function is_string_safe (str,exceptions = "")
 {
 	if (! str)
 		return false;
@@ -483,9 +499,11 @@ function is_string_safe (str)
 	if (str.length === 0)
 		return false;
 
+	exceptions = exceptions + "-/@.";
+
 	for (var i = 0; i < str.length; ++i)
 	{
-		var ch = str.charAt(i);
+		const ch = str.charAt(i);
 
 		if (
 			(ch >= 'a' && ch <= 'z') ||
@@ -497,17 +515,8 @@ function is_string_safe (str)
 		}
 		else
 		{
-			switch (ch)
-			{
-				case '-': // For email, APIs, tokens
-				case '/': // For APIs and tokens
-				case '@': // For email
-				case '.': // For email and APIs
-					break;
-
-				default:
-					return false;
-			}
+			if (exceptions.indexOf(ch) === -1)
+				return false;
 		}
 	}
 
@@ -517,13 +526,23 @@ function is_string_safe (str)
 app.post('/auth/v1/token', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,'application/json')) !== "OK") {
-		END_ERROR (res,400, error);
-		return;
+	if ((error = is_secure(req,res,"application/json")) !== "OK")
+		return END_ERROR (res,400, error);
+
+	if (req.headers['content-type'] === 'text/plain')
+	{
+		try
+		{
+			req.body = JSON.parse(req.body);
+		}
+		catch(e)
+		{
+			return END_ERROR (res,400, "body is not a valid JSON");
+		}
 	}
 
-	var cert	= req.socket.getPeerCertificate();
-	var consumer_id	= cert.subject.emailAddress.toLowerCase();
+	const cert		= req.socket.getPeerCertificate();
+	const consumer_id	= cert.subject.emailAddress.toLowerCase();
 
 	var resource_server_token = {};
 
@@ -536,8 +555,7 @@ app.post('/auth/v1/token', async function (req, res) {
 	else if (req.body.request instanceof Object)
 		request_array = [req.body.request];
 	else {
-		END_ERROR (res,400,"'request' field is not a valid JSON");
-		return;
+		return END_ERROR (res,400,"'request' field is not a valid JSON");
 	}
 
 	var cert_class = cert.subject['id-qt-unotice'];
@@ -548,21 +566,11 @@ app.post('/auth/v1/token', async function (req, res) {
 
 		cert_class = cert_class.split(":")[1];
 
-		if ( (! cert_class) || cert_class === "1") {
-
-			END_ERROR (res, 403,
-				"A class-2 or above certificate is required" +
-				" for this API"
-			);
-
-			return;
-		}
-
 		try {
 			cert_class = parseInt(cert_class,10);
 		}
 		catch (x) {
-			cert_class = 2;
+			cert_class = 0;
 		}
 	}
 	else {
@@ -576,7 +584,15 @@ app.post('/auth/v1/token', async function (req, res) {
 		cert_class = 2; // certificate issued by some other CA
 	}
 
-	var token_rows = pg.querySync (
+	if ( cert_class < 2) {
+
+		return END_ERROR (res, 403,
+			"A class-2 or above certificate is required" +
+			" for this API"
+		);
+	}
+
+	const token_rows = pg.querySync (
 		'SELECT COUNT(*)/ (1 + EXTRACT(EPOCH FROM (NOW() - MIN(issued_at)))) '		+
 		'AS rate '									+
 		'FROM token '									+
@@ -585,18 +601,15 @@ app.post('/auth/v1/token', async function (req, res) {
 			[consumer_id],
 	);
 
-	var tokens_rate_per_second = parseInt (token_rows[0].rate,10);
+	const tokens_rate_per_second = parseInt (token_rows[0].rate,10);
 
 	if (tokens_rate_per_second > 3) { // tokens per second
-
-		END_ERROR (res, 429, "Too many requests"); // TODO report this!
-		return;
-
+		return END_ERROR (res, 429, "Too many requests"); // TODO report this!
 	}
 
-	var ip		= req.connection.remoteAddress;
-	var geo		= geoip_lite.lookup(ip);
-	var issuer	= cert.issuer;
+	const ip	= req.connection.remoteAddress;
+	const geo	= geoip_lite.lookup(ip);
+	const issuer	= cert.issuer;
 
 	var context = {
 		principal	: consumer_id,
@@ -625,56 +638,53 @@ app.post('/auth/v1/token', async function (req, res) {
 			region			: geo.region		|| "",
 			timezone		: geo.timezone		|| "",
 			city			: geo.city		|| "",
-		  	latitude		: geo.ll[0]		||  0,
-		  	longitude		: geo.ll[1]		||  0,
+			latitude		: geo.ll[0]		||  0,
+			longitude		: geo.ll[1]		||  0,
 		}
 	};
 
-	var token_time;
-	var requested_token_time;		// as specified by the consumer
-	var token_time_in_policy;		// as specified by the resource-owner
+	var requested_token_time;	// as specified by the consumer
+	var token_time = 31536000;	// to be finally sent along with token (max 1 year)
 
 	if (req.body['token-time'])
 	{
 		try
 		{
 			requested_token_time = parseInt(req.body['token-time'],10);
+
+			if (requested_token_time < 1)
+				return END_ERROR (res, 403, "'token-time' field should be > 0");
 		}
 		catch (x)
 		{
-			END_ERROR (res, 403, "Invalid 'token-time' field");
+			return END_ERROR (res, 403, "Invalid 'token-time' field");
 		}
 	}
 
-	var existing_token = req.body['existing-token'];
+	const existing_token = req.body['existing-token'];
 
 	var num_rules_passed = 0;
 	var providers = {};
 
-	for (var row of request_array)
+	for (const row of request_array)
 	{
 		var resource = row['resource-id'];
 
-		if (! is_string_safe(resource)) {
-			END_ERROR (res, 400, "Invalid 'resource-id (contains unsafe chars)' :" + resource);
-			return;
-		}
+		if (! is_string_safe(resource,"* _")) // allow *, ,_ as a characters
+			return END_ERROR (res, 400, "Invalid 'resource-id (contains unsafe chars)' :" + resource);
 
-		if (typeof row.method === 'string') {
+		if (typeof row.method === 'string')
 			row.methods = [row.method];
-		}
 
 		if (! row.methods)
 			row.methods = ['*'];
 
 		if ( ! (row.methods instanceof Array)) {
 
-			END_ERROR (res, 400,
+			return END_ERROR (res, 400,
 				"Invalid 'methods' for resource id:" +
 				resource
 			);
-
-			return;
 		}
 
 		if (row.api && typeof row.api === 'string')
@@ -685,30 +695,26 @@ app.post('/auth/v1/token', async function (req, res) {
 
 		if (row.provider)
 		{
-			if (typeof row.provider !== 'string') {
-
-				END_ERROR (res, 400,
+			if (typeof row.provider !== 'string')
+			{
+				return END_ERROR (res, 400,
 					"Invalid 'provider': "+row.provider
 				);
-
-				return;
 			}
 
 			if (! is_valid_email(row.provider))
 			{
-				END_ERROR (res, 400,
+				return END_ERROR (res, 400,
 					"Invalid provider email: " +
 						row.provider
 				);
-
-				return;
 			}
 
 			row.provider = row.provider.toLowerCase();
 
-			var provider_email_domain	= row.provider.split("@")[1];
+			const provider_email_domain	= row.provider.split("@")[1];
 
-			var sha1_of_provider_email_id	= crypto.createHash('sha1')
+			const sha1_of_provider_email_id	= crypto.createHash('sha1')
 								.update(row.provider)
 								.digest('hex');
 
@@ -719,53 +725,47 @@ app.post('/auth/v1/token', async function (req, res) {
 					resource;
 		}
 
-		if ((resource.match(/\//g) || []).length < 3) {
-
-			END_ERROR (res, 400,
+		if ((resource.match(/\//g) || []).length < 3)
+		{
+			return END_ERROR (res, 400,
 				"Invalid 'resource-id' (it must have atleast 3 '/' chars): " +
 				resource
 			);
-
-			return;
 		}
 
 		if (row.body)
 		{
-			if (! (row.body instanceof Object)) {
-
-				END_ERROR (res, 400, "Invalid body for id :" + resource);
-
-				return;
+			if (! (row.body instanceof Object))
+			{
+				return END_ERROR (res, 400, "Invalid body for id :" + resource);
 			}
 		}
 
-		var rid_split 			= resource.split("/");
+		const rid_split 		= resource.split("/");
 
-		var provider_id_in_db		= rid_split[1] + '@' + rid_split[0];
-		var resource_server		= rid_split[2];
-		var resource_name		= rid_split.slice(3).join("/");
+		const provider_id_in_db		= rid_split[1] + '@' + rid_split[0];
+		const resource_server		= rid_split[2];
+		const resource_name		= rid_split.slice(3).join("/");
 
 		providers		[provider_id_in_db]	= true;
 		resource_server_token	[resource_server]	= true; // to be filled later
 
-		var p_rows = pg.querySync (
+		const p_rows = pg.querySync (
 			'SELECT policy_in_json FROM policy ' +
 			'WHERE id = $1::text',
 				[provider_id_in_db]
 		);
 
-		if (p_rows.length === 0) {
-			END_ERROR (res, 400, "Invalid 'resource-id (no policy found)': " + resource);
-			return;
-		}
+		if (p_rows.length === 0)
+			return END_ERROR (res, 400, "Invalid 'resource-id (no policy found)': " + resource);
 
-		var policy_in_json = p_rows[0].policy_in_json;
+		const policy_in_json = p_rows[0].policy_in_json;
 
 		// full name of resource eg: bangalore.domain.com/streetlight-1
 		context.resource	= resource_server + "/" + resource_name;
 		context.action		= 'access';
 
-		var g_rows = pg.querySync(
+		const g_rows = pg.querySync(
 			'SELECT DISTINCT group_name FROM groups '	+
 			'WHERE id = $1::text '				+
 			'AND consumer = $2::text '			+
@@ -774,24 +774,24 @@ app.post('/auth/v1/token', async function (req, res) {
 		);
 
 		var g = [];
-		for (var gr of g_rows)
-			g.push(gr.group_name);
+		for (const grp of g_rows)
+			g.push(grp.group_name);
 
 		context.conditions.groups = g.join();
 
 		// TODO : optimize, check if tokens_per_day is in rule
-		token_rows = pg.querySync (
+		const t_rows = pg.querySync (
 			'SELECT COUNT(*) FROM token '		+
 			'WHERE id=$1::text '			+
 			'AND resource_ids @> $2 '		+
 			'AND DATE_TRUNC(\'day\',issued_at) = DATE_TRUNC(\'day\',NOW())',
 				[
 					consumer_id,
-					'{\"' + resource + '\":true}'
+					'{"' + resource + '":true}'
 				],
 		);
 
-		context.conditions.tokens_per_day = parseInt (token_rows[0].count,10);
+		context.conditions.tokens_per_day = parseInt (t_rows[0].count,10);
 
 		// TODO optimize, see if body is in rule !
 		var CTX;
@@ -800,36 +800,33 @@ app.post('/auth/v1/token', async function (req, res) {
 			// deep copy
 			CTX = JSON.parse(JSON.stringify(context));
 
-			var key;
-
-			for (key in row.body)
+			for (const key in row.body)
 				CTX.conditions["body." + key] = row.body[key];
 		}
 		else
 			CTX = context;
 
-		for (var api of row.apis)
+		for (const api of row.apis)
 		{
-			if (typeof api !== 'string') {
-				END_ERROR (res, 400, "Invalid 'api' :"+ api);
-				return;
-			}
+			if (typeof api !== 'string')
+				return END_ERROR (res, 400, "Invalid 'api' :"+ api);
 
 			CTX.conditions.api = api;
 
-			for (var method of row.methods)
+			for (const method of row.methods)
 			{
-				if (typeof method !== 'string') {
-					END_ERROR (res, 400, "Invalid 'method' :"+ method);
-					return;
-				}
+				if (typeof method !== 'string')
+					return END_ERROR (res, 400, "Invalid 'method' :"+ method);
 
 				CTX.conditions.method = method;
 
-				try {
-					if (! (token_time_in_policy = evaluator.evaluate (policy_in_json,CTX))) {
+				try
+				{
+					var token_time_in_policy; // as specified by the resource-owner in rules
 
-						END_ERROR (res, 403,
+					if (! (token_time_in_policy = evaluator.evaluate (policy_in_json,CTX)))
+					{
+						return END_ERROR (res, 403,
 							"Unauthorized to access id :'"	+
 								resource 		+
 							"' for api :'"			+
@@ -838,18 +835,13 @@ app.post('/auth/v1/token', async function (req, res) {
 								method			+
 							"'"
 						);
-
-						return;
 					}
 
-					if (token_time)
-						token_time = Math.min(token_time, token_time_in_policy);
-					else
-						token_time = token_time_in_policy;
+					token_time = Math.min(token_time, token_time_in_policy);
 				}
-				catch (x) {
-
-					END_ERROR (res, 403,
+				catch (x)
+				{
+					return END_ERROR (res, 403,
 						"Unauthorized to access id :'"	+
 							resource		+
 						"' for api :'"			+
@@ -858,8 +850,6 @@ app.post('/auth/v1/token', async function (req, res) {
 							method			+
 						"'"
 					);
-
-					return;
 				}
 			}
 		}
@@ -890,30 +880,25 @@ app.post('/auth/v1/token', async function (req, res) {
 
 		if (existing_token)
 		{
-			if ((! existing_token.startsWith(OUR_NAME + "/")) || (! is_string_safe(existing_token))) {
-				END_ERROR (res, 400, "Invalid 'existing-token' field");
-				return;
-			}
+			if ((! existing_token.startsWith(OUR_NAME + "/")) || (! is_string_safe(existing_token)))
+				return END_ERROR (res, 400, "Invalid 'existing-token' field");
 
-			if ((existing_token.match(/\//g) || []).length !== 2) {
-				END_ERROR (res, 400, "Invalid 'existing-token' field");
-				return;
-			}
+			if ((existing_token.match(/\//g) || []).length !== 2)
+				return END_ERROR (res, 400, "Invalid 'existing-token' field");
 
-			var issued_by			= existing_token.split("/")[0];
-			var issued_to			= existing_token.split("/")[1];
-			var random_part_of_token	= existing_token.split("/")[2];
+			const issued_by			= existing_token.split("/")[0];
+			const issued_to			= existing_token.split("/")[1];
+			const random_part_of_token	= existing_token.split("/")[2];
 
 			if (
 				(issued_by 			!== OUR_NAME)		||
 				(issued_to			!== consumer_id)	||
 				(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
 			) {
-				END_ERROR (res, 400, "Invalid existing-token");
-				return;
+				return END_ERROR (res, 400, "Invalid existing-token");
 			}
 
-			var sha1_of_existing_token	= crypto.createHash('sha1')
+			const sha1_of_existing_token	= crypto.createHash('sha1')
 								.update(random_part_of_token)
 								.digest('hex');
 
@@ -930,15 +915,13 @@ app.post('/auth/v1/token', async function (req, res) {
 				]
 			);
 
-			if (existing_row.length === 0) {
-				END_ERROR (res, 403, "Invalid existing-token");
-				return;
-			}
+			if (existing_row.length === 0)
+				return END_ERROR (res, 403, "Invalid existing-token");
 
 			if (token_time < existing_row.token_time)
 				token_time = existing_row.token_time;
 
-			for (var k in existing_row[0].server_token)
+			for (const k in existing_row[0].server_token)
 			{
 				resource_server_token[k] = existing_row[0].server_token[k];
 			}
@@ -959,11 +942,11 @@ app.post('/auth/v1/token', async function (req, res) {
 			"expires-in"	: token_time,
 		};
 
-		var num_resource_servers = Object.keys(resource_server_token).length;
+		const num_resource_servers = Object.keys(resource_server_token).length;
 
 		if (num_resource_servers > 1)
 		{
-			for (var ek in resource_server_token)
+			for (const ek in resource_server_token)
 			{
 				if (resource_server_token[ek] === true)
 					resource_server_token[ek] = crypto.randomBytes(TOKEN_LENGTH).toString('hex');
@@ -972,7 +955,7 @@ app.post('/auth/v1/token', async function (req, res) {
 			response["server-token"] = resource_server_token;
 		}
 
-		var sha1_of_token	= crypto.createHash('sha1')
+		const sha1_of_token	= crypto.createHash('sha1')
 						.update(token)
 						.digest('hex');
 
@@ -980,10 +963,10 @@ app.post('/auth/v1/token', async function (req, res) {
 		{
 			// merge both existing values
 
-			var old_request = existing_row[0].request;
-			var new_request	= old_request.concat(request_array);
+			const old_request 	= existing_row[0].request;
+			const new_request	= old_request.concat(request_array);
 
-			var new_resource_ids_dict = Object.assign({},existing_row[0].resource_ids, resource_id_dict);
+			const new_resource_ids_dict = Object.assign({},existing_row[0].resource_ids, resource_id_dict);
 
 			pg.querySync (
 				'UPDATE token SET ' 						+
@@ -1007,7 +990,7 @@ app.post('/auth/v1/token', async function (req, res) {
 		}
 		else
 		{
-			var request = response_array;
+			const request = response_array;
 
 			pg.querySync (
 				'INSERT INTO token VALUES(' 				+
@@ -1041,64 +1024,55 @@ app.post('/auth/v1/token', async function (req, res) {
 			);
 		}
 
-		END_SUCCESS (res, 200, JSON.stringify(response));
-		return;
+		return END_SUCCESS (res, 200, JSON.stringify(response));
 	}
 	else
 	{
-		END_ERROR (res, 403, "Unauthorized!");
-		return;
+		return END_ERROR (res, 403, "Unauthorized!");
 	}
 });
 
 app.post('/auth/v1/introspect', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,null)) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert = req.socket.getPeerCertificate();
+	const cert = req.socket.getPeerCertificate();
 
 	var cert_class = cert.subject['id-qt-unotice'];
-	if (! cert_class) {
-
-		END_ERROR (res, 403,
+	if (! cert_class)
+	{
+		return END_ERROR (res, 403,
 			"A class-1 certificate required to call this API"
 		);
-
-		return;
 	}
 
 	cert_class = String(cert_class).split(":")[1];
 
-	if ((! cert_class) || cert_class !== "1") {
-
-		END_ERROR (res, 403,
+	if ((! cert_class) || cert_class !== "1")
+	{
+		return END_ERROR (res, 403,
 			"A class-1 certificate required to call this API"
 		);
-
-		return;
 	}
 
-	var token;
-	if (! (token = req.body.token)) {
-		END_ERROR (res, 400, "No 'token' found in the body");
-		return;
+	if (! req.body.token)
+	{
+		return END_ERROR (res, 400, "No 'token' found in the body");
 	}
 
-	if ((! token.startsWith(OUR_NAME + "/")) || (! is_string_safe(token))) {
-		END_ERROR (res, 400, "Invalid 'token' field");
-		return;
+	const token = req.body.token;
+
+	if ((! token.startsWith(OUR_NAME + "/")) || (! is_string_safe(token)))
+		return END_ERROR (res, 400, "Invalid 'token' field");
+
+	if ((token.match(/\//g) || []).length !== 2)
+	{
+		return END_ERROR (res, 400, "Invalid 'token' field");
 	}
 
-	if ((token.match(/\//g) || []).length !== 2) {
-		END_ERROR (res, 400, "Invalid 'token' field");
-		return;
-	}
-
-	var server_token = req.body['server-token'];
+	const server_token = req.body['server-token'];
 
 	if (server_token)
 	{
@@ -1106,41 +1080,37 @@ app.post('/auth/v1/introspect', async function (req, res) {
 			(server_token.length !== TOKEN_LENGTH_HEX) ||
 			(! is_string_safe(server_token))
 		) {
-			END_ERROR (res, 400, "Invalid 'server-token' field");
-			return;
+			return END_ERROR (res, 400, "Invalid 'server-token' field");
 		}
 	}
 
-	var issued_by			= token.split("/")[0];
-	var email_id_in_token		= token.split("/")[1];
-	var random_part_of_token	= token.split("/")[2];
+	const issued_by			= token.split("/")[0];
+	const email_id_in_token		= token.split("/")[1];
+	const random_part_of_token	= token.split("/")[2];
 
 	if (
 		(issued_by 			!== OUR_NAME)		||
 		(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
 	) {
-		END_ERROR (res, 400, "Invalid token");
-		return;
+		return END_ERROR (res, 400, "Invalid token");
 	}
 
-	var sha1_of_token	= crypto.createHash('sha1')
+	const sha1_of_token	= crypto.createHash('sha1')
 					.update(random_part_of_token)
 					.digest('hex');
 
-	var ip 		= req.connection.remoteAddress;
-	var ip_matched	= false;
+	const ip 		= req.connection.remoteAddress;
+	var ip_matched		= false;
 
-	var resource_server_name_in_cert = cert.subject.CN;
+	const resource_server_name_in_cert = cert.subject.CN;
 
 	await dns.lookup(resource_server_name_in_cert, {all:true},
 	async (error, ip_addresses) =>
 	{
-		if (error) {
-			END_ERROR (res, 400, "Invalid hostname : "+resource_server_name_in_cert);
-			return;
-		}
+		if (error)
+			return END_ERROR (res, 400, "Invalid hostname : "+resource_server_name_in_cert);
 
-		for (var a of ip_addresses)
+		for (const a of ip_addresses)
 		{
 			if (a.address === ip)
 			{
@@ -1151,12 +1121,10 @@ app.post('/auth/v1/introspect', async function (req, res) {
 
 		if (! ip_matched)
 		{
-			END_ERROR (res, 403,
+			return END_ERROR (res, 403,
 				"Your certificate hostname and " +
 				"your IP does not match!"
 			);
-
-			return;
 		}
 
 		await pool.query (
@@ -1167,62 +1135,46 @@ app.post('/auth/v1/introspect', async function (req, res) {
 					[sha1_of_token],
 		async (error, results) =>
 		{
-			if (error) {
-				END_ERROR (res, 500, "Internal error!");
-				return;
-			}
+			if (error)
+				return END_ERROR (res, 500, "Internal error!");
 
-			if (results.rows.length === 0) {
-				END_ERROR (res, 400, "Invalid token 1");
-				return;
-			}
+			if (results.rows.length === 0)
+				return END_ERROR (res, 400, "Invalid token 1");
 
-			var expected_server_token = results.rows[0].server_token[resource_server_name_in_cert];
-			var num_resource_servers = Object.keys(results.rows[0].server_token).length;
+			const expected_server_token = results.rows[0].server_token[resource_server_name_in_cert];
+			const num_resource_servers = Object.keys(results.rows[0].server_token).length;
 
 			if (num_resource_servers > 1)
 			{
 				// token is shared by many servers
 
 				if (! server_token) // given by the user
-				{
-					END_ERROR (res, 403, "No 'server-token' field found in the body");
-					return;
-				}
+					return END_ERROR (res, 403, "No 'server-token' field found in the body");
 
 				if (! expected_server_token) // token doesn't belong to this server
-				{
-					END_ERROR (res, 400, "Invalid token 2");
-					return;
-				}
+					return END_ERROR (res, 400, "Invalid token 2");
 
 				if (server_token !== expected_server_token)
-				{
-					END_ERROR (res, 403, "Invalid 'server-token' field in the body");
-					return;
-				}
+					return END_ERROR (res, 403, "Invalid 'server-token' field in the body");
 			}
 			else
 			{
 				// token belongs to only 1 server
 
 				if (expected_server_token !== true)
-				{
-					END_ERROR (res, 400, "Invalid token 3");
-					return;
-				}
+					return END_ERROR (res, 400, "Invalid token 3");
 			}
 
-			var request	= results.rows[0].request;
-			var providers	= results.rows[0].providers;
+			const request	= results.rows[0].request;
+			const providers	= results.rows[0].providers;
 
 			var request_for_resource_server = [];
 
-			for (var r of request)
+			for (const r of request)
 			{
-				var a			= r["resource-id"].split("/");
-				var provider 		= a[1] + "@" + a[0];
-				var resource_server	= a[2];
+				const a			= r["resource-id"].split("/");
+				const provider 		= a[1] + "@" + a[0];
+				const resource_server	= a[2];
 
 				if (providers[provider]) // if provider exists in providers dictionary
 				{
@@ -1231,12 +1183,10 @@ app.post('/auth/v1/introspect', async function (req, res) {
 				}
 			}
 
-			if (request_for_resource_server.length === 0) {
-				END_ERROR (res, 400, "Invalid token");
-				return;
-			}
+			if (request_for_resource_server.length === 0)
+				return END_ERROR (res, 400, "Invalid token");
 
-			var output = {
+			const output = {
 				'consumer'			: email_id_in_token,
 				'expiry'			: results.rows[0].expiry,
 				'request'			: request_for_resource_server,
@@ -1249,8 +1199,7 @@ app.post('/auth/v1/introspect', async function (req, res) {
 					[token]
 			);
 
-			END_SUCCESS (res, 200, JSON.stringify(output));
-			return;
+			return END_SUCCESS (res, 200, JSON.stringify(output));
 		});
 	});
 });
@@ -1258,13 +1207,11 @@ app.post('/auth/v1/introspect', async function (req, res) {
 app.post('/auth/v1/revoke', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,"application/json")) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,"application/json")) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert	= req.socket.getPeerCertificate();
-	var id		= cert.subject.emailAddress.toLowerCase();
+	const cert	= req.socket.getPeerCertificate();
+	const id	= cert.subject.emailAddress.toLowerCase();
 
 	var cert_class = cert.subject['id-qt-unotice'];
 
@@ -1282,70 +1229,57 @@ app.post('/auth/v1/revoke', async function (req, res) {
 			cert_class = 2;
 		}
 
-		if (cert_class < 3) {
-
-			END_ERROR (res, 403,
+		if (cert_class < 3)
+		{
+			return END_ERROR (res, 403,
 				"A class-3 or above certificate is required" +
 				" for this API"
 			);
-
-			return;
 		}
 	}
 
-	var tokens		= req.body.tokens;
-	var token_hashes	= req.body['token-hashes'];
+	const tokens		= req.body.tokens;
+	const token_hashes	= req.body['token-hashes'];
 
-	if (tokens && token_hashes) {
-		END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes', not both");
-		return;
-	}
+	if (tokens && token_hashes)
+		return END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes', not both");
 
-	if ( (! tokens) && (! token_hashes)) {
-		END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes'");
-		return;
-	}
+	if ( (! tokens) && (! token_hashes))
+		return END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes'");
 
 	if (tokens)
 	{
 		// user is a consumer
 
-		if (! (tokens instanceof Array)) {
-			END_ERROR (res, 400, "Invalid 'tokens' field in body");
-			return;
-		}
+		if (! (tokens instanceof Array))
+			return END_ERROR (res, 400, "Invalid 'tokens' field in body");
 
-		for (var token of tokens)
+		for (const token of tokens)
 		{
-			if ((! is_string_safe(token)) || (! token.startsWith(OUR_NAME + "/"))) {
-				END_ERROR (res, 400, "Invalid token: "+token);
-				return;
-			}
+			if ((! is_string_safe(token)) || (! token.startsWith(OUR_NAME + "/")))
+				return END_ERROR (res, 400, "Invalid token: "+token);
 
-			if ((token.match(/\//g) || []).length !== 2) {
-				END_ERROR (res, 400, "Invalid token: "+token);
-				return;
-			}
+			if ((token.match(/\//g) || []).length !== 2)
+				return END_ERROR (res, 400, "Invalid token: "+token);
 
-			var issued_by			= token.split("/")[0];
-			var issued_to			= token.split("/")[1];
-			var random_part_of_token	= token.split("/")[2];
+			const issued_by			= token.split("/")[0];
+			const issued_to			= token.split("/")[1];
+			const random_part_of_token	= token.split("/")[2];
 
 			if (
 				(issued_by 			!== OUR_NAME)		||
 				(issued_to			!== id)			||
 				(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
 			) {
-				END_ERROR (res, 400, "Invalid token");
-				return;
+				return END_ERROR (res, 400, "Invalid token");
 			}
 
-			var sha1_of_token = crypto.createHash('sha1')
+			const sha1_of_token = crypto.createHash('sha1')
 						.update(random_part_of_token)
 						.digest('hex');
 
-			await pool.query
-			(
+			await pool.query (
+
 				'UPDATE token SET revoked = true WHERE id = $1::text ' 	+
 				'AND token = $2::text '					+
 				'AND expiry > NOW()',
@@ -1354,18 +1288,13 @@ app.post('/auth/v1/revoke', async function (req, res) {
 
 				async (error,results) =>
 				{
-					if (error) {
-						END_ERROR (res, 500, "Some thing went wrong");
-						return;
-					}
+					if (error)
+						return END_ERROR (res, 500, "Some thing went wrong");
 
-					if (results.rowCount === 0) {
-						END_ERROR (res, 400, "Token not found");
-						return;
-					}
+					if (results.rowCount === 0)
+						return END_ERROR (res, 400, "Token not found");
 
-					END_SUCCESS (res, 200, '{"success":"token revoked"}');
-					return;
+					return END_SUCCESS (res, 200, '{"success":"token revoked"}');
 				}
 			);
 		}
@@ -1374,20 +1303,18 @@ app.post('/auth/v1/revoke', async function (req, res) {
 	{
 		// user is a provider
 
-		if (! (token_hashes instanceof Array)) {
-			END_ERROR (res, 400, "Invalid 'token-hashes' field in body");
-			return;
-		}
+		if (! (token_hashes instanceof Array))
+			return END_ERROR (res, 400, "Invalid 'token-hashes' field in body");
 
-		var sha1_id 		= crypto.createHash('sha1')
+		const sha1_id 		= crypto.createHash('sha1')
 						.update(id)
 						.digest('hex');
 
-		var email_domain	= id.split("@")[1];
+		const email_domain	= id.split("@")[1];
 
-		var provider_id_in_db	= sha1_id + "@" + email_domain;
+		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-		for (var token_hash of token_hashes)
+		for (const token_hash of token_hashes)
 		{
 			await pool.query (
 				'UPDATE token '						+
@@ -1399,33 +1326,26 @@ app.post('/auth/v1/revoke', async function (req, res) {
 
 			async (error,results) =>
 			{
-				if (error) {
-					END_ERROR (res, 500, "Some thing went wrong");
-					return;
-				}
+				if (error)
+					return END_ERROR (res, 500, "Some thing went wrong");
 
-				if (results.rowCount === 0) {
-					END_ERROR (res, 400, "Token hash not found : "+token_hash);
-					return;
-				}
+				if (results.rowCount === 0)
+					return END_ERROR (res, 400, "Token hash not found : "+token_hash);
 
 			});
 		}
 
-		END_SUCCESS (res, 200, '{"succes":"token revoked"}');
-		return;
+		return END_SUCCESS (res, 200, '{"succes":"token revoked"}');
 	}
 });
 
 app.post('/auth/v1/acl/set', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,"application/json")) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,"application/json")) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert	= req.socket.getPeerCertificate();
+	const cert	= req.socket.getPeerCertificate();
 	var cert_class	= cert.subject['id-qt-unotice'];
 
 	if (cert_class)
@@ -1437,48 +1357,41 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 			cert_class = parseInt(cert_class.split(":")[1],10);
 			if (cert_class < 3)
 			{
-				END_ERROR (res, 403,
+				return END_ERROR (res, 403,
 					"A class-3 or above certificate is "	+
 					"required for calling policy related "	+
 					"APIs"
 				);
-
-				return;
 			}
 		}
 		catch(x)
 		{
-			END_ERROR (res, 403,
+			return END_ERROR (res, 403,
 				"A class-3 or above certificate is required "	+
 				"for calling policy related APIs"
 			);
-
-			return;
 		}
 	}
 
-	var policy;
-	if (! (policy = req.body.policy)) {
-		END_ERROR (res, 400, "No 'policy' found in request");
-		return;
-	}
+	if (! req.body.policy)
+		return END_ERROR (res, 400, "No 'policy' found in request");
 
-	if (typeof policy !== 'string') {
-		END_ERROR (res, 400, "Invalid policy");
-		return;
-	}
+	const policy = req.body.policy;
 
-	var provider_id		= cert.subject.emailAddress.toLowerCase();
-	var email_domain	= provider_id.split("@")[1];
+	if (typeof policy !== 'string')
+		return END_ERROR (res, 400, "Invalid policy");
 
-	var sha1_id 		= crypto.createHash('sha1')
+	const provider_id	= cert.subject.emailAddress.toLowerCase();
+	const email_domain	= provider_id.split("@")[1];
+
+	const sha1_id 		= crypto.createHash('sha1')
 					.update(provider_id)
 					.digest('hex');
 
-	var provider_id_in_db	= sha1_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	var base64policy	= Buffer.from(policy).toString('base64');
-	var rules		= policy.split(";");
+	const base64policy	= Buffer.from(policy).toString('base64');
+	const rules		= policy.split(";");
 	var policy_in_json;
 
 	try {
@@ -1487,18 +1400,15 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 		});
 	}
 	catch (x) {
-		var err = String(x).replace(/\n/g," ");
-		END_ERROR (res, 400, "Syntax error in policy: " + err);
-		return;
+		const err = String(x).replace(/\n/g," ");
+		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
 
 	await pool.query('SELECT 1 FROM policy WHERE id = $1::text',
 		[provider_id_in_db], async (error, results) =>
 	{
-		if (error) {
-			END_ERROR (res, 500, "Could not do SELECT on policy");
-			return;
-		}
+		if (error)
+			return END_ERROR (res, 500, "Could not do SELECT on policy");
 
 		var q; // query
 		var p; // parameters
@@ -1523,16 +1433,12 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 			];
 		}
 
-		await pool.query (q, p, (int_error, int_results) =>
+		await pool.query (q, p, (int_error, _int_results) =>
 		{
 			if (int_error)
-			{
-				END_ERROR (res, 500, "Could not set policy");
-				return;
-			}
-
-			END_SUCCESS (res, 200, '{"success":"policy set"}');
-			return;
+				return END_ERROR (res, 500, "Could not set policy");
+			else
+				return END_SUCCESS (res, 200, '{"success":"policy set"}');
 		});
 	});
 });
@@ -1540,12 +1446,11 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 app.post('/auth/v1/acl/append', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,"application/json")) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,"application/json")) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert	= req.socket.getPeerCertificate();
+	const cert	= req.socket.getPeerCertificate();
+
 	var cert_class	= cert.subject['id-qt-unotice'];
 
 	if (cert_class)
@@ -1557,47 +1462,40 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 			cert_class = parseInt(cert_class.split(":")[1],10);
 			if (cert_class < 3)
 			{
-				END_ERROR (res, 403,
+				return END_ERROR (res, 403,
 					"A class-3 or above certificate is "	+
 					"required for calling policy related "	+
 					"APIs"
 				);
-
-				return;
 			}
 		}
 		catch(x)
 		{
-			END_ERROR (res, 403,
+			return END_ERROR (res, 403,
 				"A class-3 or above certificate is required "	+
 				"for calling policy related APIs"
 			);
-
-			return;
 		}
 	}
 
-	var policy;
-	if (! (policy = req.body.policy)) {
-		END_ERROR (res, 400, "No 'policy' found in request");
-		return;
-	}
+	if (! req.body.policy)
+		return END_ERROR (res, 400, "No 'policy' found in request");
 
-	if (typeof policy !== 'string') {
-		END_ERROR (res, 400, "Invalid policy");
-		return;
-	}
+	const policy = req.body.policy;
 
-	var provider_id		= cert.subject.emailAddress.toLowerCase();
-	var email_domain	= provider_id.split("@")[1];
+	if (typeof policy !== 'string')
+		return END_ERROR (res, 400, "Invalid policy");
 
-	var sha1_id 		= crypto.createHash('sha1')
+	const provider_id	= cert.subject.emailAddress.toLowerCase();
+	const email_domain	= provider_id.split("@")[1];
+
+	const sha1_id 		= crypto.createHash('sha1')
 					.update(provider_id)
 					.digest('hex');
 
-	var provider_id_in_db	= sha1_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	var rules = policy.split(";");
+	const rules = policy.split(";");
 	var policy_in_json;
 
 	try {
@@ -1606,45 +1504,38 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 		});
 	}
 	catch (x) {
-		var err = String(x).replace(/\n/g," ");
-		END_ERROR (res, 400, "Syntax error in policy :" + err);
-		return;
+		const err = String(x).replace(/\n/g," ");
+		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
 
 	await pool.query('SELECT policy FROM policy WHERE id = $1::text',
 		[provider_id_in_db], async (error, results) =>
 	{
-		if (error) {
-			END_ERROR (res,500, "Could not do SELECT on policy");
-			return;
-		}
+		if (error)
+			return END_ERROR (res,500, "Could not do SELECT on policy");
 
 		var q; // query
 		var p; // parameters
 
-		var old_policy;
-		var base64policy;
-
 		if (results.rows.length > 0)
 		{
-			old_policy	= Buffer.from(results.rows[0].policy, 'base64')
-						.toString('ascii');
+			const old_policy	= Buffer.from(results.rows[0].policy, 'base64')
+							.toString('ascii');
 
-			var new_policy	= old_policy + ";" + policy;
+			const new_policy	= old_policy + ";" + policy;
 
-			base64policy	= Buffer.from(new_policy).toString('base64');
+			const base64policy	= Buffer.from(new_policy).toString('base64');
 
-			rules = new_policy.split(";");
+			const new_rules = new_policy.split(";");
 
 			try {
-				policy_in_json = rules.map(function (t) {
+				policy_in_json = new_rules.map(function (t) {
 					return (parser.parse(t));
 				});
 			}
 			catch (x) {
-				var err = String(x).replace(/\n/g," ");
-				END_ERROR (res, 400, "Syntax error in policy: "+err);
-				return;
+				const err = String(x).replace(/\n/g," ");
+				return END_ERROR (res, 400, "Syntax error in policy: "+err);
 			}
 
 			q = "UPDATE policy SET policy = $1::text," +
@@ -1657,7 +1548,7 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 		}
 		else
 		{
-			base64policy = Buffer.from(policy).toString('base64');
+			const base64policy = Buffer.from(policy).toString('base64');
 
 			q = "INSERT INTO policy VALUES($1::text, $2::text, $3)";
 			p = [
@@ -1667,16 +1558,12 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 			];
 		}
 
-		await pool.query (q, p, (int_error, int_results) =>
+		await pool.query (q, p, (int_error, _int_results) =>
 		{
 			if (int_error)
-			{
-				END_ERROR (res, 500, "Could not set policy");
-				return;
-			}
-
-			END_SUCCESS (res, 200, '{"success":"policy appended"}');
-			return;
+				return END_ERROR (res, 500, "Could not set policy");
+			else
+				return END_SUCCESS (res, 200, '{"success":"policy appended"}');
 		});
 	});
 });
@@ -1684,12 +1571,10 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 app.get('/auth/v1/acl', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,null)) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert	= req.socket.getPeerCertificate();
+	const cert	= req.socket.getPeerCertificate();
 	var cert_class	= cert.subject['id-qt-unotice'];
 
 	if (cert_class)
@@ -1701,72 +1586,61 @@ app.get('/auth/v1/acl', async function (req, res) {
 			cert_class = parseInt(cert_class.split(":")[1],10);
 			if (cert_class < 3)
 			{
-				END_ERROR (res, 403,
+				return END_ERROR (res, 403,
 					"A class-3 or above certificate is "	+
 					"required for calling policy related"	+
 					"APIs"
 				);
-
-				return;
 			}
 		}
 		catch(x)
 		{
-			END_ERROR (res, 403,
+			return END_ERROR (res, 403,
 				"A class-3 or above certificate is required " +
 				"for calling policy related APIs"
 			);
-
-			return;
 		}
 	}
 
-	var provider_id		= cert.subject.emailAddress.toLowerCase();
-	var email_domain	= provider_id.split("@")[1];
+	const provider_id	= cert.subject.emailAddress.toLowerCase();
+	const email_domain	= provider_id.split("@")[1];
 
-	var sha1_id 		= crypto.createHash('sha1')
+	const sha1_id 		= crypto.createHash('sha1')
 					.update(provider_id)
 					.digest('hex');
 
-	var provider_id_in_db	= sha1_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	await pool.query('SELECT policy FROM policy WHERE id = $1::text',
 			[provider_id_in_db], (error, results) =>
 	{
-		if (error) {
-			END_ERROR (res, 500, "Could not create the policy");
-			return;
-		}
+		if (error)
+			return END_ERROR (res, 500, "Could not create the policy");
 
-		if (results.rows.length === 0) {
-			END_ERROR (res, 400, "No policies have been set yet!");
-			return;
-		}
+		if (results.rows.length === 0)
+			return END_ERROR (res, 400, "No policies have been set yet!");
 
-		var out = {
+		const out = {
 			'policy' : Buffer.from(results.rows[0].policy,'base64')
 					.toString('ascii')
 		};
 
-		END_SUCCESS (res, 200,
+		return END_SUCCESS (res, 200,
 			JSON.stringify(out)
 		);
-
-		return;
 	});
 });
 
 app.post('/auth/v1/audit/tokens', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,null)) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert	= req.socket.getPeerCertificate();
+	const cert	= req.socket.getPeerCertificate();
+	const id	= cert.subject.emailAddress.toLowerCase();
+
 	var cert_class	= cert.subject['id-qt-unotice'];
-	var id		= cert.subject.emailAddress.toLowerCase();
 
 	if (cert_class)
 	{
@@ -1777,31 +1651,25 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 			cert_class = parseInt(cert_class.split(":")[1],10);
 			if (cert_class < 3)
 			{
-				END_ERROR (res, 403,
+				return END_ERROR (res, 403,
 					"A class-3 or above certificate is "	+
 					"required for calling policy related "	+
 					"APIs"
 				);
-
-				return;
 			}
 		}
 		catch(x)
 		{
-			END_ERROR (res, 403,
+			return END_ERROR (res, 403,
 				"A class-3 or above certificate is required "	+
 				"for calling policy related APIs"
 			);
-
-			return;
 		}
 	}
 
 	var hours;
-	if (! (hours = req.body.hours)) {
-		END_ERROR (res, 400, "No 'hours' found in the body");
-		return;
-	}
+	if (! (hours = req.body.hours))
+		return END_ERROR (res, 400, "No 'hours' found in the body");
 
 	try
 	{
@@ -1809,13 +1677,11 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 
 		// 5 yrs max
 		if (isNaN(hours) || hours < 0 || hours > 43800) {
-			END_ERROR (res, 400, "Invalid 'hours' field");
-			return;
+			return END_ERROR (res, 400, "Invalid 'hours' field");
 		}
 	}
 	catch (x) {
-		END_ERROR (res, 400, "Invalid 'hours' field");
-		return;
+		return END_ERROR (res, 400, "Invalid 'hours' field");
 	}
 
 	var as_consumer = [];
@@ -1829,14 +1695,12 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 
 			[id], async (error, results) =>
 	{
-		if (error) {
-			END_ERROR (res, 500, "Internal error!");
-			return;
-		}
+		if (error)
+			return END_ERROR (res, 500, "Internal error!");
 
 		for (var i = 0; i < results.rows.length; ++i)
 		{
-			var row 	= results.rows[i];
+			const row = results.rows[i];
 
 			as_consumer.push ({
 				'token-issued-at'		: row.issued_at,
@@ -1849,12 +1713,12 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 			});
 		}
 
-		var sha1_id 		= crypto.createHash('sha1')
+		const sha1_id 		= crypto.createHash('sha1')
 						.update(id)
 						.digest('hex');
 
-		var email_domain	= id.split("@")[1];
-		var provider_id_in_db	= sha1_id + "@" + email_domain;
+		const email_domain	= id.split("@")[1];
+		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 		await pool.query (
 			"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,"+
@@ -1866,14 +1730,12 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 				[], (error, results) =>
 			{
 
-				if (error) {
-					END_ERROR (res, 500, "Internal error!");
-					return;
-				}
+				if (error)
+					return END_ERROR (res, 500, "Internal error!");
 
 				for (var i = 0; i < results.rows.length; ++i)
 				{
-					var row = results.rows[i];
+					const row = results.rows[i];
 
 					as_provider.push ({
 						'consumer'			: row.id,
@@ -1888,14 +1750,13 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 					});
 				}
 
-				var output = {
+				const output = {
 					'as-consumer'		: as_consumer,
 					'as-resource-owner'	: as_provider,
 				};
 
 				res.setHeader('content-type', 'application/json');
-				END_SUCCESS (res, 200, JSON.stringify(output));
-				return;
+				return END_SUCCESS (res, 200, JSON.stringify(output));
 			}
 		);
 	});
@@ -1904,14 +1765,13 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 app.post('/auth/v1/group/add', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,null)) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert	= req.socket.getPeerCertificate();
+	const cert		= req.socket.getPeerCertificate();
+	const provider_id	= cert.subject.emailAddress.toLowerCase();
+
 	var cert_class	= cert.subject['id-qt-unotice'];
-	var provider_id	= cert.subject.emailAddress.toLowerCase();
 
 	if (cert_class)
 	{
@@ -1922,108 +1782,87 @@ app.post('/auth/v1/group/add', async function (req, res) {
 			cert_class = parseInt(cert_class.split(":")[1],10);
 			if (cert_class < 3)
 			{
-				END_ERROR (res, 403,
+				return END_ERROR (res, 403,
 					"A class-3 or above certificate is "	+
 					"required for calling policy related "	+
 					"APIs"
 				);
-
-				return;
 			}
 		}
 		catch(x)
 		{
-			END_ERROR (res, 403,
+			return END_ERROR (res, 403,
 				"A class-3 or above certificate is required "	+
 				"for calling policy related APIs"
 			);
-
-			return;
 		}
 	}
 
-	var consumer_id;
-	if (! (consumer_id = req.body.consumer)) {
-		END_ERROR (res, 400, "No 'consumer' found in the body");
-		return;
-	}
+	if (! req.body.consumer)
+		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
-	consumer_id = consumer_id.toLowerCase();
-	if (! is_string_safe (consumer_id)) {
-		END_ERROR (res, 400, "Invalid 'consumer' field");
-		return;
-	}
+	const consumer_id = req.body.consumer.toLowerCase();
 
-	var group_name;
-	if (! (group_name = req.body.group)) {
-		END_ERROR (res, 400, "No 'group' found in the body");
-		return;
-	}
+	if (! is_string_safe (consumer_id))
+		return END_ERROR (res, 400, "Invalid 'consumer' field");
 
-	group_name = group_name.toLowerCase();
-	if (! is_string_safe (group_name)) {
-		END_ERROR (res, 400, "Invalid 'group' field");
-		return;
-	}
+	if (! req.body.group)
+		return END_ERROR (res, 400, "No 'group' found in the body");
+
+	const group_name = req.body.group.toLowerCase();
+
+	if (! is_string_safe (group_name))
+		return END_ERROR (res, 400, "Invalid 'group' field");
 
 	var valid_till; // in hours
-	if (! (valid_till = req.body["valid-till"])) {
-		END_ERROR (res, 400, "No 'valid-till' found in the body");
-		return;
-	}
+	if (! (valid_till = req.body["valid-till"]))
+		return END_ERROR (res, 400, "No 'valid-till' found in the body");
 
 	try {
 		valid_till = parseInt(valid_till,10);
 
 		// 1 year max
 		if (isNaN(valid_till) || valid_till < 0 || valid_till > 8760) {
-			END_ERROR (res, 400, "Invalid 'valid-till' field");
-			return;
+			return END_ERROR (res, 400, "Invalid 'valid-till' field");
 		}
 	}
 	catch (x)
 	{
-		END_ERROR (res, 400, "Invalid 'valid-till' field");
-		return;
+		return END_ERROR (res, 400, "Invalid 'valid-till' field");
 	}
 
-	var email_domain	= provider_id.split("@")[1];
+	const email_domain	= provider_id.split("@")[1];
 
-	var sha1_id 		= crypto.createHash('sha1')
+	const sha1_id 		= crypto.createHash('sha1')
 					.update(provider_id)
 					.digest('hex');
 
-	var provider_id_in_db	= sha1_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	await pool.query (
 		"INSERT INTO groups VALUES ($1::text, $2::text, $3::text,"	+
 		"NOW() + '"							+
 			valid_till + " hours')",
 				[provider_id_in_db, consumer_id, group_name],
-	(error, results) =>
+	(error, _results) =>
 	{
-		if (error) {
-			END_ERROR (res, 500, "Could not add consumer to group");
-			return;
-		}
-
-		END_SUCCESS (res, 200, '{"success":"consumer added to the group"}');
-		return;
+		if (error)
+			return END_ERROR (res, 500, "Could not add consumer to group");
+		else
+			return END_SUCCESS (res, 200, '{"success":"consumer added to the group"}');
 	});
 });
 
 app.post('/auth/v1/group/list', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,null)) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert	= req.socket.getPeerCertificate();
+	const cert	= req.socket.getPeerCertificate();
+	const provider_id	= cert.subject.emailAddress.toLowerCase();
+
 	var cert_class	= cert.subject['id-qt-unotice'];
-	var provider_id	= cert.subject.emailAddress.toLowerCase();
-
 	if (cert_class)
 	{
 		cert_class = String(cert_class);
@@ -2033,23 +1872,19 @@ app.post('/auth/v1/group/list', async function (req, res) {
 			cert_class = parseInt(cert_class.split(":")[1],10);
 			if (cert_class < 3)
 			{
-				END_ERROR (res, 403,
+				return END_ERROR (res, 403,
 					"A class-3 or above certificate is "	+
 					"required for calling policy related "	+
 					"APIs"
 				);
-
-				return;
 			}
 		}
 		catch(x)
 		{
-			END_ERROR (res, 403,
+			return END_ERROR (res, 403,
 				"A class-3 or above certificate is required "	+
 				"for calling policy related APIs"
 			);
-
-			return;
 		}
 	}
 
@@ -2058,19 +1893,17 @@ app.post('/auth/v1/group/list', async function (req, res) {
 	{
 		group_name = group_name.toLowerCase();
 
-		if (! is_string_safe (group_name)) {
-			END_ERROR (res, 400, "Invalid 'group' field");
-			return;
-		}
+		if (! is_string_safe (group_name))
+			return END_ERROR (res, 400, "Invalid 'group' field");
 	}
 
-	var email_domain	= provider_id.split("@")[1];
+	const email_domain	= provider_id.split("@")[1];
 
-	var sha1_id 		= crypto.createHash('sha1')
+	const sha1_id 		= crypto.createHash('sha1')
 					.update(provider_id)
 					.digest('hex');
 
-	var provider_id_in_db	= sha1_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	var response = [];
 
@@ -2084,24 +1917,20 @@ app.post('/auth/v1/group/list', async function (req, res) {
 				[provider_id_in_db, group_name],
 		(error, results) =>
 		{
-			if (error) {
-				END_ERROR (res, 500, "Could not select group");
-				return;
-			}
+			if (error)
+				return END_ERROR (res, 500, "Could not select group");
 
-			for (var row of results.rows) {
+			for (const row of results.rows) {
 				response.push (
 					{
 						"consumer"	: row.consumer,
 						"valid-till"	: row.valid_till
 					}
 				);
-
 			}
 
 			res.setHeader('content-type', 'application/json');
-			END_SUCCESS (res, 200, JSON.stringify(response));
-			return;
+			return END_SUCCESS (res, 200, JSON.stringify(response));
 		});
 	}
 	else
@@ -2113,12 +1942,11 @@ app.post('/auth/v1/group/list', async function (req, res) {
 				[provider_id_in_db],
 		(error, results) =>
 		{
-			if (error) {
-				END_ERROR (res, 500, "Could not select group");
-				return;
-			}
+			if (error)
+				return END_ERROR (res, 500, "Could not select group");
 
-			for (var row of results.rows) {
+			for (const row of results.rows)
+			{
 				response.push (
 					{
 						"consumer"	: row.consumer,
@@ -2129,8 +1957,7 @@ app.post('/auth/v1/group/list', async function (req, res) {
 			}
 
 			res.setHeader('content-type', 'application/json');
-			END_SUCCESS (res, 200, JSON.stringify(response));
-			return;
+			return END_SUCCESS (res, 200, JSON.stringify(response));
 		});
 	}
 });
@@ -2138,14 +1965,13 @@ app.post('/auth/v1/group/list', async function (req, res) {
 app.post('/auth/v1/group/delete', async function (req, res) {
 
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK") {
-		END_ERROR (res, 400, error);
-		return;
-	}
+	if ((error = is_secure(req,res,null)) !== "OK")
+		return END_ERROR (res, 400, error);
 
-	var cert	= req.socket.getPeerCertificate();
+	const cert		= req.socket.getPeerCertificate();
+	const provider_id	= cert.subject.emailAddress.toLowerCase();
+
 	var cert_class	= cert.subject['id-qt-unotice'];
-	var provider_id	= cert.subject.emailAddress.toLowerCase();
 
 	if (cert_class)
 	{
@@ -2156,57 +1982,45 @@ app.post('/auth/v1/group/delete', async function (req, res) {
 			cert_class = parseInt(cert_class.split(":")[1],10);
 			if (cert_class < 3)
 			{
-				END_ERROR (res, 403,
+				return END_ERROR (res, 403,
 					"A class-3 or above certificate is "	+
 					"required for calling policy related "	+
 					"APIs"
 				);
-
-				return;
 			}
 		}
 		catch(x)
 		{
-			END_ERROR (res, 403,
+			return END_ERROR (res, 403,
 				"A class-3 or above certificate is required "	+
 				"for calling policy related APIs"
 			);
-
-			return;
 		}
 	}
 
-	var consumer_id;
-	if (! (consumer_id = req.body.consumer)) {
-		END_ERROR (res, 400, "No 'consumer' found in the body");
-		return;
-	}
+	if (! req.body.consumer)
+		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
-	consumer_id = consumer_id.toLowerCase();
-	if (! is_string_safe (consumer_id)) {
-		END_ERROR (res, 400, "Invalid 'consumer' field");
-		return;
-	}
+	const consumer_id = req.body.consumer.toLowerCase();
 
-	var group_name;
-	if (! (group_name = req.body.group)) {
-		END_ERROR (res, 400, "No 'group' found in the body");
-		return;
-	}
-	group_name = group_name.toLowerCase();
+	if (! is_string_safe (consumer_id))
+		return END_ERROR (res, 400, "Invalid 'consumer' field");
 
-	if (! is_string_safe (group_name)) {
-		END_ERROR (res, 400, "Invalid 'group' field");
-		return;
-	}
+	if (! req.body.group)
+		return END_ERROR (res, 400, "No 'group' found in the body");
 
-	var email_domain	= provider_id.split("@")[1];
+	const group_name = req.body.group.toLowerCase();
 
-	var sha1_id 		= crypto.createHash('sha1')
+	if (! is_string_safe (group_name))
+		return END_ERROR (res, 400, "Invalid 'group' field");
+
+	const email_domain	= provider_id.split("@")[1];
+
+	const sha1_id 		= crypto.createHash('sha1')
 					.update(provider_id)
 					.digest('hex');
 
-	var provider_id_in_db	= sha1_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	var query =
 		"DELETE FROM groups "		+
@@ -2214,8 +2028,7 @@ app.post('/auth/v1/group/delete', async function (req, res) {
 		"AND group_name = $2::text "	+
 		"AND valid_till > NOW()";
 
-	var params =
-		[provider_id_in_db, group_name];
+	const params = [provider_id_in_db, group_name];
 
 	if (consumer_id !== '*')
 	{
@@ -2225,30 +2038,26 @@ app.post('/auth/v1/group/delete', async function (req, res) {
 
 	await pool.query (query, params, (error, results) =>
 	{
-		if (error) {
-			END_ERROR (res, 500, "Could not delete from group");
-			return;
-		}
+		if (error)
+			return END_ERROR (res, 500, "Could not delete from group");
 
-		if (results.rowCount === 0) {
-
+		if (results.rowCount === 0)
+		{
 			if (consumer_id === '*')
-				END_ERROR (res, 400, "Empty group");
+				return END_ERROR (res, 400, "Empty group");
 			else
-				END_ERROR (res, 400, "Consumer not in the group");
-
-			return;
+				return END_ERROR (res, 400, "Consumer not in the group");
 		}
-		else {
-			END_SUCCESS (res, 200, '{"success":"' + results.rowCount+ ' consumer(s) deleted from the group"}');
-			return;
+		else
+		{
+			return END_SUCCESS (res, 200, '{"success":"' + results.rowCount+ ' consumer(s) deleted from the group"}');
 		}
 	});
 });
 
-app.get("/auth/v1/[^\.]*/help", function (req, res) {
-	var pathname	= url.parse(req.url).pathname;
-	var api		= pathname.split("/auth/v1/")[1].split("/help")[0];
+app.get("/auth/v1/[^.]*/help", function (req, res) {
+	const pathname	= url.parse(req.url).pathname;
+	const api	= pathname.split("/auth/v1/")[1].split("/help")[0];
 
 	if (api)
 	{
@@ -2262,9 +2071,9 @@ app.get("/auth/v1/[^\.]*/help", function (req, res) {
 	}
 });
 
-app.post("/auth/v1/[^\.]*/help", function (req, res) {
-	var pathname	= url.parse(req.url).pathname;
-	var api		= pathname.split("/auth/v1/")[1].split("/help")[0];
+app.post("/auth/v1/[^.]*/help", function (req, res) {
+	const pathname	= url.parse(req.url).pathname;
+	const api	= pathname.split("/auth/v1/")[1].split("/help")[0];
 
 	if (api)
 	{
@@ -2273,20 +2082,19 @@ app.post("/auth/v1/[^\.]*/help", function (req, res) {
 	}
 	else
 	{
-		END_ERROR (res, 404, "No such API");
-		return;
+		return END_ERROR (res, 404, "No such API");
 	}
 });
 
 app.get('/*', function (req, res) {
-	var pathname = url.parse(req.url).pathname;
+	const pathname = url.parse(req.url).pathname;
 	console.log("=>>> GET  not found for :",pathname);
 	res.status(405).end("No such API");
 	return;
 });
 
 app.post('/*', function (req, res) {
-	var pathname = url.parse(req.url).pathname;
+	const pathname = url.parse(req.url).pathname;
 	console.log("=>>> POST not found for :",pathname);
 	res.status(405).end("No such API");
 	return;
@@ -2313,9 +2121,9 @@ if (! is_openbsd)
 
 	evaluator.evaluate(_tmp, {});
 
-	dns.lookup("www.google.com", {all:true}, (e, a) => {});
+	dns.lookup("www.google.com", {all:true}, (_e,_a) => {});
 
-	var _tmp = http_sync_request('GET', 'https://ca.iudx.org.in/crl');
+	_tmp = http_sync_request('GET', 'https://ca.iudx.org.in/crl');
 
 	// ======================== END preload code for chroot   ==============
 }
@@ -2327,7 +2135,8 @@ function drop_privilege ()
 
 	if (is_openbsd)
 	{
-		if (EUID === 0) {
+		if (EUID === 0)
+		{
 			process.setgid('nogroup');
 			process.setuid('nobody');
 		}
@@ -2371,7 +2180,7 @@ if (cluster.isMaster)
 		cluster.fork();
 	}
 
-	cluster.on('exit', (worker, code, signal) => {
+	cluster.on('exit', (worker, _code, _signal) => {
 		log('red',`Worker ${worker.process.pid} died, restarting it`);
 		cluster.fork();
 	});
