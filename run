@@ -1,9 +1,5 @@
 #!/bin/sh
 
-# create a directory for /var/empty
-#cp -r node_modules /var/empty
-#cp -r node-aperture /var/empty
-
 export NODE_ENV=production
 
 id=`id | cut -f1 -d'('`
@@ -19,5 +15,6 @@ fi
 while :
 do
 	/usr/local/bin/node https.js
+	sleep 1
 	echo "================> Restarting ===================="
 done

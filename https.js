@@ -32,6 +32,7 @@ const express		= require('express');
 const aperture		= require('./node-aperture');
 const geoip_lite	= require('geoip-lite');
 const bodyParser	= require('body-parser');
+const compression	= require('compression')
 const http_sync_request	= require('sync-request');
 const pgNativeClient 	= require('pg-native');
 const pg		= new pgNativeClient();
@@ -126,6 +127,9 @@ app.use (
 		}
 	})
 );
+
+app.use(compression());
+
 app.use(bodyParser.json());
 app.use(bodyParser.text());
 app.disable('x-powered-by');
@@ -201,6 +205,65 @@ const https_options = {
 	rejectUnauthorized: 	true,
 };
 
+function certificate_class (cert)
+{
+	var int_cert_class;
+
+	const cert_class = cert.subject['id-qt-unotice'];
+
+	if (! cert_class)
+	{
+		const issuer_email = cert.issuer.emailAddress.toLowerCase();
+
+		if (issuer_email === "ca@iudx.org.in" || issuer_email.startsWith("iudx.sub.ca@"))
+			int_cert_class = 0;
+		else
+			int_cert_class = 2; // some other CA
+
+		/* TODO OIDs of CCA/lisenced CAs issued certs
+			1. CP 2.16.356.100.2
+			2. CP Class 1 2.16.356.100.2.1
+			3. CP Class 2 2.16.356.100.2.2
+			4. CP Class 3 2.16.356.100.2.3
+		*/
+	}
+	else
+	{
+		int_cert_class = parseInt(cert_class.split(":")[1],10);
+
+		if (isNaN(int_cert_class))
+			int_cert_class = 0;
+	}
+
+	return int_cert_class;
+}
+
+function is_class_1_certificate (cert)
+{
+	var int_cert_class;
+
+	const cert_class = cert.subject['id-qt-unotice'];
+
+	if (! cert_class)
+	{
+		const issuer_email = cert.issuer.emailAddress.toLowerCase();
+
+		if (issuer_email === "ca@iudx.org.in" || issuer_email.startsWith("iudx.sub.ca@"))
+			int_cert_class = 0;
+		else
+			int_cert_class = 1; // some other CA
+	}
+	else
+	{
+		int_cert_class = parseInt(cert_class.split(":")[1],10);
+
+		if (isNaN(int_cert_class))
+			int_cert_class = 0;
+	}
+
+	return (int_cert_class === 1);
+}
+
 function END_SUCCESS (res, http_status, msg)
 {
 	res.setHeader('content-type', 'application/json');
@@ -266,37 +329,32 @@ function is_valid_email (email)
 	return true;
 }
 
-function is_secure (req,res,expected_content_type)
+function is_secure (req,res,cert,expected_content_type)
 {
 	req.setTimeout(5000);
 
-	res.header('x-xss-protection', '1; mode=block');
-	res.header('x-frame-options', 'deny');
-	res.header('x-content-type-options','nosniff');
-
-	res.header('access-control-allow-origin', req.headers.origin ? req.headers.origin : '*');
-
-	res.header(
-		'access-control-allow-methods',
-		'POST,GET'
-	);
-
-	res.header('connection','close');
-
-	if (req.headers.referer)
+	if (req.headers.origin)
 	{
-		// e.g https://www.iudx.org.in
+		// e.g Origin = https://www.iudx.org.in:8443/
 
-		const referer_domain = String(
-			req.headers.referer
-				.split("/")[2]
-				.split(":")[0]
+		if ((req.headers.origin.match(/\//g) || []).length < 2)
+			return "Invalid 'origin' field";
+
+		const origin_domain = String (
+			req.headers.origin
+				.split("/")[2]	// remove protocol
+				.split(":")[0]	// remove port number
 		);
 
-		// TODO maybe restrict to only few domains?
+		if (! origin_domain.toLowerCase().endsWith('.iudx.org.in'))
+			return "Invalid 'origin' field in the header";
 
-		if (! referer_domain.toLowerCase().endsWith('.iudx.org.in'))
-			return "Invalid 'referer' field in the header";
+		res.header('X-XSS-Protection', '1; mode=block');
+		res.header('X-Frame-Pptions', 'deny');
+		res.header('X-Content-Type-Options','nosniff');
+
+		res.header('Access-Control-Allow-Origin', req.headers.origin);
+		res.header('Access-Control-Allow-Methods', 'POST,GET');
 	}
 
 	if (expected_content_type)
@@ -304,20 +362,17 @@ function is_secure (req,res,expected_content_type)
 		const e = [expected_content_type, "text/plain"];
 
 		if (e.indexOf(req.headers['content-type']) === -1) 
-			return "content-type must be :" + expected_content_type;
+			return "content-type must be " + expected_content_type;
 	}
 
-	if (! is_certificate_ok (req))
+	if (! is_certificate_ok (req,cert))
 		return "Invalid certificate";
 
 	return "OK";
 }
 
-function is_certificate_ok (req)
+function is_certificate_ok (req,cert)
 {
-	// get full certificate chain
-	const cert = req.socket.getPeerCertificate (true);
-
 	if (! cert)
 		return false;
 
@@ -525,8 +580,19 @@ function is_string_safe (str,exceptions = "")
 
 app.post('/auth/v1/token', async function (req, res) {
 
+	const cert = req.socket.getPeerCertificate(true);
+
+	var cert_class; 
+	if ((cert_class = certificate_class(cert)) < 2)
+	{
+		return END_ERROR (res, 403,
+			"A class-2 or above certificate is required" +
+			" for this API"
+		);
+	}
+	
 	var error;
-	if ((error = is_secure(req,res,"application/json")) !== "OK")
+	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res,400, error);
 
 	if (req.headers['content-type'] === 'text/plain')
@@ -540,9 +606,6 @@ app.post('/auth/v1/token', async function (req, res) {
 			return END_ERROR (res,400, "body is not a valid JSON");
 		}
 	}
-
-	const cert		= req.socket.getPeerCertificate();
-	const consumer_id	= cert.subject.emailAddress.toLowerCase();
 
 	var resource_server_token = {};
 
@@ -558,39 +621,7 @@ app.post('/auth/v1/token', async function (req, res) {
 		return END_ERROR (res,400,"'request' field is not a valid JSON");
 	}
 
-	var cert_class = cert.subject['id-qt-unotice'];
-
-	if (cert_class)
-	{
-		cert_class = String(cert_class);
-
-		cert_class = cert_class.split(":")[1];
-
-		try {
-			cert_class = parseInt(cert_class,10);
-		}
-		catch (x) {
-			cert_class = 0;
-		}
-	}
-	else {
-		/* TODO OIDs of CCA/lisenced CAs issued certs
-			1. CP 2.16.356.100.2
-			2. CP Class 1 2.16.356.100.2.1
-			3. CP Class 2 2.16.356.100.2.2
-			4. CP Class 3 2.16.356.100.2.3
-		*/
-
-		cert_class = 2; // certificate issued by some other CA
-	}
-
-	if ( cert_class < 2) {
-
-		return END_ERROR (res, 403,
-			"A class-2 or above certificate is required" +
-			" for this API"
-		);
-	}
+	const consumer_id = cert.subject.emailAddress.toLowerCase();
 
 	const token_rows = pg.querySync (
 		'SELECT COUNT(*)/ (1 + EXTRACT(EPOCH FROM (NOW() - MIN(issued_at)))) '		+
@@ -603,8 +634,14 @@ app.post('/auth/v1/token', async function (req, res) {
 
 	const tokens_rate_per_second = parseInt (token_rows[0].rate,10);
 
-	if (tokens_rate_per_second > 3) { // tokens per second
-		return END_ERROR (res, 429, "Too many requests"); // TODO report this!
+	if (tokens_rate_per_second > 3) // tokens per second
+	{
+		log ('red',
+			"Too many requests from user : " +
+			cert.subject.emailAddress + ", from ip " + String(req.connection.remoteAddress) 
+		);
+
+		return END_ERROR (res, 429, "Too many requests");
 	}
 
 	const ip	= req.connection.remoteAddress;
@@ -648,17 +685,10 @@ app.post('/auth/v1/token', async function (req, res) {
 
 	if (req.body['token-time'])
 	{
-		try
-		{
-			requested_token_time = parseInt(req.body['token-time'],10);
+		requested_token_time = parseInt(req.body['token-time'],10);
 
-			if (requested_token_time < 1)
-				return END_ERROR (res, 403, "'token-time' field should be > 0");
-		}
-		catch (x)
-		{
-			return END_ERROR (res, 403, "Invalid 'token-time' field");
-		}
+		if (isNaN(requested_token_time) || requested_token_time < 1 || requested_token_time > 31536000)
+			return END_ERROR (res, 400, "'token-time' field should be > 0 and < 31536000");
 	}
 
 	const existing_token = req.body['existing-token'];
@@ -916,7 +946,7 @@ app.post('/auth/v1/token', async function (req, res) {
 			);
 
 			if (existing_row.length === 0)
-				return END_ERROR (res, 403, "Invalid existing-token");
+				return END_ERROR (res, 400, "Invalid existing-token");
 
 			if (token_time < existing_row.token_time)
 				token_time = existing_row.token_time;
@@ -926,7 +956,7 @@ app.post('/auth/v1/token', async function (req, res) {
 				resource_server_token[k] = existing_row[0].server_token[k];
 			}
 
-			token = random_part_of_token;
+			token = random_part_of_token; // given by the user
 		}
 		else
 		{
@@ -1034,33 +1064,21 @@ app.post('/auth/v1/token', async function (req, res) {
 
 app.post('/auth/v1/introspect', async function (req, res) {
 
+	const cert = req.socket.getPeerCertificate(true);
+
+	if (! is_class_1_certificate(cert))
+	{
+		return END_ERROR (res, 403,
+			"A class-1 certificate required to call this API"
+		);
+	}
+
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK")
+	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
 
-	const cert = req.socket.getPeerCertificate();
-
-	var cert_class = cert.subject['id-qt-unotice'];
-	if (! cert_class)
-	{
-		return END_ERROR (res, 403,
-			"A class-1 certificate required to call this API"
-		);
-	}
-
-	cert_class = String(cert_class).split(":")[1];
-
-	if ((! cert_class) || cert_class !== "1")
-	{
-		return END_ERROR (res, 403,
-			"A class-1 certificate required to call this API"
-		);
-	}
-
 	if (! req.body.token)
-	{
 		return END_ERROR (res, 400, "No 'token' found in the body");
-	}
 
 	const token = req.body.token;
 
@@ -1068,9 +1086,7 @@ app.post('/auth/v1/introspect', async function (req, res) {
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
 	if ((token.match(/\//g) || []).length !== 2)
-	{
 		return END_ERROR (res, 400, "Invalid 'token' field");
-	}
 
 	const server_token = req.body['server-token'];
 
@@ -1141,15 +1157,15 @@ app.post('/auth/v1/introspect', async function (req, res) {
 			if (results.rows.length === 0)
 				return END_ERROR (res, 400, "Invalid token 1");
 
-			const expected_server_token = results.rows[0].server_token[resource_server_name_in_cert];
-			const num_resource_servers = Object.keys(results.rows[0].server_token).length;
+			const expected_server_token	= results.rows[0].server_token[resource_server_name_in_cert];
+			const num_resource_servers	= Object.keys(results.rows[0].server_token).length;
 
 			if (num_resource_servers > 1)
 			{
 				// token is shared by many servers
 
 				if (! server_token) // given by the user
-					return END_ERROR (res, 403, "No 'server-token' field found in the body");
+					return END_ERROR (res, 400, "No 'server-token' field found in the body");
 
 				if (! expected_server_token) // token doesn't belong to this server
 					return END_ERROR (res, 400, "Invalid token 2");
@@ -1206,37 +1222,21 @@ app.post('/auth/v1/introspect', async function (req, res) {
 
 app.post('/auth/v1/revoke', async function (req, res) {
 
+	const cert = req.socket.getPeerCertificate(true);
+
+	if (certificate_class(cert) < 3)
+	{
+		return END_ERROR (res, 403,
+			"A class-3 or above certificate is required" +
+			" for this API"
+		);
+	}
+
 	var error;
-	if ((error = is_secure(req,res,"application/json")) !== "OK")
+	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
 
-	const cert	= req.socket.getPeerCertificate();
-	const id	= cert.subject.emailAddress.toLowerCase();
-
-	var cert_class = cert.subject['id-qt-unotice'];
-
-	if (cert_class)
-	{
-		cert_class = String(cert_class);
-
-		cert_class = cert_class.split(":")[1];
-		try
-		{
-			cert_class = parseInt(cert_class.split(":")[1],10);
-		}
-		catch (x)
-		{
-			cert_class = 2;
-		}
-
-		if (cert_class < 3)
-		{
-			return END_ERROR (res, 403,
-				"A class-3 or above certificate is required" +
-				" for this API"
-			);
-		}
-	}
+	const id		= cert.subject.emailAddress.toLowerCase();
 
 	const tokens		= req.body.tokens;
 	const token_hashes	= req.body['token-hashes'];
@@ -1341,37 +1341,19 @@ app.post('/auth/v1/revoke', async function (req, res) {
 
 app.post('/auth/v1/acl/set', async function (req, res) {
 
-	var error;
-	if ((error = is_secure(req,res,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
+	const cert = req.socket.getPeerCertificate(true);
 
-	const cert	= req.socket.getPeerCertificate();
-	var cert_class	= cert.subject['id-qt-unotice'];
-
-	if (cert_class)
+	if (certificate_class(cert) < 3)
 	{
-		cert_class = String(cert_class);
-
-		try
-		{
-			cert_class = parseInt(cert_class.split(":")[1],10);
-			if (cert_class < 3)
-			{
-				return END_ERROR (res, 403,
-					"A class-3 or above certificate is "	+
-					"required for calling policy related "	+
-					"APIs"
-				);
-			}
-		}
-		catch(x)
-		{
-			return END_ERROR (res, 403,
-				"A class-3 or above certificate is required "	+
-				"for calling policy related APIs"
-			);
-		}
+		return END_ERROR (res, 403,
+			"A class-3 or above certificate is required" +
+			" for this API"
+		);
 	}
+
+	var error;
+	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
+		return END_ERROR (res, 400, error);
 
 	if (! req.body.policy)
 		return END_ERROR (res, 400, "No 'policy' found in request");
@@ -1392,6 +1374,7 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 
 	const base64policy	= Buffer.from(policy).toString('base64');
 	const rules		= policy.split(";");
+
 	var policy_in_json;
 
 	try {
@@ -1445,38 +1428,19 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 
 app.post('/auth/v1/acl/append', async function (req, res) {
 
-	var error;
-	if ((error = is_secure(req,res,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
+	const cert = req.socket.getPeerCertificate(true);
 
-	const cert	= req.socket.getPeerCertificate();
-
-	var cert_class	= cert.subject['id-qt-unotice'];
-
-	if (cert_class)
+	if (certificate_class(cert) < 3)
 	{
-		cert_class = String(cert_class);
-
-		try
-		{
-			cert_class = parseInt(cert_class.split(":")[1],10);
-			if (cert_class < 3)
-			{
-				return END_ERROR (res, 403,
-					"A class-3 or above certificate is "	+
-					"required for calling policy related "	+
-					"APIs"
-				);
-			}
-		}
-		catch(x)
-		{
-			return END_ERROR (res, 403,
-				"A class-3 or above certificate is required "	+
-				"for calling policy related APIs"
-			);
-		}
+		return END_ERROR (res, 403,
+			"A class-3 or above certificate is required" +
+			" for this API"
+		);
 	}
+
+	var error;
+	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
+		return END_ERROR (res, 400, error);
 
 	if (! req.body.policy)
 		return END_ERROR (res, 400, "No 'policy' found in request");
@@ -1570,37 +1534,19 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 
 app.get('/auth/v1/acl', async function (req, res) {
 
-	var error;
-	if ((error = is_secure(req,res,null)) !== "OK")
-		return END_ERROR (res, 400, error);
+	const cert = req.socket.getPeerCertificate(true);
 
-	const cert	= req.socket.getPeerCertificate();
-	var cert_class	= cert.subject['id-qt-unotice'];
-
-	if (cert_class)
+	if (certificate_class(cert) < 3)
 	{
-		cert_class = String(cert_class);
-
-		try
-		{
-			cert_class = parseInt(cert_class.split(":")[1],10);
-			if (cert_class < 3)
-			{
-				return END_ERROR (res, 403,
-					"A class-3 or above certificate is "	+
-					"required for calling policy related"	+
-					"APIs"
-				);
-			}
-		}
-		catch(x)
-		{
-			return END_ERROR (res, 403,
-				"A class-3 or above certificate is required " +
-				"for calling policy related APIs"
-			);
-		}
+		return END_ERROR (res, 403,
+			"A class-3 or above certificate is required" +
+			" for this API"
+		);
 	}
+
+	var error;
+	if ((error = is_secure(req,res,cert,null)) !== "OK")
+		return END_ERROR (res, 400, error);
 
 	const provider_id	= cert.subject.emailAddress.toLowerCase();
 	const email_domain	= provider_id.split("@")[1];
@@ -1633,54 +1579,29 @@ app.get('/auth/v1/acl', async function (req, res) {
 
 app.post('/auth/v1/audit/tokens', async function (req, res) {
 
+	const cert = req.socket.getPeerCertificate(true);
+
+	if (certificate_class(cert) < 3)
+	{
+		return END_ERROR (res, 403,
+			"A class-3 or above certificate is required" +
+			" for this API"
+		);
+	}
+
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK")
+	if ((error = is_secure(req,res,cert,null)) !== "OK")
 		return END_ERROR (res, 400, error);
 
-	const cert	= req.socket.getPeerCertificate();
-	const id	= cert.subject.emailAddress.toLowerCase();
+	const id = cert.subject.emailAddress.toLowerCase();
 
-	var cert_class	= cert.subject['id-qt-unotice'];
-
-	if (cert_class)
-	{
-		cert_class = String(cert_class);
-
-		try
-		{
-			cert_class = parseInt(cert_class.split(":")[1],10);
-			if (cert_class < 3)
-			{
-				return END_ERROR (res, 403,
-					"A class-3 or above certificate is "	+
-					"required for calling policy related "	+
-					"APIs"
-				);
-			}
-		}
-		catch(x)
-		{
-			return END_ERROR (res, 403,
-				"A class-3 or above certificate is required "	+
-				"for calling policy related APIs"
-			);
-		}
-	}
-
-	var hours;
-	if (! (hours = req.body.hours))
+	if (! req.body.hours)
 		return END_ERROR (res, 400, "No 'hours' found in the body");
 
-	try
-	{
-		hours = parseInt (hours,10);
+	const hours = parseInt (req.body.hours,10);
 
-		// 5 yrs max
-		if (isNaN(hours) || hours < 0 || hours > 43800) {
-			return END_ERROR (res, 400, "Invalid 'hours' field");
-		}
-	}
-	catch (x) {
+	// 5 yrs max
+	if (isNaN(hours) || hours < 0 || hours > 43800) {
 		return END_ERROR (res, 400, "Invalid 'hours' field");
 	}
 
@@ -1764,39 +1685,21 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 
 app.post('/auth/v1/group/add', async function (req, res) {
 
+	const cert = req.socket.getPeerCertificate(true);
+
+	if (certificate_class(cert) < 3)
+	{
+		return END_ERROR (res, 403,
+			"A class-3 or above certificate is required" +
+			" for this API"
+		);
+	}
+
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK")
+	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
 
-	const cert		= req.socket.getPeerCertificate();
-	const provider_id	= cert.subject.emailAddress.toLowerCase();
-
-	var cert_class	= cert.subject['id-qt-unotice'];
-
-	if (cert_class)
-	{
-		cert_class = String(cert_class);
-
-		try
-		{
-			cert_class = parseInt(cert_class.split(":")[1],10);
-			if (cert_class < 3)
-			{
-				return END_ERROR (res, 403,
-					"A class-3 or above certificate is "	+
-					"required for calling policy related "	+
-					"APIs"
-				);
-			}
-		}
-		catch(x)
-		{
-			return END_ERROR (res, 403,
-				"A class-3 or above certificate is required "	+
-				"for calling policy related APIs"
-			);
-		}
-	}
+	const provider_id = cert.subject.emailAddress.toLowerCase();
 
 	if (! req.body.consumer)
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
@@ -1818,16 +1721,10 @@ app.post('/auth/v1/group/add', async function (req, res) {
 	if (! (valid_till = req.body["valid-till"]))
 		return END_ERROR (res, 400, "No 'valid-till' found in the body");
 
-	try {
-		valid_till = parseInt(valid_till,10);
+	valid_till = parseInt(valid_till,10);
 
-		// 1 year max
-		if (isNaN(valid_till) || valid_till < 0 || valid_till > 8760) {
-			return END_ERROR (res, 400, "Invalid 'valid-till' field");
-		}
-	}
-	catch (x)
-	{
+	// 1 year max
+	if (isNaN(valid_till) || valid_till < 0 || valid_till > 8760) {
 		return END_ERROR (res, 400, "Invalid 'valid-till' field");
 	}
 
@@ -1855,38 +1752,21 @@ app.post('/auth/v1/group/add', async function (req, res) {
 
 app.post('/auth/v1/group/list', async function (req, res) {
 
+	const cert = req.socket.getPeerCertificate(true);
+
+	if (certificate_class(cert) < 3)
+	{
+		return END_ERROR (res, 403,
+			"A class-3 or above certificate is required" +
+			" for this API"
+		);
+	}
+
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK")
+	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
 
-	const cert	= req.socket.getPeerCertificate();
-	const provider_id	= cert.subject.emailAddress.toLowerCase();
-
-	var cert_class	= cert.subject['id-qt-unotice'];
-	if (cert_class)
-	{
-		cert_class = String(cert_class);
-
-		try
-		{
-			cert_class = parseInt(cert_class.split(":")[1],10);
-			if (cert_class < 3)
-			{
-				return END_ERROR (res, 403,
-					"A class-3 or above certificate is "	+
-					"required for calling policy related "	+
-					"APIs"
-				);
-			}
-		}
-		catch(x)
-		{
-			return END_ERROR (res, 403,
-				"A class-3 or above certificate is required "	+
-				"for calling policy related APIs"
-			);
-		}
-	}
+	const provider_id = cert.subject.emailAddress.toLowerCase();
 
 	var group_name = req.body.group;
 	if (group_name)
@@ -1964,39 +1844,21 @@ app.post('/auth/v1/group/list', async function (req, res) {
 
 app.post('/auth/v1/group/delete', async function (req, res) {
 
+	const cert = req.socket.getPeerCertificate(true);
+
+	if (certificate_class(cert) < 3)
+	{
+		return END_ERROR (res, 403,
+			"A class-3 or above certificate is required" +
+			" for this API"
+		);
+	}
+
 	var error;
-	if ((error = is_secure(req,res,null)) !== "OK")
+	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
 
-	const cert		= req.socket.getPeerCertificate();
-	const provider_id	= cert.subject.emailAddress.toLowerCase();
-
-	var cert_class	= cert.subject['id-qt-unotice'];
-
-	if (cert_class)
-	{
-		cert_class = String(cert_class);
-
-		try
-		{
-			cert_class = parseInt(cert_class.split(":")[1],10);
-			if (cert_class < 3)
-			{
-				return END_ERROR (res, 403,
-					"A class-3 or above certificate is "	+
-					"required for calling policy related "	+
-					"APIs"
-				);
-			}
-		}
-		catch(x)
-		{
-			return END_ERROR (res, 403,
-				"A class-3 or above certificate is required "	+
-				"for calling policy related APIs"
-			);
-		}
-	}
+	const provider_id = cert.subject.emailAddress.toLowerCase();
 
 	if (! req.body.consumer)
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
@@ -2169,10 +2031,7 @@ function drop_privilege ()
 if (cluster.isMaster)
 {
 	if (is_openbsd)
-	{
 		pledge.init (WORKER_PLEDGE + " unveil sendfd");
-
-	}
 
 	log('green',`Master ${process.pid} is running`);
 
