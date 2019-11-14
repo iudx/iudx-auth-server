@@ -27,7 +27,15 @@ Body:
 
 	Note: If the "group" doesn't exist, it will be created automatically.
 
-Examples:
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.add_consumer_to_group("user@domain.com","confidential",3600) # add user@domain.com to confidential group for 1 hour
+
+CURL example:
 
 	Request:
 

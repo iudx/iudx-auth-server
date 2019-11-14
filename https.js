@@ -17,6 +17,8 @@
 
 "use strict";
 
+process.env.NODE_ENV = 'production';
+
 const fs		= require('fs');
 const os		= require('os');
 const dns 		= require('dns');
@@ -32,7 +34,7 @@ const express		= require('express');
 const aperture		= require('./node-aperture');
 const geoip_lite	= require('geoip-lite');
 const bodyParser	= require('body-parser');
-const compression	= require('compression')
+const compression	= require('compression');
 const http_sync_request	= require('sync-request');
 const pgNativeClient 	= require('pg-native');
 const pg		= new pgNativeClient();
@@ -197,10 +199,17 @@ const apertureOpts = {
 const parser	= aperture.createParser		(apertureOpts);
 const evaluator	= aperture.createEvaluator	(apertureOpts);
 
+const trusted_CAs = [
+	fs.readFileSync('ca.iudx.org.in.crt'),
+	fs.readFileSync('/etc/ssl/cert.pem'),
+	fs.readFileSync('CCAIndia2015.cer'),
+	fs.readFileSync('CCAIndia2014.cer'),
+];
+
 const https_options = {
 	key:			fs.readFileSync('key.pem'),
 	cert:			fs.readFileSync('server.pem'),
-	ca:			fs.readFileSync('ca.iudx.org.in.crt'),
+	ca:			trusted_CAs,
 	requestCert:		true,
 	rejectUnauthorized: 	true,
 };
@@ -350,7 +359,7 @@ function is_secure (req,res,cert,expected_content_type)
 			return "Invalid 'origin' field in the header";
 
 		res.header('X-XSS-Protection', '1; mode=block');
-		res.header('X-Frame-Pptions', 'deny');
+		res.header('X-Frame-Options', 'deny');
 		res.header('X-Content-Type-Options','nosniff');
 
 		res.header('Access-Control-Allow-Origin', req.headers.origin);
@@ -415,6 +424,11 @@ function is_certificate_ok (req,cert)
 
 			return false;
 		}
+	}
+	else
+	{
+		// some other CA.
+		// run ocspcheck tool ?
 	}
 
 	return true;

@@ -110,7 +110,15 @@ Variables in policy language:
 	| cert.issuer.st    | string | 		"							   |
 	+-------------------+------------------------------------------------------------------------------+
 
-Examples:
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.set_policy("*@iisc.ac.in can access rs1.com/my-resource-name")
+
+CURL example:
 
 	Request:
 

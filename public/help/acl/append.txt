@@ -30,7 +30,15 @@ HTTP response code:
 	400
 		If the policy contains syntax errors.
 
-Examples:
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.append_policy("*@iisc.ac.in can access rs1.com/my-resource-name")
+
+CURL example:
 
 	Request:
 

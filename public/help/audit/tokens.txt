@@ -26,8 +26,15 @@ HTTP response code:
 	403
 		If the certificate class is < 3
 
+Using pyIUDX SDK:
 
-Examples:
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.audit_tokens(5) # audit report for last 5 hours
+
+CURL example:
 
 	Request:
 

@@ -24,7 +24,15 @@ Body:
 
 	Note: If the value of consumer is "*", then the group itself will be deleted.
 
-Examples:
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.delete_consumer_from_group("user@domain.com","confidential")
+
+CURL example:
 
 	Request:
 

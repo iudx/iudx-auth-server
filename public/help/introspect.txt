@@ -39,15 +39,23 @@ HTTP response code:
 	429
 		If the resource-server makes too many requests
 
-Examples
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("resource-server-certificate.pem","private-key.pem") 
+
+	iudx_auth.introspect_token("auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90")
+
+CURL example:
 
 	Request:
 
-		curl -XPOST https://auth.iudx.org.in/auth/v1/introspect	\
+		curl -XPOST https://auth.iudx.org.in/auth/v1/introspect					\
 
-			--cert rs-certificate.key --key rs-private.key	\
+			--cert resource-server-certificate.pem --key private-key.pem			\
 
-			-H 'content-type: application/json'		\
+			-H 'content-type: application/json'						\
 
 			-d '{"token": "auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90"}'
 

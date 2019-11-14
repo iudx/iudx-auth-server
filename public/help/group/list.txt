@@ -18,7 +18,15 @@ Headers:
 Body:
 	group		: <a valid group name created by the user>	// optional
 
-Examples:
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.list_group("confidential")
+
+CURL example:
 
 	Request:
 

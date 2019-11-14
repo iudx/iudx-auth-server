@@ -22,7 +22,15 @@ HTTP response code:
 	400
 		If no policies have been set yet.
 
-Example:
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	print(iudx_auth.get_policy())
+
+CURL example:
 
 	Request:
 
