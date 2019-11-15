@@ -28,13 +28,13 @@ Using pyIUDX SDK:
 	
 	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
 
-	print(iudx_auth.get_policy())
+	iudx_auth.get_policy()
 
 CURL example:
 
 	Request:
 
-		curl -XPOST https://auth.iudx.org.in/auth/v1/acl	\
+		curl -XPOST https://auth.iudx.org.in/auth/v1/acl \
 
 			--cert certificate.pem --key private-key.pem
 

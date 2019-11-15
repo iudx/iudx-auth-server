@@ -30,6 +30,7 @@ const chroot		= require('chroot');
 const crypto		= require('crypto');
 const logger		= require('node-color-log');
 const cluster		= require('cluster');
+const request		= require('request');
 const express		= require('express');
 const aperture		= require('./node-aperture');
 const geoip_lite	= require('geoip-lite');
@@ -71,7 +72,12 @@ dns.setServers([
 
 function log(color, msg)
 {
-	logger.color(color).log(new Date() + " | " + msg);
+	const message = new Date() + " | " + msg;
+
+	if (color === 'red')
+		send_telegram(message);
+
+	logger.color(color).log(message);
 }
 
 var do_drop_privilege = true;
@@ -100,7 +106,15 @@ else
 	}
 }
 
-var db_password = fs.readFileSync ('db.password','ascii').trim();
+var db_password		= fs.readFileSync ('db.password','ascii').trim();
+const telegram_apikey	= fs.readFileSync ('telegram.apikey','ascii').trim();
+const telegram_chat_id	= fs.readFileSync ('telegram.chatid','ascii').trim();
+
+const telegram_url	= "https://api.telegram.org/bot"	+
+				telegram_apikey			+
+				"/sendMessage?chat_id="		+
+				telegram_chat_id		+
+				"&text=";
 
 const pool = new Pool ({
 	host		: '127.0.0.1',
@@ -214,63 +228,73 @@ const https_options = {
 	rejectUnauthorized: 	true,
 };
 
+function send_telegram (message)
+{
+	request(
+		telegram_url + "[ AUTH ] : " + message, function (error,response,body) {
+			if (error) {
+				log (
+					'red',
+					'Telegram failed ! response = '	+
+					String(response)		+
+					" body = "			+
+					String(body)
+				);
+			}
+		}
+	);
+}
+
 function certificate_class (cert)
 {
-	var int_cert_class;
+	var integer_cert_class = 0;
 
-	const cert_class = cert.subject['id-qt-unotice'];
+	const issuer_email = (cert.issuer.emailAddress || "").toLowerCase();
 
-	if (! cert_class)
+	if (issuer_email === "ca@iudx.org.in" || issuer_email.startsWith("iudx.sub.ca@"))
 	{
-		const issuer_email = cert.issuer.emailAddress.toLowerCase();
+		const cert_class = cert.subject['id-qt-unotice'];
 
-		if (issuer_email === "ca@iudx.org.in" || issuer_email.startsWith("iudx.sub.ca@"))
-			int_cert_class = 0;
-		else
-			int_cert_class = 2; // some other CA
+		if (cert_class)
+		{
+			integer_cert_class = parseInt(cert_class.split(":")[1],10);
 
-		/* TODO OIDs of CCA/lisenced CAs issued certs
-			1. CP 2.16.356.100.2
-			2. CP Class 1 2.16.356.100.2.1
-			3. CP Class 2 2.16.356.100.2.2
-			4. CP Class 3 2.16.356.100.2.3
-		*/
+			if (isNaN(integer_cert_class))
+				integer_cert_class = 0;
+		}
 	}
 	else
 	{
-		int_cert_class = parseInt(cert_class.split(":")[1],10);
-
-		if (isNaN(int_cert_class))
-			int_cert_class = 0;
+		integer_cert_class = 2; // some other CA
 	}
 
-	return int_cert_class;
+	return integer_cert_class;
 }
 
 function is_class_1_certificate (cert)
 {
-	var int_cert_class;
+	var integer_cert_class = 0;
 
-	const cert_class = cert.subject['id-qt-unotice'];
+	const issuer_email = (cert.issuer.emailAddress || "").toLowerCase();
 
-	if (! cert_class)
+	if (issuer_email === "ca@iudx.org.in" || issuer_email.startsWith("iudx.sub.ca@"))
 	{
-		const issuer_email = cert.issuer.emailAddress.toLowerCase();
+		const cert_class = cert.subject['id-qt-unotice'];
 
-		if (issuer_email === "ca@iudx.org.in" || issuer_email.startsWith("iudx.sub.ca@"))
-			int_cert_class = 0;
-		else
-			int_cert_class = 1; // some other CA
+		if (cert_class)
+		{
+			integer_cert_class = parseInt(cert_class.split(":")[1],10);
+
+			if (isNaN(integer_cert_class))
+				integer_cert_class = 0;
+		}
 	}
 	else
 	{
-		int_cert_class = parseInt(cert_class.split(":")[1],10);
-
-		if (isNaN(int_cert_class))
-			int_cert_class = 0;
+		integer_cert_class = 1; // some other CA
 	}
 
-	return (int_cert_class === 1);
+	return (integer_cert_class === 1);
 }
 
 function END_SUCCESS (res, http_status, msg)
@@ -382,47 +406,46 @@ function is_secure (req,res,cert,expected_content_type)
 
 function is_certificate_ok (req,cert)
 {
-	if (! cert)
+	if ((! cert) || (! cert.subject))
 		return false;
 
-	if ((! cert.subject) || (! cert.subject.emailAddress))
+	if (cert.subject.emailAddress && (! is_valid_email(cert.subject.emailAddress)))
 		return false;
 
-	if (! is_string_safe(cert.subject.emailAddress))
-		return false;
-
-	if (! is_valid_email(cert.subject.emailAddress))
-		return false;
-
-	const issuer = cert.issuer;
-
-	if ((! issuer) || (! issuer.emailAddress))
-		return false;
-
-	if (issuer.emailAddress.length < 5)
-		return false;
-
-	if (issuer.emailAddress.toLowerCase() === "ca@iudx.org.in")
+	if (cert.issuer && cert.issuer.emailAddress)
 	{
-		if (has_iudx_certificate_been_revoked (req.socket,cert))
-			return false;
-	}
-	else if (issuer.emailAddress.toLowerCase().startsWith("iudx.sub.ca@"))
-	{
-		const issued_to_domain	= cert.subject.emailAddress.split("@")[1];
-		const issuer_domain	= issuer.emailAddress.split("@")[1];
+		const issuer = cert.issuer;
 
-		if (issuer_domain.toLowerCase() !== issued_to_domain.toLowerCase())
+		if (! is_valid_email(issuer.emailAddress))
 			return false;
 
-		if (has_iudx_certificate_been_revoked (req.socket,cert))
+		if (issuer.emailAddress.toLowerCase() === "ca@iudx.org.in")
 		{
-			log (	'red',
-				"Revoked certificate used by: " +
-				cert.subject.emailAddress
-			);
+			if (has_iudx_certificate_been_revoked (req.socket,cert))
+				return false;
+		}
+		else if (issuer.emailAddress.toLowerCase().startsWith("iudx.sub.ca@"))
+		{
+			const issued_to_domain	= cert.subject.emailAddress.split("@")[1];
+			const issuer_domain	= issuer.emailAddress.split("@")[1];
 
-			return false;
+			if (issuer_domain.toLowerCase() !== issued_to_domain.toLowerCase())
+				return false;
+
+			if (has_iudx_certificate_been_revoked (req.socket,cert))
+			{
+				log ('red',
+					"Revoked certificate used by: " +
+					cert.subject.emailAddress
+				);
+
+				return false;
+			}
+		}
+		else
+		{
+			// some other CA.
+			// run ocspcheck tool ?
 		}
 	}
 	else
@@ -568,7 +591,7 @@ function is_string_safe (str,exceptions = "")
 	if (str.length === 0)
 		return false;
 
-	exceptions = exceptions + "-/@.";
+	exceptions = exceptions + "-/.@";
 
 	for (var i = 0; i < str.length; ++i)
 	{
@@ -592,7 +615,7 @@ function is_string_safe (str,exceptions = "")
 	return true;
 }
 
-app.post('/auth/v1/token', async function (req, res) {
+app.post('/auth/v1/token', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -634,6 +657,9 @@ app.post('/auth/v1/token', async function (req, res) {
 	else {
 		return END_ERROR (res,400,"'request' field is not a valid JSON");
 	}
+
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
 
 	const consumer_id = cert.subject.emailAddress.toLowerCase();
 
@@ -794,52 +820,66 @@ app.post('/auth/v1/token', async function (req, res) {
 		providers		[provider_id_in_db]	= true;
 		resource_server_token	[resource_server]	= true; // to be filled later
 
-		const p_rows = pg.querySync (
-			'SELECT policy_in_json FROM policy ' +
+		const policy_rows = pg.querySync (
+			'SELECT policy,policy_in_json FROM policy ' +
 			'WHERE id = $1::text',
 				[provider_id_in_db]
 		);
 
-		if (p_rows.length === 0)
+		if (policy_rows.length === 0)
 			return END_ERROR (res, 400, "Invalid 'resource-id (no policy found)': " + resource);
 
-		const policy_in_json = p_rows[0].policy_in_json;
+		const policy_in_text	= Buffer.from(policy_rows[0].policy, 'base64')
+							.toString('ascii')
+							.toLowerCase();
+
+		const policy_in_json	= policy_rows[0].policy_in_json;
 
 		// full name of resource eg: bangalore.domain.com/streetlight-1
 		context.resource	= resource_server + "/" + resource_name;
 		context.action		= 'access';
 
-		const g_rows = pg.querySync(
-			'SELECT DISTINCT group_name FROM groups '	+
-			'WHERE id = $1::text '				+
-			'AND consumer = $2::text '			+
-			'AND valid_till > NOW()',
-				[provider_id_in_db, consumer_id]
-		);
 
-		var g = [];
-		for (const grp of g_rows)
-			g.push(grp.group_name);
+		context.conditions.groups = ""; 
+		if (policy_in_text.search(" consumer-in-group") > 0)
+		{
+			const group_rows = pg.querySync(
+				'SELECT DISTINCT group_name FROM groups '	+
+				'WHERE id = $1::text '				+
+				'AND consumer = $2::text '			+
+				'AND valid_till > NOW()',
+				[
+					provider_id_in_db,
+					consumer_id
+				]
+			);
 
-		context.conditions.groups = g.join();
+			var group_array = [];
+			for (const g of group_rows)
+				group_array.push(g.group_name);
 
-		// TODO : optimize, check if tokens_per_day is in rule
-		const t_rows = pg.querySync (
-			'SELECT COUNT(*) FROM token '		+
-			'WHERE id=$1::text '			+
-			'AND resource_ids @> $2 '		+
-			'AND DATE_TRUNC(\'day\',issued_at) = DATE_TRUNC(\'day\',NOW())',
+			context.conditions.groups = group_array.join();
+		}
+
+		context.conditions.tokens_per_day = 0; 
+		if (policy_in_text.search(" tokens_per_day ") > 0)
+		{
+			const tokens_per_day_rows = pg.querySync (
+				'SELECT COUNT(*) FROM token '		+
+				'WHERE id=$1::text '			+
+				'AND resource_ids @> $2 '		+
+				'AND DATE_TRUNC(\'day\',issued_at) = DATE_TRUNC(\'day\',NOW())',
 				[
 					consumer_id,
 					'{"' + resource + '":true}'
 				],
-		);
+			);
 
-		context.conditions.tokens_per_day = parseInt (t_rows[0].count,10);
+			context.conditions.tokens_per_day = parseInt (tokens_per_day_rows[0].count,10);
+		}
 
-		// TODO optimize, see if body is in rule !
-		var CTX;
-		if (row.body)
+		var CTX = context;
+		if (row.body && policy_in_text.search(" body.") > 0)
 		{
 			// deep copy
 			CTX = JSON.parse(JSON.stringify(context));
@@ -847,8 +887,6 @@ app.post('/auth/v1/token', async function (req, res) {
 			for (const key in row.body)
 				CTX.conditions["body." + key] = row.body[key];
 		}
-		else
-			CTX = context;
 
 		for (const api of row.apis)
 		{
@@ -1076,7 +1114,7 @@ app.post('/auth/v1/token', async function (req, res) {
 	}
 });
 
-app.post('/auth/v1/introspect', async function (req, res) {
+app.post('/auth/v1/introspect', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -1134,8 +1172,8 @@ app.post('/auth/v1/introspect', async function (req, res) {
 
 	const resource_server_name_in_cert = cert.subject.CN;
 
-	await dns.lookup(resource_server_name_in_cert, {all:true},
-	async (error, ip_addresses) =>
+	dns.lookup(resource_server_name_in_cert, {all:true},
+	(error, ip_addresses) =>
 	{
 		if (error)
 			return END_ERROR (res, 400, "Invalid hostname : "+resource_server_name_in_cert);
@@ -1152,18 +1190,18 @@ app.post('/auth/v1/introspect', async function (req, res) {
 		if (! ip_matched)
 		{
 			return END_ERROR (res, 403,
-				"Your certificate hostname and " +
+				"Your certificate hostname in CN and " +
 				"your IP does not match!"
 			);
 		}
 
-		await pool.query (
+		pool.query (
 				'SELECT expiry,request,cert_class,server_token,providers FROM token '	+
 				'WHERE token = $1::text '			+
 				'AND revoked = false '				+
 				'AND expiry > NOW()',
 					[sha1_of_token],
-		async (error, results) =>
+		(error, results) =>
 		{
 			if (error)
 				return END_ERROR (res, 500, "Internal error!");
@@ -1223,13 +1261,22 @@ app.post('/auth/v1/introspect', async function (req, res) {
 				'consumer-certificate-class'	: results.rows[0].cert_class,
 			};
 
-			pg.querySync (
-				"UPDATE token SET introspected = true WHERE " +
-				"token = $1::text",
-					[token]
-			);
+			// TODO introspected should be a map introspected[resource-server] = true/false
 
-			return END_SUCCESS (res, 200, JSON.stringify(output));
+			pool.query (
+				"UPDATE token SET introspected = true "		+
+				'WHERE token = $1::text '			+
+				'AND revoked = false '				+
+				'AND expiry > NOW()',
+					[sha1_of_token],
+				(internal_error, internal_results) =>
+				{
+					if (internal_error || internal_results.rowCount === 0)
+						return END_ERROR (res, 500, "Could not update token table");
+					else
+						return END_SUCCESS (res, 200, JSON.stringify(output));
+				}
+			);
 		});
 	});
 });
@@ -1249,6 +1296,9 @@ app.post('/auth/v1/revoke', async function (req, res) {
 	var error;
 	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
+
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
 
 	const id		= cert.subject.emailAddress.toLowerCase();
 
@@ -1297,10 +1347,9 @@ app.post('/auth/v1/revoke', async function (req, res) {
 				'UPDATE token SET revoked = true WHERE id = $1::text ' 	+
 				'AND token = $2::text '					+
 				'AND expiry > NOW()',
+					[id, sha1_of_token],
 
-				[id, sha1_of_token],
-
-				async (error,results) =>
+				(error,results) =>
 				{
 					if (error)
 						return END_ERROR (res, 500, "Some thing went wrong");
@@ -1336,9 +1385,9 @@ app.post('/auth/v1/revoke', async function (req, res) {
 				'WHERE token = $1::text '				+
 				"AND providers->'"+ provider_id_in_db + "' = 'true' "	+
 				'AND expiry > NOW()',
-			[token_hash],
+					[token_hash],
 
-			async (error,results) =>
+			(error,results) =>
 			{
 				if (error)
 					return END_ERROR (res, 500, "Some thing went wrong");
@@ -1353,7 +1402,7 @@ app.post('/auth/v1/revoke', async function (req, res) {
 	}
 });
 
-app.post('/auth/v1/acl/set', async function (req, res) {
+app.post('/auth/v1/acl/set', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -1376,6 +1425,9 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 
 	if (typeof policy !== 'string')
 		return END_ERROR (res, 400, "Invalid policy");
+
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
 
 	const provider_id	= cert.subject.emailAddress.toLowerCase();
 	const email_domain	= provider_id.split("@")[1];
@@ -1401,8 +1453,8 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
 
-	await pool.query('SELECT 1 FROM policy WHERE id = $1::text',
-		[provider_id_in_db], async (error, results) =>
+	pool.query('SELECT 1 FROM policy WHERE id = $1::text',
+		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Could not do SELECT on policy");
@@ -1430,9 +1482,9 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 			];
 		}
 
-		await pool.query (q, p, (int_error, _int_results) =>
+		pool.query (q, p, (internal_error, internal_results) =>
 		{
-			if (int_error)
+			if (internal_error || internal_results.rowCount !== 1)
 				return END_ERROR (res, 500, "Could not set policy");
 			else
 				return END_SUCCESS (res, 200, '{"success":"policy set"}');
@@ -1440,7 +1492,7 @@ app.post('/auth/v1/acl/set', async function (req, res) {
 	});
 });
 
-app.post('/auth/v1/acl/append', async function (req, res) {
+app.post('/auth/v1/acl/append', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -1464,6 +1516,9 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 	if (typeof policy !== 'string')
 		return END_ERROR (res, 400, "Invalid policy");
 
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
+
 	const provider_id	= cert.subject.emailAddress.toLowerCase();
 	const email_domain	= provider_id.split("@")[1];
 
@@ -1486,8 +1541,8 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
 
-	await pool.query('SELECT policy FROM policy WHERE id = $1::text',
-		[provider_id_in_db], async (error, results) =>
+	pool.query('SELECT policy FROM policy WHERE id = $1::text',
+		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res,500, "Could not do SELECT on policy");
@@ -1536,17 +1591,17 @@ app.post('/auth/v1/acl/append', async function (req, res) {
 			];
 		}
 
-		await pool.query (q, p, (int_error, _int_results) =>
+		pool.query (q, p, (internal_error, internal_results) =>
 		{
-			if (int_error)
-				return END_ERROR (res, 500, "Could not set policy");
+			if (internal_error || internal_results.rowCount === 0)
+				return END_ERROR (res, 500, "Could not append policy");
 			else
 				return END_SUCCESS (res, 200, '{"success":"policy appended"}');
 		});
 	});
 });
 
-app.get('/auth/v1/acl', async function (req, res) {
+app.get('/auth/v1/acl', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -1562,6 +1617,9 @@ app.get('/auth/v1/acl', async function (req, res) {
 	if ((error = is_secure(req,res,cert,null)) !== "OK")
 		return END_ERROR (res, 400, error);
 
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
+
 	const provider_id	= cert.subject.emailAddress.toLowerCase();
 	const email_domain	= provider_id.split("@")[1];
 
@@ -1571,7 +1629,7 @@ app.get('/auth/v1/acl', async function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	await pool.query('SELECT policy FROM policy WHERE id = $1::text',
+	pool.query('SELECT policy FROM policy WHERE id = $1::text',
 			[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -1585,13 +1643,11 @@ app.get('/auth/v1/acl', async function (req, res) {
 					.toString('ascii')
 		};
 
-		return END_SUCCESS (res, 200,
-			JSON.stringify(out)
-		);
+		return END_SUCCESS (res, 200, JSON.stringify(out));
 	});
 });
 
-app.post('/auth/v1/audit/tokens', async function (req, res) {
+app.post('/auth/v1/audit/tokens', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -1606,6 +1662,9 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 	var error;
 	if ((error = is_secure(req,res,cert,null)) !== "OK")
 		return END_ERROR (res, 400, error);
+
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
 
 	const id = cert.subject.emailAddress.toLowerCase();
 
@@ -1622,13 +1681,13 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 	var as_consumer = [];
 	var as_provider = [];
 
-	await pool.query (
+	pool.query (
 		'SELECT issued_at,expiry,request,cert_serial,cert_fingerprint,introspected,revoked '	+
 		'FROM token '										+
 		'WHERE id = $1::text '									+
 		'AND issued_at >= (NOW() + \'-'+ hours +' hours\')',
 
-			[id], async (error, results) =>
+			[id], (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Internal error!");
@@ -1655,7 +1714,7 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 		const email_domain	= id.split("@")[1];
 		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-		await pool.query (
+		pool.query (
 			"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,"+
 			"introspected,providers->'" + provider_id_in_db + "' AS is_revoked "	+
 			'FROM token '								+
@@ -1697,7 +1756,7 @@ app.post('/auth/v1/audit/tokens', async function (req, res) {
 	});
 });
 
-app.post('/auth/v1/group/add', async function (req, res) {
+app.post('/auth/v1/group/add', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -1712,6 +1771,9 @@ app.post('/auth/v1/group/add', async function (req, res) {
 	var error;
 	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
+
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
 
 	const provider_id = cert.subject.emailAddress.toLowerCase();
 
@@ -1750,21 +1812,21 @@ app.post('/auth/v1/group/add', async function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	await pool.query (
+	pool.query (
 		"INSERT INTO groups VALUES ($1::text, $2::text, $3::text,"	+
 		"NOW() + '"							+
 			valid_till + " hours')",
 				[provider_id_in_db, consumer_id, group_name],
-	(error, _results) =>
+	(error, results) =>
 	{
-		if (error)
+		if (error || results.rowCount !== 1)
 			return END_ERROR (res, 500, "Could not add consumer to group");
 		else
 			return END_SUCCESS (res, 200, '{"success":"consumer added to the group"}');
 	});
 });
 
-app.post('/auth/v1/group/list', async function (req, res) {
+app.post('/auth/v1/group/list', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -1779,6 +1841,9 @@ app.post('/auth/v1/group/list', async function (req, res) {
 	var error;
 	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
+
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
 
 	const provider_id = cert.subject.emailAddress.toLowerCase();
 
@@ -1803,7 +1868,7 @@ app.post('/auth/v1/group/list', async function (req, res) {
 
 	if (group_name)
 	{
-		await pool.query (
+		pool.query (
 			"SELECT consumer, valid_till FROM groups "	+
 			"WHERE id = $1::text "				+
 			"AND group_name = $2::text "			+
@@ -1829,7 +1894,7 @@ app.post('/auth/v1/group/list', async function (req, res) {
 	}
 	else
 	{
-		await pool.query (
+		pool.query (
 			"SELECT consumer, group_name, valid_till FROM groups "	+
 			"WHERE id = $1::text "				+
 			"AND valid_till > NOW()",
@@ -1856,7 +1921,7 @@ app.post('/auth/v1/group/list', async function (req, res) {
 	}
 });
 
-app.post('/auth/v1/group/delete', async function (req, res) {
+app.post('/auth/v1/group/delete', function (req, res) {
 
 	const cert = req.socket.getPeerCertificate(true);
 
@@ -1871,6 +1936,9 @@ app.post('/auth/v1/group/delete', async function (req, res) {
 	var error;
 	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
 		return END_ERROR (res, 400, error);
+
+	if (! cert.subject.emailAddress)
+		return END_ERROR (res,403,"The certificate does not have a emailAddress");
 
 	const provider_id = cert.subject.emailAddress.toLowerCase();
 
@@ -1912,7 +1980,7 @@ app.post('/auth/v1/group/delete', async function (req, res) {
 		params.push(consumer_id);
 	}
 
-	await pool.query (query, params, (error, results) =>
+	pool.query (query, params, (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Could not delete from group");
@@ -1997,7 +2065,12 @@ if (! is_openbsd)
 
 	evaluator.evaluate(_tmp, {});
 
-	dns.lookup("www.google.com", {all:true}, (_e,_a) => {});
+	dns.lookup("www.google.com", {all:true}, (error, address) => {
+		if (error)
+			log('red',"DNS to www.google.com failed ");
+		else
+			log('green',"DNS to www.google.com success " + String(address));
+	});
 
 	_tmp = http_sync_request('GET', 'https://ca.iudx.org.in/crl');
 
@@ -2053,10 +2126,12 @@ if (cluster.isMaster)
 		cluster.fork();
 	}
 
-	cluster.on('exit', (worker, _code, _signal) => {
-		log('red',`Worker ${worker.process.pid} died, restarting it`);
+	cluster.on('exit', (worker, code, signal) => {
+		log('red',`Worker ${worker.process.pid} died with code = ${code}, signal = ${signal}. restarting it`);
 		cluster.fork();
 	});
+
+	log('red',`Auth with pid ${process.pid} started`);
 }
 else
 {

@@ -16,7 +16,7 @@ Headers:
 	content-type	: "application/json"
 
 Body:
-	group		: <a valid group name created by the user>	// optional
+	group		: <a valid group name created by the user>   // optional
 
 Using pyIUDX SDK:
 

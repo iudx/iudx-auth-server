@@ -11,8 +11,11 @@ Methods:
 Description:
 	This API is used to add a consumer to a group.
 
-	Groups are useful in setting access control polcies where access to a resources is given to a group of consumers.
-	This is done using the "consumer-in-group(group-name)" function in aperture policy when using the "/acl/set" API.
+	Groups are useful in setting access control polcies where access to
+	resources is given to a group of consumers.
+
+	This is done using the "consumer-in-group(group-name)" function in
+	the aperture policy when using the "/acl/set" API.
 
 Called by:
 	A resource-owner with a valid class-3 or above certificate.
@@ -23,7 +26,7 @@ Headers:
 
 Body:
 	group		: <a valid group name created by the user>
-	valid-till	: <how long (in seconds) the consumer should be in the group>
+	valid-till	: <how long (in seconds) the consumer will be in the group>
 
 	Note: If the "group" doesn't exist, it will be created automatically.
 
@@ -33,7 +36,8 @@ Using pyIUDX SDK:
 	
 	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
 
-	iudx_auth.add_consumer_to_group("user@domain.com","confidential",3600) # add user@domain.com to confidential group for 1 hour
+	# add user@domain.com to confidential group for 1 hour
+	iudx_auth.add_consumer_to_group("user@domain.com","confidential",3600)
 
 CURL example:
 

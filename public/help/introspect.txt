@@ -12,21 +12,23 @@ Description:
 	This API is used to validate an access token provided by a consumer.
 
 Called by:
-	A "resource server" with a valid class-1 certificate.
+	A "resource-server" with a valid class-1 certificate.
 
-Note:
-	The "cn" of the resource server certificate should be valid hostname (FQDN) or IP address.
-	And it must be ensured that the IP address of the "cn" matches with the machine that makes
-	the introspect call.
+	Note-1:
+	The "CN" of the resource-server certificate should be valid hostname
+	(FQDN) or IP address. And it must be ensured that the IP address of the
+	"CN" matches with the machine that makes the introspect call.
 
-	This is to ensure that only the user who owns the resource server can introspect its tokens.
+	Note-2:
+	This API must be only called by the resource-server after ensuring that
+	the "resource-ids" requested by consumer is valid.
 
 Headers:
 	content-type	: "application/json"
 
 Body:
 	token		: <token presented by the consumer>
-	server-token	: <server token presented by the consumer>		// optional
+	server-token	: <server token presented by the consumer> // optional
 
 HTTP response code:
 
@@ -36,14 +38,19 @@ HTTP response code:
 	403
 		If the token is invalid/expired
 
+			-OR-
+
+		The "CN" of the resource-server certificate does not match the
+		IP address of the machine which is calling this API.
+
 	429
 		If the resource-server makes too many requests
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("resource-server-certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("resource-server-certificate.pem","private-key.pem")
 
 	iudx_auth.introspect_token("auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90")
 
@@ -84,14 +91,15 @@ CURL example:
 			The consumer's email-id.
 
 		2. consumer-certificate-class
-			The class of certificate used by the consumer to get the token.
+			The class of certificate used by the consumer to get the
+			token.
 
 		3. expiry:
 			Indicates till what time the token is valid.
 
 		4. request:
-			The list of resource-id's, methods, and APIs for which the token is valid.
-
+			The list of resource-id's, methods, and APIs for which
+			the token is valid.
 
 See also:
 	token API:

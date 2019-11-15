@@ -36,7 +36,7 @@ Using pyIUDX SDK:
 	
 	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
 
-	iudx_auth.append_policy("*@iisc.ac.in can access rs1.com/my-resource-name")
+	iudx_auth.append_policy("*@gov.in can access rs1.com/my-resource")
 
 CURL example:
 
@@ -48,7 +48,7 @@ CURL example:
 
 			-H 'content-type: application/json'			\
 
-			-d '{"policy":"*@iisc.ac.in can access rs1.com/my-resource-name"}'
+			-d '{"policy":"*@gov.in can access rs1.com/my-resource"}'
 
 	Response:
 
