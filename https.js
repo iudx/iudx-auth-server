@@ -1,3 +1,5 @@
+/* vim: set ts=8 sw=4 tw=0 noet : */
+
 /*
  * Copyright (c) 2019
  * Arun Babu {arun <dot> hbni <at> gmail}
@@ -17,13 +19,12 @@
 
 "use strict";
 
-process.env.NODE_ENV = 'production';
-
 const fs		= require('fs');
 const os		= require('os');
 const dns 		= require('dns');
 const url		= require('url');
 const cors		= require('cors');
+const ocsp		= require('ocsp');
 const Pool		= require('pg').Pool;
 const https		= require('https');
 const chroot		= require('chroot');
@@ -33,35 +34,44 @@ const cluster		= require('cluster');
 const request		= require('request');
 const express		= require('express');
 const aperture		= require('./node-aperture');
+const immutable		= require('immutable');
+const http_sync		= require('sync-request');
 const geoip_lite	= require('geoip-lite');
 const bodyParser	= require('body-parser');
 const compression	= require('compression');
-const http_sync_request	= require('sync-request');
 const pgNativeClient 	= require('pg-native');
 const pg		= new pgNativeClient();
 
 const TOKEN_LENGTH	= 16;
-const TOKEN_LENGTH_HEX	= 2*TOKEN_LENGTH;
+const TOKEN_LENGTH_HEX	= 2 * TOKEN_LENGTH;
 
 const is_openbsd	= os.type() === 'OpenBSD';
+const EUID		= process.geteuid();
 const WORKER_PLEDGE	= "stdio tty prot_exec inet dns recvfd rpath proc exec";
+const pledge 		= is_openbsd ? require("node-pledge")		: null;
+const unveil		= is_openbsd ? require("openbsd-unveil")	: null;
 
-var pledge;
-var unveil;
-
-if (is_openbsd)
-{
-	pledge	= require("node-pledge");
-	unveil	= require("openbsd-unveil");
-}
-
-const OUR_NAME		= 'auth.iudx.org.in';
-const CRL_SCAN_TIME	= 300; // seconds
-
-const EUID = process.geteuid();
+const NUM_CPUS		= os.cpus().length;
+const SERVER_NAME	= 'auth.iudx.org.in';
+const SUCCESS		= '{"success":true}';
 
 var CRL;
-var CRL_last_accessed = new Date(2000,1,2,3,4,5,6);
+var CRL_last_accessed	= new Date(0,1,2,3,4,5,6);
+const CRL_SCAN_TIME	= 300; // seconds
+
+const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
+
+	'/auth/v1/introspect'	: 1,
+	'/auth/v1/token'	: 2,
+	'/auth/v1/revoke'	: 3,
+	'/auth/v1/acl'		: 3,
+	'/auth/v1/acl/set'	: 3,
+	'/auth/v1/acl/append'	: 3,
+	'/auth/v1/audit/tokens'	: 3,
+	'/auth/v1/group/add'	: 3,
+	'/auth/v1/group/delete'	: 3,
+	'/auth/v1/group/list'	: 3,
+});
 
 dns.setServers([
   '1.1.1.1',
@@ -70,52 +80,20 @@ dns.setServers([
   '[2001:4860:4860::8888]',
 ]);
 
-function log(color, msg)
-{
-	const message = new Date() + " | " + msg;
-
-	if (color === 'red')
-		send_telegram(message);
-
-	logger.color(color).log(message);
-}
-
-var do_drop_privilege = true;
-const argv = process.argv.slice(2);
-
-if (argv.length < 1)
-{
-	log("green", "Starting Server in production mode");
-}
-else if (argv.length > 1)
-{
-	log("red", "Please provide only one argument. Exiting process!!!");
-	process.exit(0);
-}
-else
-{
-	if (argv[0] === "test")
-	{
-		log("yellow", "Starting Server in development mode");
-		do_drop_privilege = false;
-	}
-	else
-	{
-		log("red","Valid arguments are: 'test' and 'start' with npm");
-		process.exit(0);
-	}
-}
-
-var db_password		= fs.readFileSync ('db.password','ascii').trim();
 const telegram_apikey	= fs.readFileSync ('telegram.apikey','ascii').trim();
 const telegram_chat_id	= fs.readFileSync ('telegram.chatid','ascii').trim();
 
 const telegram_url	= "https://api.telegram.org/bot"	+
-				telegram_apikey			+
+					telegram_apikey		+
 				"/sendMessage?chat_id="		+
-				telegram_chat_id		+
+					telegram_chat_id	+
 				"&text=";
 
+/* postgres */
+
+const db_password	= fs.readFileSync ('db.password','ascii').trim();
+
+// async postgres connection
 const pool = new Pool ({
 	host		: '127.0.0.1',
 	port		: 5432,
@@ -123,9 +101,9 @@ const pool = new Pool ({
 	database	: 'postgres',
 	password	: db_password,
 });
-
 pool.connect();
 
+// sync postgres connection
 pg.connectSync (
 	'postgresql://auth:'+ db_password+ '@127.0.0.1:5432/postgres',
 		function(err) {
@@ -133,41 +111,46 @@ pg.connectSync (
 		}
 );
 
-var app = express();
+/* express */
+
+const app = express();
 app.use (
 	cors ({
 		methods		: ['POST','GET'],
 		credentials	: true,
 		origin		: function (origin, callback) {
-			callback(null, true);
+
+			callback(null, origin ? true : false);
 		}
 	})
 );
 
+app.use(bodyParser.raw({type:'*/*'}));
 app.use(compression());
+app.use(security);
 
-app.use(bodyParser.json());
-app.use(bodyParser.text());
 app.disable('x-powered-by');
 
-app.get('/', function (req, res) {
+app.all('/', function (req, res) {
 	res.sendFile(__dirname + '/public/hyperspace/index.html');
 });
 
-app.get('/apis', function (req, res) {
+app.all('/apis', function (req, res) {
 	res.sendFile(__dirname + '/public/help/apis.html');
 });
 
-app.get('/favicon.ico', function (req, res) {
+app.all('/favicon.ico', function (req, res) {
 	res.sendFile(__dirname + '/public/favicon.ico');
 });
 
-app.get('/doc', function (req, res) {
+app.all('/doc', function (req, res) {
 	res.sendFile(__dirname + '/public/output/auth-api-doc.html');
 });
 
 app.use("/assets", express.static(__dirname + "/public/hyperspace/assets"));
 app.use("/images", express.static(__dirname + "/public/hyperspace/images"));
+
+/* aperture */
 
 const apertureOpts = {
 
@@ -213,6 +196,8 @@ const apertureOpts = {
 const parser	= aperture.createParser		(apertureOpts);
 const evaluator	= aperture.createEvaluator	(apertureOpts);
 
+/* https */
+
 const trusted_CAs = [
 	fs.readFileSync('ca.iudx.org.in.crt'),
 	fs.readFileSync('/etc/ssl/cert.pem'),
@@ -221,80 +206,40 @@ const trusted_CAs = [
 ];
 
 const https_options = {
-	key:			fs.readFileSync('key.pem'),
-	cert:			fs.readFileSync('server.pem'),
-	ca:			trusted_CAs,
-	requestCert:		true,
-	rejectUnauthorized: 	true,
+	key			: fs.readFileSync('key.pem'),
+	cert			: fs.readFileSync('server.pem'),
+	ca			: trusted_CAs,
+	requestCert		: true,
+	rejectUnauthorized	: true,
 };
+
+function log(color, msg)
+{
+	const message = new Date() + " | " + msg;
+
+	if (color === 'red') {
+		send_telegram(message);
+	}
+
+	logger.color(color).log(message);
+}
 
 function send_telegram (message)
 {
-	request(
-		telegram_url + "[ AUTH ] : " + message, function (error,response,body) {
-			if (error) {
-				log (
-					'red',
-					'Telegram failed ! response = '	+
-					String(response)		+
-					" body = "			+
-					String(body)
-				);
+	request( telegram_url + "[ AUTH ] : " + message,
+			function (error,response,body)
+			{
+				if (error)
+				{
+					log ('yellow',
+						'Telegram failed ! response = '	+
+							String(response)	+
+						" body = "			+
+							String(body)
+					);
+				}
 			}
-		}
 	);
-}
-
-function certificate_class (cert)
-{
-	var integer_cert_class = 0;
-
-	const issuer_email = (cert.issuer.emailAddress || "").toLowerCase();
-
-	if (issuer_email === "ca@iudx.org.in" || issuer_email.startsWith("iudx.sub.ca@"))
-	{
-		const cert_class = cert.subject['id-qt-unotice'];
-
-		if (cert_class)
-		{
-			integer_cert_class = parseInt(cert_class.split(":")[1],10);
-
-			if (isNaN(integer_cert_class))
-				integer_cert_class = 0;
-		}
-	}
-	else
-	{
-		integer_cert_class = 2; // some other CA
-	}
-
-	return integer_cert_class;
-}
-
-function is_class_1_certificate (cert)
-{
-	var integer_cert_class = 0;
-
-	const issuer_email = (cert.issuer.emailAddress || "").toLowerCase();
-
-	if (issuer_email === "ca@iudx.org.in" || issuer_email.startsWith("iudx.sub.ca@"))
-	{
-		const cert_class = cert.subject['id-qt-unotice'];
-
-		if (cert_class)
-		{
-			integer_cert_class = parseInt(cert_class.split(":")[1],10);
-
-			if (isNaN(integer_cert_class))
-				integer_cert_class = 0;
-		}
-	}
-	else
-	{
-		integer_cert_class = 1; // some other CA
-	}
-
-	return (integer_cert_class === 1);
 }
 
 function END_SUCCESS (res, http_status, msg)
@@ -306,13 +251,14 @@ function END_SUCCESS (res, http_status, msg)
 function END_ERROR (res, http_status, msg)
 {
 	res.setHeader('content-type', 'application/json');
+	res.setHeader('connection', 'close');
 	res.status(http_status).end('{"error":"' + msg + '"}\n');
 	res.connection.destroy();
 }
 
 function is_valid_email (email)
 {
-	if (typeof email !== 'string')
+	if (! email || typeof email !== 'string')
 		return false;
 
 	if (email.length < 5 || email.length > 64)
@@ -362,10 +308,8 @@ function is_valid_email (email)
 	return true;
 }
 
-function is_secure (req,res,cert,expected_content_type)
+function is_secure (req,res,cert, validate_email = true)
 {
-	req.setTimeout(5000);
-
 	if (req.headers.origin)
 	{
 		// e.g Origin = https://www.iudx.org.in:8443/
@@ -390,47 +334,52 @@ function is_secure (req,res,cert,expected_content_type)
 		res.header('Access-Control-Allow-Methods', 'POST,GET');
 	}
 
-	if (expected_content_type)
-	{
-		const e = [expected_content_type, "text/plain"];
-
-		if (e.indexOf(req.headers['content-type']) === -1) 
-			return "content-type must be " + expected_content_type;
-	}
-
-	if (! is_certificate_ok (req,cert))
-		return "Invalid certificate";
+	var cert_err;
+	if ((cert_err = is_certificate_ok (req,cert,validate_email)) !== "OK")
+		return "Invalid certificate. " + cert_err;
 
 	return "OK";
 }
 
-function is_certificate_ok (req,cert)
+function is_certificate_ok (req,cert,validate_email)
 {
 	if ((! cert) || (! cert.subject))
-		return false;
+		return "Invalid certificate. No subject found";
 
-	if (cert.subject.emailAddress && (! is_valid_email(cert.subject.emailAddress)))
-		return false;
+	if (validate_email)
+	{
+		if (! is_valid_email(cert.subject.emailAddress))
+			return "Invalid emailAddress field in the certificate";
+	}
 
 	if (cert.issuer && cert.issuer.emailAddress)
 	{
-		const issuer = cert.issuer;
+		const issuer_email = cert.issuer.emailAddress;
 
-		if (! is_valid_email(issuer.emailAddress))
-			return false;
+		if (! is_valid_email(issuer_email))
+			return "Certificate issuer's emailAddress is invalid";
 
-		if (issuer.emailAddress.toLowerCase() === "ca@iudx.org.in")
+		if (issuer_email === "ca@iudx.org.in")
 		{
 			if (has_iudx_certificate_been_revoked (req.socket,cert))
-				return false;
+				return "Your certificate has been revoked";
 		}
-		else if (issuer.emailAddress.toLowerCase().startsWith("iudx.sub.ca@"))
+		else if (issuer_email.startsWith("iudx.sub.ca@"))
 		{
 			const issued_to_domain	= cert.subject.emailAddress.split("@")[1];
-			const issuer_domain	= issuer.emailAddress.split("@")[1];
+			const issuer_domain	= issuer_email.split("@")[1];
 
 			if (issuer_domain.toLowerCase() !== issued_to_domain.toLowerCase())
-				return false;
+			{
+				log ('red',
+					'Invalid certificate: issuer = '	+
+						issuer_domain			+
+					" and issued to = "			+
+						issued_to_domain
+				);
+
+				return "Invalid certificate issuer";
+			}
 
 			if (has_iudx_certificate_been_revoked (req.socket,cert))
 			{
@@ -439,22 +388,20 @@ function is_certificate_ok (req,cert)
 					cert.subject.emailAddress
 				);
 
-				return false;
+				return "Your certificate has been revoked";
 			}
 		}
 		else
 		{
-			// some other CA.
-			// run ocspcheck tool ?
+			return "OK"; // some other CA
 		}
 	}
 	else
 	{
-		// some other CA.
-		// run ocspcheck tool ?
+		return "OK"; // some other CA
 	}
 
-	return true;
+	return "OK";
 }
 
 function has_iudx_certificate_been_revoked (socket, cert)
@@ -466,7 +413,7 @@ function has_iudx_certificate_been_revoked (socket, cert)
 
 		if (diff > CRL_SCAN_TIME)
 		{
-			const response = http_sync_request (
+			const response = http_sync (
 				'GET',
 				'https://ca.iudx.org.in/crl'
 			);
@@ -476,15 +423,16 @@ function has_iudx_certificate_been_revoked (socket, cert)
 				CRL = JSON.parse(response.getBody());
 				CRL_last_accessed = new Date();
 
-				for (var i = 0; i < CRL.length; ++i)
+				for (const c of CRL)
 				{
-					CRL[i].issuer		= CRL[i].issuer.toLowerCase();	
-					CRL[i].serial		= CRL[i].serial.toLowerCase().replace(/^0+/,"");
-					CRL[i].fingerprint	= CRL[i].fingerprint.toLowerCase().replace(/:/g,"");
+					c.issuer	= c.issuer.toLowerCase();
+					c.serial	= c.serial.toLowerCase().replace(/^0+/,"");
+					c.fingerprint	= c.fingerprint.toLowerCase().replace(/:/g,"");
 				}
 			}
 			catch(x)
 			{
+				log ('red','CRL is not a valid JSON');
 				return true; // something went wrong!
 			}
 		}
@@ -528,6 +476,8 @@ function has_iudx_certificate_been_revoked (socket, cert)
 				/*
 					This should not happen
 				*/
+
+				log('yellow','issuerCertificate is undefined for ' + cert.subject.emailAddress);
 
 				if (! socket.isSessionReused())
 					return true;
@@ -575,17 +525,15 @@ function has_iudx_certificate_been_revoked (socket, cert)
 	}
 	catch (x)
 	{
-		log('red',"Exception in crl fetch ",x);
+		const err = String(x).replace(/\n/g," ");
+		log('red',"Exception in CRL fetch :" + err);
 		return true; // by default !
 	}
 }
 
 function is_string_safe (str,exceptions = "")
 {
-	if (! str)
-		return false;
-
-	if (typeof str !== 'string')
+	if (! str || typeof str !== 'string')
 		return false;
 
 	if (str.length === 0)
@@ -593,10 +541,8 @@ function is_string_safe (str,exceptions = "")
 
 	exceptions = exceptions + "-/.@";
 
-	for (var i = 0; i < str.length; ++i)
+	for (const ch of str)
 	{
-		const ch = str.charAt(i);
-
 		if (
 			(ch >= 'a' && ch <= 'z') ||
 			(ch >= 'A' && ch <= 'Z') ||
@@ -615,53 +561,150 @@ function is_string_safe (str,exceptions = "")
 	return true;
 }
 
-app.post('/auth/v1/token', function (req, res) {
+function is_iudx_certificate(cert)
+{
+	var issuer_email;
+	if (! (issuer_email = cert.issuer.emailAddress))
+		return false;
+
+	issuer_email = issuer_email.toLowerCase();
+
+	return ((issuer_email === 'ca@iudx.org.in') || issuer_email.startsWith('iudx.sub.ca@'));
+}
+
+function security (req, res, next)
+{
+	req.setTimeout(5000);
+
+	const api = url.parse(req.url).pathname;
+
+	// not an api, or just help
+	if ((! api.startsWith("/auth/v")) || (api.endsWith("/help")))
+		return next();
 
 	const cert = req.socket.getPeerCertificate(true);
 
-	var cert_class; 
-	if ((cert_class = certificate_class(cert)) < 2)
+	const min_class_required = MIN_CERTIFICATE_CLASS_REQUIRED.get(api);
+
+	if (! min_class_required)
+		return END_ERROR(res, 404, "Invalid API call");
+
+	if (is_iudx_certificate(cert))
 	{
-		return END_ERROR (res, 403,
-			"A class-2 or above certificate is required" +
-			" for this API"
+		const cert_class = cert.subject['id-qt-unotice'];
+
+		var integer_cert_class = 0;
+
+		if (cert_class)
+			integer_cert_class = parseInt(cert_class.split(":")[1],10) || 0;
+
+		if (integer_cert_class < 1)
+			return END_ERROR(res, 403, "Invalid certificate class");
+		
+		if (integer_cert_class < min_class_required)
+			return END_ERROR(res, 403, "A class-" + min_class_required + " or above certificate is required to call this API");
+
+		if (api === '/auth/v1/introspect' && integer_cert_class !== 1)
+			return END_ERROR(res, 403, "A class-1 certificate is required to call this API");
+
+		var error;
+		if ((error = is_secure(req,res,cert)) !== "OK")
+			return END_ERROR (res,403, error);
+
+		res.locals.body = {};
+		if (req.body)
+		{
+			try
+			{
+				res.locals.body = Buffer.from(req.body,'utf-8').toString('ascii');
+				res.locals.body = JSON.parse (res.locals.body);
+			}
+			catch(e)
+			{
+				return END_ERROR (res,400, "Body is not a valid JSON");
+			}
+		}
+
+		res.locals.cert		= cert;
+		res.locals.cert_class	= integer_cert_class;
+		res.locals.email	= cert.subject.emailAddress.toLowerCase();
+
+		return next();
+	}
+	else
+	{
+		ocsp.check({cert:cert.raw, issuer:cert.issuerCertificate.raw},
+			function (err, ocsp_response)
+			{
+				if (err)
+					return END_ERROR(res, 403, "Your certificate issuer did not respond to an OCSP request");
+
+				if (ocsp_response.type !== 'good')
+					return END_ERROR(res, 403, "Your certificate has been revoked");
+
+				var error;
+				if ((error = is_secure(req,res,cert,false)) !== "OK") // false as it may not have email id
+					return END_ERROR (res,403, error);
+
+				res.locals.cert_class	= 1;
+				res.locals.email	= "";
+
+				if (is_valid_email(cert.subject.emailAddress))
+				{
+					res.locals.cert_class	= 2;
+					res.locals.email	= cert.subject.emailAddress.toLowerCase();
+				}
+
+				if (integer_cert_class < min_class_required)
+					return END_ERROR(res, 403, "A class-" + min_class_required + " or above certificate is required to call this API");
+
+				res.locals.body = {};
+				if (req.body)
+				{
+					try
+					{
+						res.locals.body = Buffer.from(req.body,'utf-8').toString('ascii');
+						res.locals.body = JSON.parse (res.locals.body);
+					}
+					catch(e)
+					{
+						return END_ERROR (res,400, "Body is not a valid JSON");
+					}
+				}
+
+				res.locals.cert		= cert;
+				res.locals.cert_class	= integer_cert_class;
+
+				return next();
+			}
 		);
 	}
-	
-	var error;
-	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
-		return END_ERROR (res,400, error);
+}
 
-	if (req.headers['content-type'] === 'text/plain')
+app.all('/auth/v1/token', function (req, res) {
+
+	const cert		= res.locals.cert;
+	const cert_class	= res.locals.cert_class;
+	const body		= res.locals.body;
+	const consumer_id	= res.locals.email;
+
+	var request_array 		= [];
+	var response_array 		= [];
+	var resource_id_dict		= {};
+	var resource_server_token 	= {};
+
+	if (body.request instanceof Array)
 	{
-		try
-		{
-			req.body = JSON.parse(req.body);
-		}
-		catch(e)
-		{
-			return END_ERROR (res,400, "body is not a valid JSON");
-		}
+		request_array = body.request;
 	}
-
-	var resource_server_token = {};
-
-	var request_array 	= [];
-	var resource_id_dict	= {};
-	var response_array 	= [];
-
-	if (req.body.request instanceof Array)
-		request_array = req.body.request;
-	else if (req.body.request instanceof Object)
-		request_array = [req.body.request];
-	else {
+	else if (body.request instanceof Object)
+	{
+		request_array = [body.request];
+	}
+	else
+	{
 		return END_ERROR (res,400,"'request' field is not a valid JSON");
 	}
-
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const consumer_id = cert.subject.emailAddress.toLowerCase();
 
 	const token_rows = pg.querySync (
 		'SELECT COUNT(*)/ (1 + EXTRACT(EPOCH FROM (NOW() - MIN(issued_at)))) '		+
@@ -677,8 +720,8 @@ app.post('/auth/v1/token', function (req, res) {
 	if (tokens_rate_per_second > 3) // tokens per second
 	{
 		log ('red',
-			"Too many requests from user : " +
-			cert.subject.emailAddress + ", from ip " + String(req.connection.remoteAddress) 
+			"Too many requests from user : " + consumer_id +
+			", from ip : " + String(req.connection.remoteAddress)
 		);
 
 		return END_ERROR (res, 429, "Too many requests");
@@ -689,7 +732,10 @@ app.post('/auth/v1/token', function (req, res) {
 	const issuer	= cert.issuer;
 
 	var context = {
+
 		principal	: consumer_id,
+		action		: 'access',
+
 		conditions	: {
 			ip			: ip,
 			time			: new Date(),
@@ -723,15 +769,15 @@ app.post('/auth/v1/token', function (req, res) {
 	var requested_token_time;	// as specified by the consumer
 	var token_time = 31536000;	// to be finally sent along with token (max 1 year)
 
-	if (req.body['token-time'])
+	if (body['token-time'])
 	{
-		requested_token_time = parseInt(req.body['token-time'],10);
+		requested_token_time = parseInt(body['token-time'],10);
 
 		if (isNaN(requested_token_time) || requested_token_time < 1 || requested_token_time > 31536000)
 			return END_ERROR (res, 400, "'token-time' field should be > 0 and < 31536000");
 	}
 
-	const existing_token = req.body['existing-token'];
+	const existing_token = body['existing-token'];
 
 	var num_rules_passed = 0;
 	var providers = {};
@@ -749,8 +795,8 @@ app.post('/auth/v1/token', function (req, res) {
 		if (! row.methods)
 			row.methods = ['*'];
 
-		if ( ! (row.methods instanceof Array)) {
-
+		if ( ! (row.methods instanceof Array))
+		{
 			return END_ERROR (res, 400,
 				"Invalid 'methods' for resource id:" +
 				resource
@@ -806,9 +852,7 @@ app.post('/auth/v1/token', function (req, res) {
 		if (row.body)
 		{
 			if (! (row.body instanceof Object))
-			{
 				return END_ERROR (res, 400, "Invalid body for id :" + resource);
-			}
 		}
 
 		const rid_split 		= resource.split("/");
@@ -836,11 +880,9 @@ app.post('/auth/v1/token', function (req, res) {
 		const policy_in_json	= policy_rows[0].policy_in_json;
 
 		// full name of resource eg: bangalore.domain.com/streetlight-1
-		context.resource	= resource_server + "/" + resource_name;
-		context.action		= 'access';
+		context.resource = resource_server + "/" + resource_name;
 
-
-		context.conditions.groups = ""; 
+		context.conditions.groups = "";
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
 			const group_rows = pg.querySync(
@@ -861,7 +903,7 @@ app.post('/auth/v1/token', function (req, res) {
 			context.conditions.groups = group_array.join();
 		}
 
-		context.conditions.tokens_per_day = 0; 
+		context.conditions.tokens_per_day = 0;
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
 			const tokens_per_day_rows = pg.querySync (
@@ -952,7 +994,7 @@ app.post('/auth/v1/token', function (req, res) {
 
 		resource_id_dict[resource] = true;
 
-		num_rules_passed = num_rules_passed + 1;
+		++num_rules_passed;
 	}
 
 	var existing_row;
@@ -962,7 +1004,7 @@ app.post('/auth/v1/token', function (req, res) {
 
 		if (existing_token)
 		{
-			if ((! existing_token.startsWith(OUR_NAME + "/")) || (! is_string_safe(existing_token)))
+			if ((! is_string_safe(existing_token)) || (! existing_token.startsWith(SERVER_NAME + "/")))
 				return END_ERROR (res, 400, "Invalid 'existing-token' field");
 
 			if ((existing_token.match(/\//g) || []).length !== 2)
@@ -973,11 +1015,11 @@ app.post('/auth/v1/token', function (req, res) {
 			const random_part_of_token	= existing_token.split("/")[2];
 
 			if (
-				(issued_by 			!== OUR_NAME)		||
+				(issued_by 			!== SERVER_NAME)	||
 				(issued_to			!== consumer_id)	||
 				(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
 			) {
-				return END_ERROR (res, 400, "Invalid existing-token");
+				return END_ERROR (res, 403, "Invalid existing-token");
 			}
 
 			const sha1_of_existing_token	= crypto.createHash('sha1')
@@ -998,10 +1040,9 @@ app.post('/auth/v1/token', function (req, res) {
 			);
 
 			if (existing_row.length === 0)
-				return END_ERROR (res, 400, "Invalid existing-token");
+				return END_ERROR (res, 403, "Invalid existing-token");
 
-			if (token_time < existing_row.token_time)
-				token_time = existing_row.token_time;
+			token_time = Math.min (token_time,parseInt(existing_row[0].token_time,10));
 
 			for (const k in existing_row[0].server_token)
 			{
@@ -1019,7 +1060,7 @@ app.post('/auth/v1/token', function (req, res) {
 
 			/* Token format: issued-by / issued-to / token */
 
-			"token"		: OUR_NAME + "/" + consumer_id + "/" + token,
+			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
 			"token-type"	: "IUDX",
 			"expires-in"	: token_time,
 		};
@@ -1114,42 +1155,28 @@ app.post('/auth/v1/token', function (req, res) {
 	}
 });
 
-app.post('/auth/v1/introspect', function (req, res) {
+app.all('/auth/v1/introspect', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	const cert	= res.locals.cert;
+	const body	= res.locals.body;
 
-	if (! is_class_1_certificate(cert))
-	{
-		return END_ERROR (res, 403,
-			"A class-1 certificate required to call this API"
-		);
-	}
-
-	var error;
-	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! req.body.token)
+	if (! body.token)
 		return END_ERROR (res, 400, "No 'token' found in the body");
 
-	const token = req.body.token;
+	const token = body.token;
 
-	if ((! token.startsWith(OUR_NAME + "/")) || (! is_string_safe(token)))
+	if ((! is_string_safe(token)) || (! token.startsWith(SERVER_NAME + "/")))
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
 	if ((token.match(/\//g) || []).length !== 2)
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
-	const server_token = req.body['server-token'];
+	const server_token = body['server-token'];
 
 	if (server_token)
 	{
-		if (
-			(server_token.length !== TOKEN_LENGTH_HEX) ||
-			(! is_string_safe(server_token))
-		) {
+		if ((! is_string_safe(server_token)) || (server_token.length !== TOKEN_LENGTH_HEX))
 			return END_ERROR (res, 400, "Invalid 'server-token' field");
-		}
 	}
 
 	const issued_by			= token.split("/")[0];
@@ -1157,7 +1184,7 @@ app.post('/auth/v1/introspect', function (req, res) {
 	const random_part_of_token	= token.split("/")[2];
 
 	if (
-		(issued_by 			!== OUR_NAME)		||
+		(issued_by 			!== SERVER_NAME)	||
 		(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
 	) {
 		return END_ERROR (res, 400, "Invalid token");
@@ -1170,7 +1197,10 @@ app.post('/auth/v1/introspect', function (req, res) {
 	const ip 		= req.connection.remoteAddress;
 	var ip_matched		= false;
 
-	const resource_server_name_in_cert = cert.subject.CN;
+	if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
+		return END_ERROR (res, 400, "Invalid CN in the certificate");
+
+	const resource_server_name_in_cert = cert.subject.CN.toLowerCase();
 
 	dns.lookup(resource_server_name_in_cert, {all:true},
 	(error, ip_addresses) =>
@@ -1207,7 +1237,7 @@ app.post('/auth/v1/introspect', function (req, res) {
 				return END_ERROR (res, 500, "Internal error!");
 
 			if (results.rows.length === 0)
-				return END_ERROR (res, 400, "Invalid token 1");
+				return END_ERROR (res, 403, "Invalid token");
 
 			const expected_server_token	= results.rows[0].server_token[resource_server_name_in_cert];
 			const num_resource_servers	= Object.keys(results.rows[0].server_token).length;
@@ -1220,7 +1250,7 @@ app.post('/auth/v1/introspect', function (req, res) {
 					return END_ERROR (res, 400, "No 'server-token' field found in the body");
 
 				if (! expected_server_token) // token doesn't belong to this server
-					return END_ERROR (res, 400, "Invalid token 2");
+					return END_ERROR (res, 403, "Invalid token");
 
 				if (server_token !== expected_server_token)
 					return END_ERROR (res, 403, "Invalid 'server-token' field in the body");
@@ -1230,7 +1260,7 @@ app.post('/auth/v1/introspect', function (req, res) {
 				// token belongs to only 1 server
 
 				if (expected_server_token !== true)
-					return END_ERROR (res, 400, "Invalid token 3");
+					return END_ERROR (res, 403, "Invalid token");
 			}
 
 			const request	= results.rows[0].request;
@@ -1252,7 +1282,7 @@ app.post('/auth/v1/introspect', function (req, res) {
 			}
 
 			if (request_for_resource_server.length === 0)
-				return END_ERROR (res, 400, "Invalid token");
+				return END_ERROR (res, 403, "Invalid token");
 
 			const output = {
 				'consumer'			: email_id_in_token,
@@ -1281,35 +1311,21 @@ app.post('/auth/v1/introspect', function (req, res) {
 	});
 });
 
-app.post('/auth/v1/revoke', async function (req, res) {
+app.all('/auth/v1/revoke', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	const body		= res.locals.body;
+	const id		= res.locals.email;
 
-	if (certificate_class(cert) < 3)
-	{
-		return END_ERROR (res, 403,
-			"A class-3 or above certificate is required" +
-			" for this API"
-		);
-	}
-
-	var error;
-	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const id		= cert.subject.emailAddress.toLowerCase();
-
-	const tokens		= req.body.tokens;
-	const token_hashes	= req.body['token-hashes'];
+	const tokens		= body.tokens;
+	const token_hashes	= body['token-hashes'];
 
 	if (tokens && token_hashes)
 		return END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes', not both");
 
 	if ( (! tokens) && (! token_hashes))
 		return END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes'");
+
+	var num_tokens_revoked = 0;
 
 	if (tokens)
 	{
@@ -1320,8 +1336,8 @@ app.post('/auth/v1/revoke', async function (req, res) {
 
 		for (const token of tokens)
 		{
-			if ((! is_string_safe(token)) || (! token.startsWith(OUR_NAME + "/")))
-				return END_ERROR (res, 400, "Invalid token: "+token);
+			if ((! is_string_safe(token)) || (! token.startsWith(SERVER_NAME + "/")))
+				return END_ERROR (res, 400, "Invalid token: "+token + ". " + String(num_tokens_revoked) + " tokens revoked.");
 
 			if ((token.match(/\//g) || []).length !== 2)
 				return END_ERROR (res, 400, "Invalid token: "+token);
@@ -1331,35 +1347,36 @@ app.post('/auth/v1/revoke', async function (req, res) {
 			const random_part_of_token	= token.split("/")[2];
 
 			if (
-				(issued_by 			!== OUR_NAME)		||
+				(issued_by 			!== SERVER_NAME)	||
 				(issued_to			!== id)			||
 				(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
 			) {
-				return END_ERROR (res, 400, "Invalid token");
+				return END_ERROR (res, 403, "Invalid token: " + token);
 			}
 
 			const sha1_of_token = crypto.createHash('sha1')
 						.update(random_part_of_token)
 						.digest('hex');
 
-			await pool.query (
+			const select_rows = pg.querySync (
+				'SELECT 1 from token '	+
+				'WHERE id = $1::text ' 	+
+				'AND token = $2::text '	+
+				'AND expiry > NOW()',
+					[id, sha1_of_token]
+			);
 
+			if (select_rows.length !== 1)
+				return END_ERROR (res, 400, "Invalid token: " + token + ". " + String(num_tokens_revoked) + " tokens revoked");
+
+			pg.querySync (
 				'UPDATE token SET revoked = true WHERE id = $1::text ' 	+
 				'AND token = $2::text '					+
 				'AND expiry > NOW()',
-					[id, sha1_of_token],
-
-				(error,results) =>
-				{
-					if (error)
-						return END_ERROR (res, 500, "Some thing went wrong");
-
-					if (results.rowCount === 0)
-						return END_ERROR (res, 400, "Token not found");
-
-					return END_SUCCESS (res, 200, '{"success":"token revoked"}');
-				}
+					[id, sha1_of_token]
 			);
+
+			++num_tokens_revoked;
 		}
 	}
 	else
@@ -1379,57 +1396,54 @@ app.post('/auth/v1/revoke', async function (req, res) {
 
 		for (const token_hash of token_hashes)
 		{
-			await pool.query (
-				'UPDATE token '						+
-				"SET provider->'" + sha1_id + "' = false "		+
-				'WHERE token = $1::text '				+
-				"AND providers->'"+ provider_id_in_db + "' = 'true' "	+
+			// TODO set revoked = true if all providers keys are false
+
+			if (! is_string_safe(token_hash))
+				return END_ERROR (res, 400, "Invalid token-hash: " + token_hash + ". " + String(num_tokens_revoked) + " tokens revoked.");
+
+			const select_rows = pg.querySync (
+				'SELECT 1 from token '							+
+				'WHERE token = $1::text '						+
+				"AND providers->'"+ provider_id_in_db + "' = 'true' "			+
 				'AND expiry > NOW()',
-					[token_hash],
+					[token_hash]
+			);
 
-			(error,results) =>
-			{
-				if (error)
-					return END_ERROR (res, 500, "Some thing went wrong");
+			if (select_rows.length !== 1)
+				return END_ERROR (res, 400, "Invalid token-hash: " + token_hash + ". " + String(num_tokens_revoked) + " tokens revoked");
 
-				if (results.rowCount === 0)
-					return END_ERROR (res, 400, "Token hash not found : "+token_hash);
+			pg.querySync (
+				'UPDATE token '								+
+				"SET providers = providers || '{\"" + provider_id_in_db + "\":false}'"	+
+				'WHERE token = $1::text '						+
+				"AND providers->'"+ provider_id_in_db + "' = 'true' "			+
+				'AND expiry > NOW()',
+					[token_hash]
+			);
 
-			});
+			++num_tokens_revoked;
 		}
-
-		return END_SUCCESS (res, 200, '{"succes":"token revoked"}');
 	}
+
+	return END_SUCCESS (res, 200, SUCCESS);
 });
 
-app.post('/auth/v1/acl/set', function (req, res) {
+app.all('/auth/v1/acl/set', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	// TODO: add 3 more boolean columns in DB,
+	// rule_has_body, rule_has_group, rule_has_tokens_per_second
 
-	if (certificate_class(cert) < 3)
-	{
-		return END_ERROR (res, 403,
-			"A class-3 or above certificate is required" +
-			" for this API"
-		);
-	}
+	const body		= res.locals.body;
+	const provider_id	= res.locals.email;
 
-	var error;
-	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! req.body.policy)
+	if (! body.policy)
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
-	const policy = req.body.policy;
+	const policy = body.policy;
 
 	if (typeof policy !== 'string')
 		return END_ERROR (res, 400, "Invalid policy");
 
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const provider_id	= cert.subject.emailAddress.toLowerCase();
 	const email_domain	= provider_id.split("@")[1];
 
 	const sha1_id 		= crypto.createHash('sha1')
@@ -1485,41 +1499,26 @@ app.post('/auth/v1/acl/set', function (req, res) {
 		pool.query (q, p, (internal_error, internal_results) =>
 		{
 			if (internal_error || internal_results.rowCount !== 1)
-				return END_ERROR (res, 500, "Could not set policy");
+				return END_ERROR (res,500,"set policy failed");
 			else
-				return END_SUCCESS (res, 200, '{"success":"policy set"}');
+				return END_SUCCESS (res, 200, SUCCESS);
 		});
 	});
 });
 
-app.post('/auth/v1/acl/append', function (req, res) {
+app.all('/auth/v1/acl/append', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	const body		= res.locals.body;
+	const provider_id	= res.locals.email;
 
-	if (certificate_class(cert) < 3)
-	{
-		return END_ERROR (res, 403,
-			"A class-3 or above certificate is required" +
-			" for this API"
-		);
-	}
-
-	var error;
-	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! req.body.policy)
+	if (! body.policy)
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
-	const policy = req.body.policy;
+	const policy = body.policy;
 
 	if (typeof policy !== 'string')
 		return END_ERROR (res, 400, "Invalid policy");
 
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const provider_id	= cert.subject.emailAddress.toLowerCase();
 	const email_domain	= provider_id.split("@")[1];
 
 	const sha1_id 		= crypto.createHash('sha1')
@@ -1545,7 +1544,7 @@ app.post('/auth/v1/acl/append', function (req, res) {
 		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
-			return END_ERROR (res,500, "Could not do SELECT on policy");
+			return END_ERROR (res,500, "SELECT on policy failed");
 
 		var q; // query
 		var p; // parameters
@@ -1596,31 +1595,15 @@ app.post('/auth/v1/acl/append', function (req, res) {
 			if (internal_error || internal_results.rowCount === 0)
 				return END_ERROR (res, 500, "Could not append policy");
 			else
-				return END_SUCCESS (res, 200, '{"success":"policy appended"}');
+				return END_SUCCESS (res, 200, SUCCESS);
 		});
 	});
 });
 
-app.get('/auth/v1/acl', function (req, res) {
+app.all('/auth/v1/acl', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	const provider_id	= res.locals.email;
 
-	if (certificate_class(cert) < 3)
-	{
-		return END_ERROR (res, 403,
-			"A class-3 or above certificate is required" +
-			" for this API"
-		);
-	}
-
-	var error;
-	if ((error = is_secure(req,res,cert,null)) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const provider_id	= cert.subject.emailAddress.toLowerCase();
 	const email_domain	= provider_id.split("@")[1];
 
 	const sha1_id 		= crypto.createHash('sha1')
@@ -1647,31 +1630,15 @@ app.get('/auth/v1/acl', function (req, res) {
 	});
 });
 
-app.post('/auth/v1/audit/tokens', function (req, res) {
+app.all('/auth/v1/audit/tokens', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	const body		= res.locals.body;
+	const id		= res.locals.email;
 
-	if (certificate_class(cert) < 3)
-	{
-		return END_ERROR (res, 403,
-			"A class-3 or above certificate is required" +
-			" for this API"
-		);
-	}
-
-	var error;
-	if ((error = is_secure(req,res,cert,null)) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const id = cert.subject.emailAddress.toLowerCase();
-
-	if (! req.body.hours)
+	if (! body.hours)
 		return END_ERROR (res, 400, "No 'hours' found in the body");
 
-	const hours = parseInt (req.body.hours,10);
+	const hours = parseInt (body.hours,10);
 
 	// 5 yrs max
 	if (isNaN(hours) || hours < 0 || hours > 43800) {
@@ -1692,14 +1659,12 @@ app.post('/auth/v1/audit/tokens', function (req, res) {
 		if (error)
 			return END_ERROR (res, 500, "Internal error!");
 
-		for (var i = 0; i < results.rows.length; ++i)
+		for (const row of results.rows)
 		{
-			const row = results.rows[i];
-
 			as_consumer.push ({
 				'token-issued-at'		: row.issued_at,
-				'introspected'			: row.introspected === 't',
-				'revoked'			: row.revoked === 't',
+				'introspected'			: row.introspected	=== 't',
+				'revoked'			: row.revoked		=== 't',
 				'expiry'			: row.expiry,
 				'certificate-serial-number'	: row.cert_serial,
 				'certificate-fingerprint'	: row.cert_fingerprint,
@@ -1727,16 +1692,14 @@ app.post('/auth/v1/audit/tokens', function (req, res) {
 				if (error)
 					return END_ERROR (res, 500, "Internal error!");
 
-				for (var i = 0; i < results.rows.length; ++i)
+				for (const row of results.rows)
 				{
-					const row = results.rows[i];
-
 					as_provider.push ({
 						'consumer'			: row.id,
 						'token-hash'			: row.token,
 						'token-issued-at'		: row.issued_at,
-						'introspected'			: row.introspected === 't',
-						'revoked'			: row.is_revoked === 't',
+						'introspected'			: row.introspected	=== 't',
+						'revoked'			: row.is_revoked	=== 't',
 						'expiry'			: row.expiry,
 						'certificate-serial-number'	: row.cert_serial,
 						'certificate-fingerprint'	: row.cert_fingerprint,
@@ -1749,53 +1712,36 @@ app.post('/auth/v1/audit/tokens', function (req, res) {
 					'as-resource-owner'	: as_provider,
 				};
 
-				res.setHeader('content-type', 'application/json');
 				return END_SUCCESS (res, 200, JSON.stringify(output));
 			}
 		);
 	});
 });
 
-app.post('/auth/v1/group/add', function (req, res) {
+app.all('/auth/v1/group/add', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	const body		= res.locals.body;
+	const provider_id	= res.locals.email;
 
-	if (certificate_class(cert) < 3)
-	{
-		return END_ERROR (res, 403,
-			"A class-3 or above certificate is required" +
-			" for this API"
-		);
-	}
-
-	var error;
-	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const provider_id = cert.subject.emailAddress.toLowerCase();
-
-	if (! req.body.consumer)
+	if (! body.consumer)
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
-	const consumer_id = req.body.consumer.toLowerCase();
+	const consumer_id = body.consumer.toLowerCase();
 
 	if (! is_string_safe (consumer_id))
 		return END_ERROR (res, 400, "Invalid 'consumer' field");
 
-	if (! req.body.group)
+	if (! body.group)
 		return END_ERROR (res, 400, "No 'group' found in the body");
 
-	const group_name = req.body.group.toLowerCase();
+	const group_name = body.group.toLowerCase();
 
 	if (! is_string_safe (group_name))
 		return END_ERROR (res, 400, "Invalid 'group' field");
 
 	var valid_till; // in hours
-	if (! (valid_till = req.body["valid-till"]))
-		return END_ERROR (res, 400, "No 'valid-till' found in the body");
+	if (! (valid_till = body["valid-till"]))
+		return END_ERROR (res,400,"No 'valid-till' found in the body");
 
 	valid_till = parseInt(valid_till,10);
 
@@ -1822,32 +1768,16 @@ app.post('/auth/v1/group/add', function (req, res) {
 		if (error || results.rowCount !== 1)
 			return END_ERROR (res, 500, "Could not add consumer to group");
 		else
-			return END_SUCCESS (res, 200, '{"success":"consumer added to the group"}');
+			return END_SUCCESS (res, 200, SUCCESS);
 	});
 });
 
-app.post('/auth/v1/group/list', function (req, res) {
+app.all('/auth/v1/group/list', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	const body		= res.locals.body;
+	const provider_id	= res.locals.email;
 
-	if (certificate_class(cert) < 3)
-	{
-		return END_ERROR (res, 403,
-			"A class-3 or above certificate is required" +
-			" for this API"
-		);
-	}
-
-	var error;
-	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const provider_id = cert.subject.emailAddress.toLowerCase();
-
-	var group_name = req.body.group;
+	var group_name = body.group;
 	if (group_name)
 	{
 		group_name = group_name.toLowerCase();
@@ -1888,15 +1818,14 @@ app.post('/auth/v1/group/list', function (req, res) {
 				);
 			}
 
-			res.setHeader('content-type', 'application/json');
 			return END_SUCCESS (res, 200, JSON.stringify(response));
 		});
 	}
 	else
 	{
 		pool.query (
-			"SELECT consumer, group_name, valid_till FROM groups "	+
-			"WHERE id = $1::text "				+
+			"SELECT consumer,group_name,valid_till FROM groups "	+
+			"WHERE id = $1::text "					+
 			"AND valid_till > NOW()",
 				[provider_id_in_db],
 		(error, results) =>
@@ -1915,45 +1844,31 @@ app.post('/auth/v1/group/list', function (req, res) {
 				);
 			}
 
-			res.setHeader('content-type', 'application/json');
 			return END_SUCCESS (res, 200, JSON.stringify(response));
 		});
 	}
 });
 
-app.post('/auth/v1/group/delete', function (req, res) {
+app.all('/auth/v1/group/delete', function (req, res) {
 
-	const cert = req.socket.getPeerCertificate(true);
+	const body		= res.locals.body;
+	const provider_id	= res.locals.email;
 
-	if (certificate_class(cert) < 3)
-	{
-		return END_ERROR (res, 403,
-			"A class-3 or above certificate is required" +
-			" for this API"
-		);
-	}
-
-	var error;
-	if ((error = is_secure(req,res,cert,"application/json")) !== "OK")
-		return END_ERROR (res, 400, error);
-
-	if (! cert.subject.emailAddress)
-		return END_ERROR (res,403,"The certificate does not have a emailAddress");
-
-	const provider_id = cert.subject.emailAddress.toLowerCase();
-
-	if (! req.body.consumer)
+	if (! body.consumer)
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
-	const consumer_id = req.body.consumer.toLowerCase();
+	const consumer_id = body.consumer.toLowerCase();
 
-	if (! is_string_safe (consumer_id))
-		return END_ERROR (res, 400, "Invalid 'consumer' field");
+	if (consumer_id !== '*')
+	{
+		if (! is_string_safe (consumer_id))
+			return END_ERROR (res, 400, "Invalid 'consumer' field");
+	}
 
-	if (! req.body.group)
+	if (! body.group)
 		return END_ERROR (res, 400, "No 'group' found in the body");
 
-	const group_name = req.body.group.toLowerCase();
+	const group_name = body.group.toLowerCase();
 
 	if (! is_string_safe (group_name))
 		return END_ERROR (res, 400, "Invalid 'group' field");
@@ -1983,23 +1898,25 @@ app.post('/auth/v1/group/delete', function (req, res) {
 	pool.query (query, params, (error, results) =>
 	{
 		if (error)
-			return END_ERROR (res, 500, "Could not delete from group");
+			return END_ERROR (res,500,"Could not delete from group");
 
-		if (results.rowCount === 0)
-		{
-			if (consumer_id === '*')
-				return END_ERROR (res, 400, "Empty group");
-			else
-				return END_ERROR (res, 400, "Consumer not in the group");
-		}
+		if (consumer_id !== '*' && results.rowCount === 0)
+			return END_ERROR (res,400,"Consumer not in the group");
 		else
 		{
-			return END_SUCCESS (res, 200, '{"success":"' + results.rowCount+ ' consumer(s) deleted from the group"}');
+			return END_SUCCESS (
+				res,
+				200,
+				JSON.stringify ({
+					success			: true,
+					num_consumers_deleted	: results.rowCount
+				})
+			);
 		}
 	});
 });
 
-app.get("/auth/v1/[^.]*/help", function (req, res) {
+app.all("/auth/v1/[^.]*/help", function (req, res) {
 	const pathname	= url.parse(req.url).pathname;
 	const api	= pathname.split("/auth/v1/")[1].split("/help")[0];
 
@@ -2010,37 +1927,15 @@ app.get("/auth/v1/[^.]*/help", function (req, res) {
 	}
 	else
 	{
-		res.status(404).end("No such API");
+		res.status(404).end("No such API\n");
 		res.connection.destroy();
 	}
 });
 
-app.post("/auth/v1/[^.]*/help", function (req, res) {
-	const pathname	= url.parse(req.url).pathname;
-	const api	= pathname.split("/auth/v1/")[1].split("/help")[0];
-
-	if (api)
-	{
-		res.setHeader('content-type', 'text/plain');
-		res.sendFile(__dirname + '/public/help/' + api + ".txt");
-	}
-	else
-	{
-		return END_ERROR (res, 404, "No such API");
-	}
-});
-
-app.get('/*', function (req, res) {
+app.all('/*', function (req, res) {
 	const pathname = url.parse(req.url).pathname;
-	console.log("=>>> GET  not found for :",pathname);
-	res.status(405).end("No such API");
-	return;
-});
-
-app.post('/*', function (req, res) {
-	const pathname = url.parse(req.url).pathname;
-	console.log("=>>> POST not found for :",pathname);
-	res.status(405).end("No such API");
+	console.log("=>>> API not found :",pathname);
+	res.status(404).end("No such API\n");
 	return;
 });
 
@@ -2050,14 +1945,9 @@ app.on('error', function(e) {
 
 //////////////////////// RUN /////////////////////////////////
 
-var num_cpus = os.cpus().length;
-
-if (num_cpus < 4)
-	num_cpus = 2;
-
 if (! is_openbsd)
 {
-	// ======================== START preload code for chroot ==============
+	// ======================== START preload code for chroot =============
 
 	var _tmp = ["x can x x"].map(function (t) {
 		return (parser.parse(t));
@@ -2065,20 +1955,22 @@ if (! is_openbsd)
 
 	evaluator.evaluate(_tmp, {});
 
-	dns.lookup("www.google.com", {all:true}, (error, address) => {
+	dns.lookup("google.com", {all:true}, (error, address) => {
 		if (error)
-			log('red',"DNS to www.google.com failed ");
+			log('red',"DNS to google.com failed ");
 		else
-			log('green',"DNS to www.google.com success " + String(address));
+			log('green',"IP of google.com = " + String(address));
 	});
 
-	_tmp = http_sync_request('GET', 'https://ca.iudx.org.in/crl');
+	_tmp = http_sync ('GET', 'https://ca.iudx.org.in/crl');
 
-	// ======================== END preload code for chroot   ==============
+	// ======================== END preload code for chroot   =============
 }
 
 function drop_privilege ()
 {
+	const do_drop_privilege = true; // change this for testing !
+
 	if (! do_drop_privilege)
 		return;
 
@@ -2120,27 +2012,27 @@ if (cluster.isMaster)
 	if (is_openbsd)
 		pledge.init (WORKER_PLEDGE + " unveil sendfd");
 
-	log('green',`Master ${process.pid} is running`);
+	log('yellow',`Master ${process.pid} started.`);
 
-	for (var i = 0; i < num_cpus; i++) {
+	for (var i = 0; i < NUM_CPUS; i++) {
 		cluster.fork();
 	}
 
 	cluster.on('exit', (worker, code, signal) => {
-		log('red',`Worker ${worker.process.pid} died with code = ${code}, signal = ${signal}. restarting it`);
+
+		log('red',`Worker ${worker.process.pid} died. Restarting it.`);
+		log('yellow',`code = ${code}; signal = ${signal}.`);
+
 		cluster.fork();
 	});
-
-	log('red',`Auth with pid ${process.pid} started`);
 }
 else
 {
 	https.createServer (https_options,app).listen(443,'0.0.0.0');
-	drop_privilege();
-	log('green',`Worker ${process.pid} started `);
-}
 
-// forget password
-db_password = "";
+	drop_privilege();
+
+	log('green',`Worker ${process.pid} started.`);
+}
 
 //////////////////////////////////////////////////////////////
