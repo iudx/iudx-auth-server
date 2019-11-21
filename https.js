@@ -56,7 +56,7 @@ const SERVER_NAME	= 'auth.iudx.org.in';
 const SUCCESS		= '{"success":true}';
 
 var CRL;
-var CRL_last_accessed	= new Date(0,1,2,3,4,5,6);
+var CRL_last_accessed	= new Date(1970,1,2,3,4,5,6);
 const CRL_SCAN_TIME	= 300; // seconds
 
 const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
@@ -154,8 +154,8 @@ app.use("/images", express.static(__dirname + "/public/hyperspace/images"));
 
 const apertureOpts = {
 
-    types: aperture.types,
-    typeTable: {
+    types	: aperture.types,
+    typeTable	: {
 
         ip				: 'ip',
 	time				: 'time',
@@ -244,16 +244,19 @@ function send_telegram (message)
 
 function END_SUCCESS (res, http_status, msg)
 {
-	res.setHeader('content-type', 'application/json');
+	res.setHeader('Content-Type', 'application/json');
 	res.status(http_status).end(msg + "\n");
 }
 
 function END_ERROR (res, http_status, msg)
 {
-	res.setHeader('content-type', 'application/json');
-	res.setHeader('connection', 'close');
+	res.setHeader('Content-Type', 'application/json');
+	res.setHeader('Connection', 'close');
+
 	res.status(http_status).end('{"error":"' + msg + '"}\n');
-	res.connection.destroy();
+
+	res.socket.end();
+	res.socket.destroy();
 }
 
 function is_valid_email (email)
@@ -372,7 +375,7 @@ function is_certificate_ok (req,cert,validate_email)
 			if (issuer_domain.toLowerCase() !== issued_to_domain.toLowerCase())
 			{
 				log ('red',
-					'Invalid certificate: issuer = '	+
+					"Invalid certificate: issuer = "	+
 						issuer_domain			+
 					" and issued to = "			+
 						issued_to_domain
@@ -1044,10 +1047,8 @@ app.all('/auth/v1/token', function (req, res) {
 
 			token_time = Math.min (token_time,parseInt(existing_row[0].token_time,10));
 
-			for (const k in existing_row[0].server_token)
-			{
-				resource_server_token[k] = existing_row[0].server_token[k];
-			}
+			for (const key in existing_row[0].server_token)
+				resource_server_token[key] = existing_row[0].server_token[key];
 
 			token = random_part_of_token; // given by the user
 		}
@@ -1069,10 +1070,10 @@ app.all('/auth/v1/token', function (req, res) {
 
 		if (num_resource_servers > 1)
 		{
-			for (const ek in resource_server_token)
+			for (const key in resource_server_token)
 			{
-				if (resource_server_token[ek] === true)
-					resource_server_token[ek] = crypto.randomBytes(TOKEN_LENGTH).toString('hex');
+				if (resource_server_token[key] === true)
+					resource_server_token[key] = crypto.randomBytes(TOKEN_LENGTH).toString('hex');
 			}
 
 			response["server-token"] = resource_server_token;
@@ -2012,7 +2013,7 @@ if (cluster.isMaster)
 	if (is_openbsd)
 		pledge.init (WORKER_PLEDGE + " unveil sendfd");
 
-	log('yellow',`Master ${process.pid} started.`);
+	log('yellow',`Master ${process.pid} started`);
 
 	for (var i = 0; i < NUM_CPUS; i++) {
 		cluster.fork();
@@ -2032,7 +2033,7 @@ else
 
 	drop_privilege();
 
-	log('green',`Worker ${process.pid} started.`);
+	log('green',`Worker ${process.pid} started`);
 }
 
 //////////////////////////////////////////////////////////////
