@@ -35,7 +35,6 @@ const request		= require('request');
 const express		= require('express');
 const aperture		= require('./node-aperture');
 const immutable		= require('immutable');
-const http_sync		= require('sync-request');
 const geoip_lite	= require('geoip-lite');
 const bodyParser	= require('body-parser');
 const compression	= require('compression');
@@ -47,17 +46,13 @@ const TOKEN_LENGTH_HEX	= 2 * TOKEN_LENGTH;
 
 const is_openbsd	= os.type() === 'OpenBSD';
 const EUID		= process.geteuid();
-const WORKER_PLEDGE	= "stdio tty prot_exec inet dns recvfd rpath proc exec";
+const WORKER_PLEDGE	= "stdio tty prot_exec inet dns recvfd rpath";
 const pledge 		= is_openbsd ? require("node-pledge")		: null;
 const unveil		= is_openbsd ? require("openbsd-unveil")	: null;
 
 const NUM_CPUS		= os.cpus().length;
 const SERVER_NAME	= 'auth.iudx.org.in';
 const SUCCESS		= '{"success":true}';
-
-var CRL;
-var CRL_last_accessed	= new Date(1970,1,2,3,4,5,6);
-const CRL_SCAN_TIME	= 300; // seconds
 
 const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 
@@ -107,7 +102,8 @@ pool.connect();
 pg.connectSync (
 	'postgresql://auth:'+ db_password+ '@127.0.0.1:5432/postgres',
 		function(err) {
-			if(err) throw err;
+			if(err)
+				throw err;
 		}
 );
 
@@ -409,129 +405,102 @@ function is_certificate_ok (req,cert,validate_email)
 
 function has_iudx_certificate_been_revoked (socket, cert)
 {
-	try
+	const rows = pg.querySync("SELECT crl from crl LIMIT 1");
+
+	if (rows.length === 0)
+		return true;
+
+	const CRL = rows[0].crl;
+
+	const cert_fingerprint	= cert.fingerprint.replace(/:/g,'').toLowerCase();
+	const cert_serial	= cert.serialNumber
+					.toLowerCase()
+					.replace(/^0+/,"");
+
+	const cert_issuer	= cert.issuer.emailAddress.toLowerCase();
+
+	for (const c of CRL)
 	{
-		const now  = new Date();
-		const diff = (now.getTime() - CRL_last_accessed.getTime())/1000.0;
+		c.issuer	= c.issuer.toLowerCase();
+		c.serial	= c.serial.toLowerCase().replace(/^0+/,"");
+		c.fingerprint	= c.fingerprint.toLowerCase().replace(/:/g,"");
 
-		if (diff > CRL_SCAN_TIME)
+		if (
+			(c.issuer	=== cert_issuer)	&&
+			(c.serial	=== cert_serial)	&&
+			(c.fingerprint	=== cert_fingerprint)
+		)
 		{
-			const response = http_sync (
-				'GET',
-				'https://ca.iudx.org.in/crl'
-			);
+			return true;
+		}
+	}
 
-			try
+	// If it was issued by a sub-CA then check the sub-CA's cert too
+	// Assuming depth is <= 3. ca@iudx.org.in -> sub-CA -> user
+
+	if (cert_issuer !== 'ca@iudx.org.in')
+	{
+		var ISSUERS = [];
+
+		if (cert.issuerCertificate)
+		{
+			// both CA and sub-CA are the issuers
+			ISSUERS.push(cert.issuerCertificate);
+
+			if (cert.issuerCertificate.issuerCertificate)
+				ISSUERS.push(cert.issuerCertificate.issuerCertificate);
+		}
+		else
+		{
+			/*
+				This should not happen
+			*/
+
+			log('yellow','issuerCertificate is undefined for ' + cert.subject.emailAddress);
+
+			if (! socket.isSessionReused())
+				return true;
+		}
+
+		for (const issuer of ISSUERS)
+		{
+			if (issuer.fingerprint && issuer.serialNumber)
 			{
-				CRL = JSON.parse(response.getBody());
-				CRL_last_accessed = new Date();
+				const issuer_fingerprint	= issuer.fingerprint.replace(/:/g,'').toLowerCase();
+				const issuer_serial		= issuer.serialNumber.toLowerCase();
 
 				for (const c of CRL)
 				{
-					c.issuer	= c.issuer.toLowerCase();
-					c.serial	= c.serial.toLowerCase().replace(/^0+/,"");
-					c.fingerprint	= c.fingerprint.toLowerCase().replace(/:/g,"");
+					if (c.issuer === 'ca@iudx.org.in')
+					{
+						const crl_serial = c.serial
+									.toLowerCase()
+									.replace(/^0+/,"");
+
+						const crl_fingerprint	= c.fingerprint
+										.replace(/:/g,'')
+										.toLowerCase();
+
+						if (crl_serial === issuer_serial && crl_fingerprint == issuer_fingerprint)
+							return true;
+					}
 				}
-			}
-			catch(x)
-			{
-				log ('red','CRL is not a valid JSON');
-				return true; // something went wrong!
-			}
-		}
-
-		const cert_fingerprint	= cert.fingerprint.replace(/:/g,'').toLowerCase();
-		const cert_serial	= cert.serialNumber
-						.toLowerCase()
-						.replace(/^0+/,"");
-
-		const cert_issuer	= cert.issuer.emailAddress.toLowerCase();
-
-		for (const entry of CRL)
-		{
-			if (
-				(entry.issuer		=== cert_issuer)	&&
-				(entry.serial		=== cert_serial)	&&
-				(entry.fingerprint	=== cert_fingerprint)
-			)
-			{
-					return true;
-			}
-		}
-
-		// If it was issued by a sub-CA then check the sub-CA's cert too
-		// Assuming depth is <= 3. ca@iudx.org.in -> sub-CA -> user
-
-		if (cert_issuer !== 'ca@iudx.org.in')
-		{
-			var ISSUERS = [];
-
-			if (cert.issuerCertificate)
-			{
-				// both CA and sub-CA are the issuers
-				ISSUERS.push(cert.issuerCertificate);
-
-				if (cert.issuerCertificate.issuerCertificate)
-					ISSUERS.push(cert.issuerCertificate.issuerCertificate);
 			}
 			else
 			{
 				/*
-					This should not happen
+					if fingerprint OR serial is undefined,
+					then the session must have been reused
+					by the client
 				*/
-
-				log('yellow','issuerCertificate is undefined for ' + cert.subject.emailAddress);
 
 				if (! socket.isSessionReused())
 					return true;
 			}
-
-			for (const issuer of ISSUERS)
-			{
-				if (issuer.fingerprint && issuer.serialNumber)
-				{
-					const issuer_fingerprint	= issuer.fingerprint.replace(/:/g,'').toLowerCase();
-					const issuer_serial		= issuer.serialNumber.toLowerCase();
-
-					for (const entry of CRL)
-					{
-						if (entry.issuer === 'ca@iudx.org.in')
-						{
-							const entry_serial = entry.serial
-										.toLowerCase()
-										.replace(/^0+/,"");
-
-							const entry_fingerprint	= entry.fingerprint
-											.replace(/:/g,'')
-											.toLowerCase();
-
-							if (entry_serial === issuer_serial && entry_fingerprint == issuer_fingerprint)
-								return true;
-						}
-					}
-				}
-				else
-				{
-					/*
-						if fingerprint OR serial is undefined,
-						then the session must have been reused
-						by the client
-					*/
-
-					if (! socket.isSessionReused())
-						return true;
-				}
-			}
 		}
+	}
 
-		return false;
-	}
-	catch (x)
-	{
-		const err = String(x).replace(/\n/g," ");
-		log('red',"Exception in CRL fetch :" + err);
-		return true; // by default !
-	}
+	return false;
 }
 
 function is_string_safe (str,exceptions = "")
@@ -603,7 +572,7 @@ function security (req, res, next)
 
 		if (integer_cert_class < 1)
 			return END_ERROR(res, 403, "Invalid certificate class");
-		
+
 		if (integer_cert_class < min_class_required)
 			return END_ERROR(res, 403, "A class-" + min_class_required + " or above certificate is required to call this API");
 
@@ -614,19 +583,29 @@ function security (req, res, next)
 		if ((error = is_secure(req,res,cert)) !== "OK")
 			return END_ERROR (res,403, error);
 
-		res.locals.body = {};
 		if (req.body)
 		{
 			try
 			{
 				res.locals.body = Buffer.from(req.body,'utf-8').toString('ascii');
+			}
+			catch (x)
+			{
+				res.locals.body = "{}";
+			}
+
+			try
+			{
 				res.locals.body = JSON.parse (res.locals.body);
 			}
-			catch(e)
+			catch(x)
 			{
 				return END_ERROR (res,400, "Body is not a valid JSON");
 			}
 		}
+
+		if (! res.locals.body)
+			res.locals.body = {};
 
 		res.locals.cert		= cert;
 		res.locals.cert_class	= integer_cert_class;
@@ -661,19 +640,29 @@ function security (req, res, next)
 				if (integer_cert_class < min_class_required)
 					return END_ERROR(res, 403, "A class-" + min_class_required + " or above certificate is required to call this API");
 
-				res.locals.body = {};
 				if (req.body)
 				{
 					try
 					{
 						res.locals.body = Buffer.from(req.body,'utf-8').toString('ascii');
+					}
+					catch (x)
+					{
+						res.locals.body = "{}";
+					}
+
+					try
+					{
 						res.locals.body = JSON.parse (res.locals.body);
 					}
-					catch(e)
+					catch(x)
 					{
 						return END_ERROR (res,400, "Body is not a valid JSON");
 					}
 				}
+
+				if (! res.locals.body)
+					res.locals.body = {};
 
 				res.locals.cert		= cert;
 				res.locals.cert_class	= integer_cert_class;
@@ -685,6 +674,8 @@ function security (req, res, next)
 }
 
 app.all('/auth/v1/token', function (req, res) {
+
+	// prover9:	can_call_token_api(user,certificate) -> has_class_2_certificate(user,certificate) | has_class_3_certificate(user,certificate).
 
 	const cert		= res.locals.cert;
 	const cert_class	= res.locals.cert_class;
@@ -789,7 +780,7 @@ app.all('/auth/v1/token', function (req, res) {
 	{
 		var resource = row['resource-id'];
 
-		if (! is_string_safe(resource,"* _")) // allow *, ,_ as a characters
+		if (! is_string_safe(resource,"* _ ()&")) // allow *, ,_ as a characters
 			return END_ERROR (res, 400, "Invalid 'resource-id (contains unsafe chars)' :" + resource);
 
 		if (typeof row.method === 'string')
@@ -1147,6 +1138,9 @@ app.all('/auth/v1/token', function (req, res) {
 				]
 			);
 		}
+
+		// prover9:	all resources can_get_token(user,certificate,resources) -> can_call_token_api(user,certificate).
+		// prover9:	can_get_token(user,certificate,resources) -> is_authorized(user,certificate,resources).
 
 		return END_SUCCESS (res, 200, JSON.stringify(response));
 	}
@@ -1681,10 +1675,10 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 		pool.query (
-			"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,"+
-			"introspected,providers->'" + provider_id_in_db + "' AS is_revoked "	+
-			'FROM token '								+
-			"WHERE providers->'"+ provider_id_in_db + "' IS NOT NULL "		+
+			"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,revoked,"+
+			"introspected,providers->'" + provider_id_in_db + "' AS has_provider_revoked "		+
+			'FROM token '									+
+			"WHERE providers->'"+ provider_id_in_db + "' IS NOT NULL "			+
 			'AND issued_at >= (NOW() + \'-'+ hours +' hours\')',
 
 				[], (error, results) =>
@@ -1695,12 +1689,14 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 
 				for (const row of results.rows)
 				{
+					const revoked = (row.revoked === 't' || row.has_provider_revoked === 't');
+
 					as_provider.push ({
 						'consumer'			: row.id,
 						'token-hash'			: row.token,
 						'token-issued-at'		: row.issued_at,
 						'introspected'			: row.introspected	=== 't',
-						'revoked'			: row.is_revoked	=== 't',
+						'revoked'			: revoked,
 						'expiry'			: row.expiry,
 						'certificate-serial-number'	: row.cert_serial,
 						'certificate-fingerprint'	: row.cert_fingerprint,
@@ -1963,16 +1959,14 @@ if (! is_openbsd)
 			log('green',"IP of google.com = " + String(address));
 	});
 
-	_tmp = http_sync ('GET', 'https://ca.iudx.org.in/crl');
-
 	// ======================== END preload code for chroot   =============
 }
 
-function drop_privilege ()
+function drop_privileges()
 {
-	const do_drop_privilege = true; // change this for testing !
+	const do_drop_privileges = true; // change this for testing !
 
-	if (! do_drop_privilege)
+	if (! do_drop_privileges)
 		return;
 
 	if (is_openbsd)
@@ -1983,7 +1977,6 @@ function drop_privilege ()
 			process.setuid('nobody');
 		}
 
-		unveil('/usr/bin/nc',			'rx');
 		unveil('/usr/lib',			'r' );
 		unveil('/usr/libexec/ld.so',		'r' );
 		unveil(__dirname + '/node_modules',	'r' );
@@ -2011,7 +2004,15 @@ function drop_privilege ()
 if (cluster.isMaster)
 {
 	if (is_openbsd)
-		pledge.init (WORKER_PLEDGE + " unveil sendfd");
+	{
+		unveil('/usr/local/bin/node',	'x');
+		unveil('/usr/lib',		'r');
+		unveil('/usr/libexec/ld.so',	'r');
+
+		unveil();
+
+		pledge.init (WORKER_PLEDGE + " sendfd exec proc");
+	}
 
 	log('yellow',`Master ${process.pid} started`);
 
@@ -2031,7 +2032,7 @@ else
 {
 	https.createServer (https_options,app).listen(443,'0.0.0.0');
 
-	drop_privilege();
+	drop_privileges();
 
 	log('green',`Worker ${process.pid} started`);
 }
