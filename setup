@@ -9,14 +9,11 @@ head /dev/random | sha256 > crl.db.password
 head /dev/random | sha256 > auth.db.password
 head /dev/random | sha256 > postgres.db.password
 
-postgres_password=`cat postgres.db.password`
-sed -i "s/XXXauthXXX/$postgres_password/" postgres.sql 
+crl_password=`cat crl.db.password`
+sed -i "s/XXXcrlXXX/$crl_password/" postgres.sql 
 
 auth_password=`cat auth.db.password`
 sed -i "s/XXXauthXXX/$auth_password/" postgres.sql 
-
-crl_password=`cat crl.db.password`
-sed -i "s/XXXcrlXXX/$crl_password/" postgres.sql 
 
 cp postgres.db.password /var/postgresql
 cp setup.postgres.openbsd /var/postgresql
