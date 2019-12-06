@@ -92,8 +92,8 @@ ALTER TABLE ONLY public.policy
 -- Name: TABLE crl; Type: ACL; Schema: public; Owner: postgres
 --
 
-CREATE USER auth with PASSWORD 'XXXAUTHXXX';
-CREATE USER crl with PASSWORD 'XXXCRLXXX';
+CREATE USER auth with PASSWORD 'XXXauthXXX';
+CREATE USER crl with PASSWORD 'XXXcrlXXX';
 
 GRANT SELECT ON TABLE public.crl TO auth;
 GRANT UPDATE ON TABLE public.crl TO crl;

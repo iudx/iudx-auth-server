@@ -9,10 +9,10 @@ head /dev/random | sha256 > db.password
 head /dev/random | sha256 > crl.db.password
 
 auth_password=`cat db.password`
-sed -i "s/XXXAUTHXXX/$auth_password/" postgres.sql 
+sed -i "s/XXXauthXXX/$auth_password/" postgres.sql 
 
 crl_password=`cat crl.db.password`
-sed -i "s/XXXCRLXXX/$crl_password/" postgres.sql 
+sed -i "s/XXXcrlXXX/$crl_password/" postgres.sql 
 
 cp db.password /var/postgresql
 cp setup.postgres.openbsd /var/postgresql
@@ -20,6 +20,11 @@ chmod a+x /var/postgresql/setup.postgres.openbsd
 
 cp postgres.sql /var/postgresql
 su _postgresql -c /var/postgresql/setup.postgres.openbsd
+
+until su _postgresql -c pg_isready
+do
+	sleep 0.1
+done
 
 # setup postgres
 
@@ -39,7 +44,9 @@ npm audit fix
 echo syspatch >> /etc/daily.local
 echo boot >> /etc/boot.conf
 
-echo "Press enter to reboot. Ctrl + C to quit"
-read
+rcctl disable sndiod slaacd smtpd 
+
+echo "Will reboot now"
+sleep 1
 
 reboot

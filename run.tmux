@@ -1,1 +1,1 @@
-tmux new-session -d -s nodejs 'cd /root/iudx-auth-server && ./run'
+tmux new-session -d -s nodejs 'cd /home/auth/iudx-auth-server && ./run'
