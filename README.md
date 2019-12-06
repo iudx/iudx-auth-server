@@ -13,7 +13,7 @@ git clone https://github.com/iudx-auth-server
 cd iudx-auth-server
 ./setup
 ```
-The system will reboot after the setup. After reboot the auth server should be
+The system will reboot after the setup. After reboot, the auth server should be
 ready at port 443.
 
 Please read the documentation at http://auth.iudx.org.in
