@@ -87,7 +87,7 @@ const telegram_url	= "https://api.telegram.org/bot"	+
 
 /* postgres */
 
-const db_password	= fs.readFileSync ('db.password','ascii').trim();
+const db_password	= fs.readFileSync ('auth.db.password','ascii').trim();
 
 // async postgres connection
 const pool = new Pool ({
