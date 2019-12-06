@@ -27,7 +27,7 @@ CREATE TABLE public.crl (
     crl jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
-INSERT INTO public.crl ('[]'::jsonb);
+INSERT INTO public.crl VALUES('[]'::jsonb);
 
 ALTER TABLE public.crl OWNER TO postgres;
 
