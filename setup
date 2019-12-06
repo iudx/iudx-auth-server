@@ -20,7 +20,7 @@ cp setup.postgres.openbsd /var/postgresql
 chmod a+x /var/postgresql/setup.postgres.openbsd /var/postgresql
 
 cp postgres.sql /var/postgresql
-su _postgres -c /var/postgresql/setup.postgres.openbsd
+su _postgresql -c /var/postgresql/setup.postgres.openbsd
 
 # setup postgres
 
