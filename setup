@@ -1,0 +1,29 @@
+#!/bin/sh
+
+syspatch
+pkg_add postgresql-server postgresql-client node
+
+rcctl enable postgresql
+rcctl start postgres
+
+# setup postgres
+
+cp rc.local /etc/
+cp pf.conf /etc/
+
+openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyout key.pem -out server.pem
+
+git clone https://github.com/rbccps-iisc/node-aperture
+cd node-aperture
+npm install
+
+cd ..
+npm install
+
+echo syspatch >> /etc/daily.local
+echo boot >> /etc/boot.conf
+
+echo "Press enter to reboot. Ctrl + C to quit"
+read
+
+reboot
