@@ -1,10 +1,9 @@
 #!/bin/sh
 
 syspatch
-pkg_add postgresql-server postgresql-client node
 
+pkg_add postgresql-server postgresql-client node
 rcctl enable postgresql
-rcctl start postgresql
 
 head /dev/random | sha256 > db.password
 head /dev/random | sha256 > crl.db.password

@@ -2,7 +2,7 @@
 
 cd /var/postgresql
 
-initdb -D /var/postgresql/data/ -U postgres --auth=md5 --pwprompt --encoding=UTF-8 --pwfile=db.password
+initdb -D /var/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=db.password
 pg_ctl -D /var/postgresql/data/ -l logfile start
 
 export PGPASSWORD=`cat db.password`
