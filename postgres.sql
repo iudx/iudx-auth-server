@@ -24,7 +24,7 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE public.crl (
-    crl jsonb DEFAULT '{}'::jsonb NOT NULL
+    crl jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
 
