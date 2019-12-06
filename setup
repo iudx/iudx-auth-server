@@ -16,7 +16,7 @@ sed -i "s/XXXCRLXXX/$crl_password/" postgres.sql
 
 cp db.password /var/postgresql
 cp setup.postgres.openbsd /var/postgresql
-chmod a+x /var/postgresql/setup.postgres.openbsd /var/postgresql
+chmod a+x /var/postgresql/setup.postgres.openbsd
 
 cp postgres.sql /var/postgresql
 su _postgresql -c /var/postgresql/setup.postgres.openbsd
