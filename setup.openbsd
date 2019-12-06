@@ -1,7 +1,11 @@
 #!/bin/sh
 
+syspatch
 pkg_add postgresql-server postgresql-client node
 # setup postgres
+
+cp rc.local /etc/
+cp pf.conf /etc/
 
 cd /root
 
@@ -15,7 +19,5 @@ rcctl postgres start
 npm install
 
 echo syspatch >> /etc/daily.local
-cp rc.local /etc/
-cp pf.conf /etc/
 
-sh rc.local
+sh /etc/rc.local

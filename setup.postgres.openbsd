@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cd /var/postgresql
+su _postgresql
+
+initdb -D /var/postgresql/data/ -U postgres --auth=md5 --pwprompt --encoding=UTF-8
+exit
