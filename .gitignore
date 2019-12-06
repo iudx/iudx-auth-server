@@ -6,5 +6,5 @@ doc/result
 doc/result_
 doc/traces/
 server.pem
-postgres.password
+*.password
 *.pem

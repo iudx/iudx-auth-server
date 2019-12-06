@@ -24,9 +24,10 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE public.crl (
-    crl jsonb DEFAULT '{}'::jsonb NOT NULL
+    crl jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
+INSERT INTO public.crl ('[]'::jsonb);
 
 ALTER TABLE public.crl OWNER TO postgres;
 
