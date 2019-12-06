@@ -44,7 +44,7 @@ npm audit fix
 echo syspatch >> /etc/daily.local
 echo boot >> /etc/boot.conf
 
-rcctl disable sndiod slaacd smtpd 
+rcctl disable sndiod slaacd smtpd xenodm 
 
 echo "Will reboot now"
 sleep 1
