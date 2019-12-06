@@ -652,6 +652,8 @@ function security (req, res, next)
 
 app.all('/auth/v1/token', function (req, res) {
 
+	// prover9:	can_call_token_api(user,certificate) -> has_class_2_certificate(user,certificate) | has_class_3_certificate(user,certificate).
+
 	const cert			= res.locals.cert;
 	const cert_class		= res.locals.cert_class;
 	const body			= res.locals.body;
@@ -1124,6 +1126,9 @@ app.all('/auth/v1/token', function (req, res) {
 					JSON.stringify(providers)
 			];
 		}
+
+		// prover9:	all resources can_get_token(user,certificate,resources) -> can_call_token_api(user,certificate).
+		// prover9:	can_get_token(user,certificate,resources) -> is_authorized(user,certificate,resources).
 
 		pool.query (query, parameters, (error,results) =>
 		{

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+pkg_add postgresql-server postgresql-client node
+# setup postgres
+
+cd /root
+
+openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyout key.pem -out server.pem #generates dummy certificate and key
+pgsql -U postgres < postgres.sql
+git clone https://github.com/rbccps-iisc/node-aperture
+
+rcctl enable postgresql
+rcctl postgres start
+
+npm install
+
+echo syspatch >> /etc/daily.local
+cp rc.local /etc/
+cp pf.conf /etc/
+
+sh rc.local
