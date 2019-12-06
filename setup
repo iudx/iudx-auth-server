@@ -19,6 +19,7 @@ npm install
 
 cd ..
 npm install
+npm audit fix
 
 echo syspatch >> /etc/daily.local
 echo boot >> /etc/boot.conf
