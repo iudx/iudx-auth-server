@@ -7,8 +7,9 @@ rcctl enable postgresql
 rcctl start postgres
 
 cp setup.postgres.openbsd /var/postgresql
-cp postgres.sql /var/postgresql
+chmod a+x /var/postgresql/setup.postgres.openbsd /var/postgresql
 
+cp postgres.sql /var/postgresql
 su -c _postgres /var/postgresql/setup.postgres.openbsd
 
 # setup postgres
