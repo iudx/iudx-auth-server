@@ -701,7 +701,7 @@ app.all('/auth/v1/token', function (req, res) {
 	}
 
 	const ip	= req.connection.remoteAddress;
-	const geo	= geoip_lite.lookup(ip) || {};
+	const geo	= geoip_lite.lookup(ip) || {ll:[]};
 	const issuer	= cert.issuer;
 
 	const context = {
