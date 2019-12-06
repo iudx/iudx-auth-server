@@ -1,11 +1,11 @@
-# auth.iudx.org.in
+# IUDX Auth Server 
 
-# On OpenBSD (as root)
+## On OpenBSD (as root)
 ```
 pkg_add git 
 ``` 
 
-# setup (as root) 
+## Installation (as root) 
 ```
 mkdir /home/auth
 cd /home/auth
@@ -15,6 +15,6 @@ cd iudx-auth-server
 ```
 The system will reboot after the setup.
 
-# telegram setup (as root) 
+## Telegram setup (as root) 
 You may edit the `/home/auth/telegram.apikey` and `/home/auth/telegram.chatid` to
 get telegram notifications.
