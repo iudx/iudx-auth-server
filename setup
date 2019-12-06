@@ -4,13 +4,23 @@ syspatch
 pkg_add postgresql-server postgresql-client node
 
 rcctl enable postgresql
-rcctl start postgres
+rcctl start postgresql
 
+head /dev/random | sha256 > db.password
+head /dev/random | sha256 > crl.db.password
+
+auth_password=`cat db.password`
+sed -i "s/XXXAUTHXXX/$auth_password/" postgres.sql 
+
+crl_password=`cat crl.db.password`
+sed -i "s/XXXCRLXXX/$crl_password/" postgres.sql 
+
+cp db.password /var/postgresql
 cp setup.postgres.openbsd /var/postgresql
 chmod a+x /var/postgresql/setup.postgres.openbsd /var/postgresql
 
 cp postgres.sql /var/postgresql
-su -c _postgres /var/postgresql/setup.postgres.openbsd
+su _postgres -c /var/postgresql/setup.postgres.openbsd
 
 # setup postgres
 
