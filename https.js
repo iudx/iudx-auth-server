@@ -332,6 +332,7 @@ function is_secure (req, res, cert, validate_email = true)
 		res.header('X-XSS-Protection', '1; mode=block');
 		res.header('X-Frame-Options', 'deny');
 		res.header('X-Content-Type-Options','nosniff');
+		res.header('Referrer-Policy','no-referrer-when-downgrade');
 
 		res.header('Access-Control-Allow-Origin', req.headers.origin);
 		res.header('Access-Control-Allow-Methods', 'POST,GET');
@@ -566,7 +567,7 @@ function security (req, res, next)
 	const min_class_required	= MIN_CERTIFICATE_CLASS_REQUIRED.get(api);
 
 	if (! min_class_required)
-		return END_ERROR(res, 404, "Invalid API call");
+		return END_ERROR(res, 404, "No such API. Please visit http://auth.iudx.org.in for API help.");
 
 	if (is_iudx_certificate(cert))
 	{
@@ -1984,16 +1985,14 @@ app.all("/auth/v1/[^.]*/help", function (req, res) {
 	}
 	else
 	{
-		res.status(404).end("No such API\n");
-		res.connection.destroy();
+		return END_ERROR(res, 404, "No such API. Please visit http://auth.iudx.org.in for API help.");
 	}
 });
 
 app.all('/*', function (req, res) {
 	const pathname = url.parse(req.url).pathname;
 	console.log("=>>> API not found :",pathname);
-	res.status(404).end("No such API\n");
-	return;
+	return END_ERROR(res, 404, "No such API. Please visit http://auth.iudx.org.in for API help.");
 });
 
 app.on('error', function(e) {
