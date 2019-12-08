@@ -1,0 +1,20 @@
+#!/bin/sh
+
+id=`id | cut -f1 -d'('`
+if [ $id != "uid=0" ]
+then
+	echo
+	echo "You must be root to run this script"
+	echo
+	exit
+fi
+
+exit
+
+pkg_add git
+mkdir /home/auth
+cd /home/auth
+git clone https://github.com/iudx-auth-server
+cd iudx-auth-server
+
+./setup
