@@ -9,8 +9,6 @@ then
 	exit
 fi
 
-exit
-
 pkg_add git
 mkdir /home/auth
 cd /home/auth
