@@ -4,8 +4,10 @@
 ```
 ftp -o - http://install-auth.iudx.org.in | sh
 ```
+This will install the Auth server at `/home/auth/`.
+
 The system will reboot after the setup. After which, the auth server should be
-ready at port 443.
+ready at https://localhost.
 
 Please read the API documentation at http://auth.iudx.org.in
 
