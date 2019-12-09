@@ -18,6 +18,9 @@ head /dev/random | sha256 > crl.db.password
 head /dev/random | sha256 > auth.db.password
 head /dev/random | sha256 > postgres.db.password
 
+echo your-telegram-api-key > telegram.apikey
+echo your-telegram-chat-id > telegram.chatid
+
 crl_password=`cat crl.db.password`
 sed -i "s/XXXcrlXXX/$crl_password/" postgres.sql 
 
