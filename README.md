@@ -2,7 +2,7 @@
 
 ## Installation on OpenBSD (as root) 
 ```
-ftp -o - https://iudx.org.in/install-auth | sh
+ftp -o - https://iudx.org.in/install/auth | sh
 ```
 This will install the Auth server at `/home/auth/`.
 
