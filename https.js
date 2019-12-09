@@ -69,11 +69,11 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 });
 
 dns.setServers ([
-  '1.1.1.1',
-  '4.4.4.4',
-  '8.8.8.8',
-  '[2001:4860:4860::8888]',
-  '[2001:4860:4860::8844]',
+	'1.1.1.1',
+	'4.4.4.4',
+	'8.8.8.8',
+	'[2001:4860:4860::8888]',
+	'[2001:4860:4860::8844]',
 ]);
 
 const telegram_apikey	= fs.readFileSync ('telegram.apikey','ascii').trim();
@@ -358,17 +358,22 @@ function is_certificate_ok (req, cert, validate_email)
 
 	if (cert.issuer && cert.issuer.emailAddress)
 	{
-		const issuer_email = cert.issuer.emailAddress;
+		const issuer_email = cert.issuer.emailAddress.toLowerCase();
 
 		if (! is_valid_email(issuer_email))
 			return "Certificate issuer's emailAddress is invalid";
 
 		if (issuer_email.startsWith("iudx.sub.ca@"))
 		{
-			const issued_to_domain	= cert.subject.emailAddress.split("@")[1];
-			const issuer_domain	= issuer_email.split("@")[1];
+			const issued_to_domain	= cert.subject.emailAddress
+							.toLowerCase()
+							.split("@")[1];
 
-			if (issuer_domain.toLowerCase() !== issued_to_domain.toLowerCase())
+			const issuer_domain	= issuer_email
+							.toLowerCase()
+							.split("@")[1];
+
+			if (issuer_domain !== issued_to_domain)
 			{
 				log ('red',
 					"Invalid certificate: issuer = "+
@@ -430,7 +435,11 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 			ISSUERS.push(cert.issuerCertificate);
 
 			if (cert.issuerCertificate.issuerCertificate)
-				ISSUERS.push(cert.issuerCertificate.issuerCertificate);
+			{
+				ISSUERS.push (
+					cert.issuerCertificate.issuerCertificate
+				);
+			}
 		}
 		else
 		{
