@@ -1054,7 +1054,7 @@ app.all('/auth/v1/token', function (req, res) {
 			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
 			"token-type"	: "IUDX",
 			"expires-in"	: token_time,
-			"server-token"	: "{}",
+			"server-token"	: {},
 		};
 
 		const num_resource_servers = Object.keys(resource_server_token).length;
