@@ -621,7 +621,7 @@ function security (req, res, next)
 			);
 		}
 
-		if (api.endsWith('/introspect' && integer_cert_class !== 1)
+		if (api.endsWith('/introspect') && integer_cert_class !== 1)
 		{
 			return END_ERROR (
 				res, 403,
@@ -807,8 +807,14 @@ app.all('/auth/v1/token', function (req, res) {
 	{
 		let resource = row['resource-id'];
 
-		if (! is_string_safe(resource,"* _ ()&")) // allow *, ,_ as a characters
-			return END_ERROR (res, 400, "Invalid 'resource-id (contains unsafe chars)' :" + resource);
+		if (! is_string_safe(resource,"* _ ()&")) // allow: *, , ,_,(,),&
+		{
+			return END_ERROR (
+				res, 400,
+				"Invalid 'resource-id "		+
+				"(contains unsafe chars)' :"	+ resource
+			);
+		}
 
 		if (typeof row.method === 'string')
 			row.methods = [row.method];
@@ -873,15 +879,18 @@ app.all('/auth/v1/token', function (req, res) {
 		if ((resource.match(/\//g) || []).length < 3)
 		{
 			return END_ERROR (res, 400,
-				"Invalid 'resource-id' (it must have atleast 3 '/' chars): " +
-				resource
+				"Invalid 'resource-id' "		+
+				"(it must have at least 3 '/' chars): "	+
+					resource
 			);
 		}
 
-		if (row.body)
+		// if body is given but is not a valid object
+		if (row.body && (! (row.body instanceof Object)))
 		{
-			if (! (row.body instanceof Object))
-				return END_ERROR (res, 400, "Invalid body for id :" + resource);
+			return END_ERROR (res, 400,
+				"Invalid body for id :" + resource
+			);
 		}
 
 		const rid_split 		= resource.split("/");
@@ -891,8 +900,12 @@ app.all('/auth/v1/token', function (req, res) {
 		const resource_name		= rid_split.slice(3).join("/");
 
 		providers			[provider_id_in_db]	= true;
-		resource_server_token		[resource_server]	= true; // to be filled later
-		sha256_of_resource_server_token	[resource_server]	= true; // to be filled later
+
+		// to be generated later
+		resource_server_token		[resource_server]	= true;
+
+		// to be generated later
+		sha256_of_resource_server_token	[resource_server]	= true;
 
 		const policy_rows = pg.querySync (
 			'SELECT policy,policy_in_json FROM policy ' +
@@ -901,7 +914,12 @@ app.all('/auth/v1/token', function (req, res) {
 		);
 
 		if (policy_rows.length === 0)
-			return END_ERROR (res, 400, "Invalid 'resource-id (no policy found)': " + resource);
+		{
+			return END_ERROR (res, 400,
+				"Invalid 'resource-id (no policy found)': " +
+					resource
+			);
+		}
 
 		const policy_in_text = Buffer.from (
 						policy_rows[0].policy, 'base64'
@@ -949,7 +967,9 @@ app.all('/auth/v1/token', function (req, res) {
 				],
 			);
 
-			context.conditions.tokens_per_day = parseInt (tokens_per_day_rows[0].count,10);
+			context.conditions.tokens_per_day = parseInt (
+				tokens_per_day_rows[0].count, 10
+			);
 		}
 
 		let CTX = context;
@@ -965,14 +985,22 @@ app.all('/auth/v1/token', function (req, res) {
 		for (const api of row.apis)
 		{
 			if (typeof api !== 'string')
-				return END_ERROR (res, 400, "Invalid 'api' :" + api);
+			{
+				return END_ERROR (
+					res, 400, "Invalid 'api' :" + api
+				);
+			}
 
 			CTX.conditions.api = api;
 
 			for (const method of row.methods)
 			{
 				if (typeof method !== 'string')
-					return END_ERROR (res, 400, "Invalid 'method' :" + method);
+				{
+					return END_ERROR (res, 400,
+						"Invalid 'method' :" + method
+					);
+				}
 
 				CTX.conditions.method = method;
 
@@ -1070,9 +1098,16 @@ app.all('/auth/v1/token', function (req, res) {
 			);
 
 			if (existing_row.length === 0)
-				return END_ERROR (res, 403, "Invalid existing-token");
+			{
+				return END_ERROR (res, 403,
+					"Invalid existing-token"
+				);
+			}
 
-			token_time = Math.min (token_time,parseInt(existing_row[0].token_time,10));
+			token_time = Math.min (
+				token_time,
+				(parseInt(existing_row[0].token_time, 10) || 0)
+			);
 
 			for (const key in existing_row[0].server_token)
 				resource_server_token [key] = true;
@@ -1094,17 +1129,22 @@ app.all('/auth/v1/token', function (req, res) {
 			"server-token"	: {},
 		};
 
-		const num_resource_servers = Object.keys(resource_server_token).length;
+		const num_resource_servers = Object
+						.keys(resource_server_token)
+						.length;
 
 		if (num_resource_servers > 1)
 		{
 			for (const key in resource_server_token)
 			{
-				resource_server_token[key]		= crypto.randomBytes(TOKEN_LENGTH).toString('hex');
+				resource_server_token[key] = crypto
+								.randomBytes(TOKEN_LENGTH)
+								.toString('hex');
 
-				sha256_of_resource_server_token[key]	= crypto.createHash('sha256')
-										.update(resource_server_token[key])
-										.digest('hex');
+				sha256_of_resource_server_token[key] = crypto
+									.createHash('sha256')
+									.update(resource_server_token[key])
+									.digest('hex');
 			}
 
 			response["server-token"] = resource_server_token;
