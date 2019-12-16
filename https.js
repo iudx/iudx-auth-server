@@ -43,6 +43,7 @@ const pg		= new pgNativeClient();
 
 const TOKEN_LENGTH	= 16;
 const TOKEN_LENGTH_HEX	= 2 * TOKEN_LENGTH;
+const MAX_TOKEN_TIME	= 31536000; // in seconds (1 year)
 
 const EUID		= process.geteuid();
 const is_openbsd	= os.type() === 'OpenBSD';
@@ -79,10 +80,8 @@ dns.setServers ([
 const telegram_apikey	= fs.readFileSync ('telegram.apikey','ascii').trim();
 const telegram_chat_id	= fs.readFileSync ('telegram.chatid','ascii').trim();
 
-const telegram_url	= "https://api.telegram.org/bot"	+
-					telegram_apikey		+
-				"/sendMessage?chat_id="		+
-					telegram_chat_id	+
+const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey	+
+				"/sendMessage?chat_id="	+ telegram_chat_id	+
 				"&text=";
 
 /* postgres */
@@ -443,6 +442,12 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 		}
 		else
 		{
+			/*
+				if the issuerCertificate is empty, 
+				then the session must have been reused
+				by the browser.
+			*/
+
 			if (! socket.isSessionReused())
 				return true;
 		}
@@ -451,8 +456,14 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 		{
 			if (issuer.fingerprint && issuer.serialNumber)
 			{
-				const issuer_fingerprint	= issuer.fingerprint.replace(/:/g,'').toLowerCase();
-				const issuer_serial		= issuer.serialNumber.toLowerCase();
+				const issuer_fingerprint = issuer
+								.fingerprint
+								.replace(/:/g,'')
+								.toLowerCase();
+
+				const issuer_serial = issuer
+							.serialNumber
+							.toLowerCase();
 
 				for (const c of CRL)
 				{
@@ -462,9 +473,9 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 									.toLowerCase()
 									.replace(/^0+/,"");
 
-						const crl_fingerprint	= c.fingerprint
-										.replace(/:/g,'')
-										.toLowerCase();
+						const crl_fingerprint = c.fingerprint
+									.replace(/:/g,'')
+									.toLowerCase();
 
 						if (crl_serial === issuer_serial && crl_fingerprint == issuer_fingerprint)
 							return true;
@@ -476,7 +487,7 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 				/*
 					if fingerprint OR serial is undefined,
 					then the session must have been reused
-					by the client
+					by the browser. 
 				*/
 
 				if (! socket.isSessionReused())
@@ -572,11 +583,17 @@ function security (req, res, next)
 	if ((! api.startsWith("/auth/v")) || (api.endsWith("/help")))
 		return next();
 
-	const cert			= req.socket.getPeerCertificate(true);
-	const min_class_required	= MIN_CERTIFICATE_CLASS_REQUIRED.get(api);
+	const cert		 = req.socket.getPeerCertificate(true);
+	const min_class_required = MIN_CERTIFICATE_CLASS_REQUIRED.get(api);
 
 	if (! min_class_required)
-		return END_ERROR(res, 404, "No such API. Please visit http://auth.iudx.org.in for API help.");
+	{
+		return END_ERROR (
+			res, 404, 
+				"No such API. Please visit: "	+
+				"http://auth.iudx.org.in for API help."
+		);
+	}
 
 	if (is_iudx_certificate(cert))
 	{
@@ -585,16 +602,33 @@ function security (req, res, next)
 		let integer_cert_class = 0;
 
 		if (cert_class)
-			integer_cert_class = parseInt(cert_class.split(":")[1],10) || 0;
+		{
+			integer_cert_class = parseInt(
+				cert_class.split(":")[1],10
+			) || 0;
+		}
 
 		if (integer_cert_class < 1)
 			return END_ERROR(res, 403, "Invalid certificate class");
 
 		if (integer_cert_class < min_class_required)
-			return END_ERROR(res, 403, "A class-" + min_class_required + " or above certificate is required to call this API");
+		{
+			return END_ERROR (
+				res, 403,
+					"A class-" + min_class_required		+ 
+					" or above certificate is required "	+
+					"to call this API"
+			);
+		}
 
-		if (api === '/auth/v1/token/introspect' && integer_cert_class !== 1)
-			return END_ERROR(res, 403, "A class-1 certificate is required to call this API");
+		if (api.endsWith('/introspect' && integer_cert_class !== 1)
+		{
+			return END_ERROR (
+				res, 403,
+					"A class-1 certificate is required "	+
+					"to call this API"
+			);
+		}
 
 		let error;
 		if ((error = is_secure(req,res,cert)) !== "OK")
@@ -604,7 +638,12 @@ function security (req, res, next)
 			[], (error,results) =>
 			{
 				if (error || results.rows.length === 0)
-					return END_ERROR (res, 500, "Internal error!", error);
+				{
+					return END_ERROR (
+						res, 500,
+							"Internal error!", error
+					);
+				}
 
 				const CRL = results.rows[0].crl;
 
@@ -661,8 +700,6 @@ function security (req, res, next)
 }
 
 app.all('/auth/v1/token', function (req, res) {
-
-	// prover9:	can_call_token_api(user,certificate) -> has_class_2_certificate(user,certificate) | has_class_3_certificate(user,certificate).
 
 	const cert			= res.locals.cert;
 	const cert_class		= res.locals.cert_class;
@@ -750,15 +787,15 @@ app.all('/auth/v1/token', function (req, res) {
 		}
 	};
 
-	let requested_token_time;	// as specified by the consumer
-	let token_time = 31536000;	// to be finally sent along with token (max 1 year)
+	let requested_token_time;	 	// as specified by the consumer
+	let token_time = MAX_TOKEN_TIME;	// to be sent along with token
 
 	if (body['token-time'])
 	{
 		requested_token_time = parseInt(body['token-time'],10);
 
-		if (isNaN(requested_token_time) || requested_token_time < 1 || requested_token_time > 31536000)
-			return END_ERROR (res, 400, "'token-time' field should be > 0 and < 31536000");
+		if (isNaN(requested_token_time) || requested_token_time < 1 || requested_token_time > MAX_TOKEN_TIME)
+			return END_ERROR (res, 400, "'token-time' field should be > 0 and < " + MAX_TOKEN_TIME);
 	}
 
 	const existing_token	= body['existing-token'];
@@ -1143,9 +1180,6 @@ app.all('/auth/v1/token', function (req, res) {
 			];
 		}
 
-		// prover9:	all resources can_get_token(user,certificate,resources) -> can_call_token_api(user,certificate).
-		// prover9:	can_get_token(user,certificate,resources) -> is_authorized(user,certificate,resources).
-
 		pool.query (query, parameters, (error,results) =>
 		{
 			if (error || results.rowCount === 0)
@@ -1486,7 +1520,7 @@ app.all('/auth/v1/token/revoke-all', function (req, res) {
 					'num-tokens-revoked'	: results.rowCount
 				};
 
-				return END_SUCCESS (res, 200, JSON.stringify(out));
+				return END_SUCCESS (res,200,JSON.stringify(out));
 			}
 		}
 	);
@@ -1635,9 +1669,14 @@ app.all('/auth/v1/acl/append', function (req, res) {
 					return (parser.parse(t));
 				});
 			}
-			catch (x) {
+			catch (x)
+			{
 				const err = String(x).replace(/\n/g," ");
-				return END_ERROR (res, 400, "Syntax error in policy: " + err);
+
+				return END_ERROR (
+					res, 400,
+						"Syntax error in policy: " + err
+				);
 			}
 
 			query = "UPDATE policy SET policy = $1::text," +
@@ -1651,9 +1690,11 @@ app.all('/auth/v1/acl/append', function (req, res) {
 		}
 		else
 		{
-			const base64policy = Buffer.from(policy).toString('base64');
+			const base64policy = Buffer
+						.from(policy)
+						.toString('base64');
 
-			query = "INSERT INTO policy VALUES($1::text, $2::text, $3)";
+			query = "INSERT INTO policy VALUES($1::text,$2::text,$3)";
 
 			parameters = [
 				provider_id_in_db,
@@ -1721,9 +1762,10 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 	const as_provider = [];
 
 	pool.query (
-		'SELECT issued_at,expiry,request,cert_serial,cert_fingerprint,introspected,revoked '	+
-		'FROM token '										+
-		'WHERE id = $1::text '									+
+		'SELECT issued_at,expiry,request,cert_serial,'		+
+		'cert_fingerprint,introspected,revoked '		+
+		'FROM token '						+
+		'WHERE id = $1::text '					+
 		"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
 			[id], (error, results) =>
@@ -1752,45 +1794,46 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 		const provider_id_in_db	= sha256_id + "@" + email_domain;
 
 		pool.query (
-			"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,revoked,"	+
-			"introspected,providers->'" + provider_id_in_db + "' AS has_provider_revoked "		+
-			'FROM token '										+
-			"WHERE providers->'" + provider_id_in_db + "' IS NOT NULL "				+
-			"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
-				[], (error, results) =>
+		"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,revoked,"	+
+		"introspected,providers->'" + provider_id_in_db + "' AS has_provider_revoked "		+
+		'FROM token '										+
+		"WHERE providers->'" + provider_id_in_db + "' IS NOT NULL "				+
+		"AND issued_at >= (NOW() + '-" + hours + " hours')",
+
+		[], (error, results) =>
+		{
+
+			if (error)
+				return END_ERROR (res, 500, "Internal error!", error);
+
+			for (const row of results.rows)
 			{
+				const revoked		= (row.revoked === 't' || row.has_provider_revoked === 't');
+				const introspected	= (row.introspected === 't');
 
-				if (error)
-					return END_ERROR (res, 500, "Internal error!", error);
-
-				for (const row of results.rows)
-				{
-					const revoked = (row.revoked === 't' || row.has_provider_revoked === 't');
-
-					as_provider.push ({
-						'consumer'			: row.id,
-						'token-hash'			: row.token,
-						'token-issued-at'		: row.issued_at,
-						'introspected'			: row.introspected	=== 't',
-						'revoked'			: revoked,
-						'expiry'			: row.expiry,
-						'certificate-serial-number'	: row.cert_serial,
-						'certificate-fingerprint'	: row.cert_fingerprint,
-						'request'			: row.request,
-					});
-				}
-
-				const output = {
-					'as-consumer'		: as_consumer,
-					'as-resource-owner'	: as_provider,
-				};
-
-				return END_SUCCESS (
-					res, 200, JSON.stringify(output)
-				);
+				as_provider.push ({
+					'consumer'			: row.id,
+					'token-hash'			: row.token,
+					'token-issued-at'		: row.issued_at,
+					'introspected'			: introspected,
+					'revoked'			: revoked,
+					'expiry'			: row.expiry,
+					'certificate-serial-number'	: row.cert_serial,
+					'certificate-fingerprint'	: row.cert_fingerprint,
+					'request'			: row.request,
+				});
 			}
-		);
+
+			const output = {
+				'as-consumer'		: as_consumer,
+				'as-resource-owner'	: as_provider,
+			};
+
+			return END_SUCCESS (
+				res, 200, JSON.stringify(output)
+			);
+		});
 	});
 });
 
@@ -1994,6 +2037,7 @@ app.all('/auth/v1/group/delete', function (req, res) {
 });
 
 app.all("/auth/v1/[^.]*/help", function (req, res) {
+
 	const pathname	= url.parse(req.url).pathname;
 	const api	= pathname.split("/auth/v1/")[1].split("/help")[0];
 
@@ -2004,14 +2048,24 @@ app.all("/auth/v1/[^.]*/help", function (req, res) {
 	}
 	else
 	{
-		return END_ERROR(res, 404, "No such API. Please visit http://auth.iudx.org.in for API help.");
+		return END_ERROR (
+			res, 404, 
+				"No such API. Please visit: "	+
+				"http://auth.iudx.org.in for API help."
+		);
 	}
 });
 
 app.all('/*', function (req, res) {
+
 	const pathname = url.parse(req.url).pathname;
 	console.log("=>>> API not found :",pathname);
-	return END_ERROR(res, 404, "No such API. Please visit http://auth.iudx.org.in for API help.");
+
+	return END_ERROR (
+		res, 404, 
+			"No such API. Please visit: "	+
+			"http://auth.iudx.org.in for API help."
+	);
 });
 
 app.on('error', function(e) {
