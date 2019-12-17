@@ -648,10 +648,20 @@ function security (req, res, next)
 				const CRL = results.rows[0].crl;
 
 				if (has_iudx_certificate_been_revoked (req.socket,cert,CRL))
-					return END_ERROR (res,403,"Your certificate has been revoked");
+				{
+					return END_ERROR (
+						res, 403,
+						"Your certificate has been revoked"
+					);
+				}
 
 				if (! (res.locals.body = body_to_json(req.body)))
-					return END_ERROR (res,400, "Body is not a valid JSON");
+				{
+					return END_ERROR (
+						res, 400,
+						"Body is not a valid JSON"
+					);
+				}
 
 				res.locals.cert		= cert;
 				res.locals.cert_class	= integer_cert_class;
@@ -1528,7 +1538,12 @@ app.all('/auth/v1/token/revoke-all', function (req, res) {
 		return END_ERROR (res, 400, "No 'serial' found in the body");
 	
 	if (! body.fingerprint)
-		return END_ERROR (res, 400, "No 'fingerprint' found in the body");
+	{
+		return END_ERROR (
+			res, 400,
+			"No 'fingerprint' found in the body"
+		);
+	}
 
 	const serial 		= body.serial;
 	const fingerprint	= body.fingerprint;

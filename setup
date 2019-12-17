@@ -54,6 +54,7 @@ cd ..
 npm install
 npm audit fix
 
+echo /sbin/pfctl -t bruteforce -T expire 86400 >> /detc/daily.local
 echo syspatch >> /etc/daily.local
 echo boot >> /etc/boot.conf
 
