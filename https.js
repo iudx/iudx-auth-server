@@ -1557,8 +1557,8 @@ app.all('/auth/v1/token/revoke-all', function (req, res) {
 	pool.query (
 		'UPDATE token SET revoked = true '	+
 		'WHERE id = $1::text '			+
-		'AND serial = $2::text '		+
-		'AND fingerprint = $3::text '		+
+		'AND cert_serial = $2::text '		+
+		'AND cert_fingerprint = $3::text '	+
 		'AND expiry > NOW() '			+
 		'AND revoked = false',
 
