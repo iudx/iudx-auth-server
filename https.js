@@ -80,8 +80,8 @@ dns.setServers ([
 const telegram_apikey	= fs.readFileSync ('telegram.apikey','ascii').trim();
 const telegram_chat_id	= fs.readFileSync ('telegram.chatid','ascii').trim();
 
-const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey	+
-				"/sendMessage?chat_id="	+ telegram_chat_id	+
+const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
+				"/sendMessage?chat_id="	+ telegram_chat_id +
 				"&text=";
 
 /* postgres */
@@ -471,7 +471,7 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 					{
 						const crl_serial = c.serial
 									.toLowerCase()
-									.replace(/^0+/,"");
+									.replace(/^0+/,'');
 
 						const crl_fingerprint = c.fingerprint
 									.replace(/:/g,'')
@@ -615,9 +615,9 @@ function security (req, res, next)
 		{
 			return END_ERROR (
 				res, 403,
-					"A class-" + min_class_required		+ 
-					" or above certificate is required "	+
-					"to call this API"
+					"A class-" + min_class_required	+ 
+					" or above certificate "	+
+					"is required to call this API"
 			);
 		}
 
@@ -625,7 +625,7 @@ function security (req, res, next)
 		{
 			return END_ERROR (
 				res, 403,
-					"A class-1 certificate is required "	+
+					"A class-1 certificate is required " +
 					"to call this API"
 			);
 		}
@@ -641,7 +641,7 @@ function security (req, res, next)
 				{
 					return END_ERROR (
 						res, 500,
-							"Internal error!", error
+						"Internal error!", error
 					);
 				}
 
@@ -651,7 +651,7 @@ function security (req, res, next)
 				{
 					return END_ERROR (
 						res, 403,
-						"Your certificate has been revoked"
+						"Certificate has been revoked"
 					);
 				}
 
@@ -665,7 +665,10 @@ function security (req, res, next)
 
 				res.locals.cert		= cert;
 				res.locals.cert_class	= integer_cert_class;
-				res.locals.email	= cert.subject.emailAddress.toLowerCase();
+				res.locals.email	= cert
+								.subject
+								.emailAddress
+								.toLowerCase();
 
 				return next();
 			}
@@ -817,7 +820,7 @@ app.all('/auth/v1/token', function (req, res) {
 	{
 		let resource = row['resource-id'];
 
-		if (! is_string_safe(resource,"* _ ()&")) // allow: *, , ,_,(,),&
+		if (! is_string_safe(resource,"* _ ()&")) // allow some chars
 		{
 			return END_ERROR (
 				res, 400,
@@ -903,11 +906,11 @@ app.all('/auth/v1/token', function (req, res) {
 			);
 		}
 
-		const rid_split 		= resource.split("/");
+		const split 			= resource.split("/");
 
-		const provider_id_in_db		= rid_split[1] + '@' + rid_split[0];
-		const resource_server		= rid_split[2];
-		const resource_name		= rid_split.slice(3).join("/");
+		const provider_id_in_db		= split[1] + '@' + split[0];
+		const resource_server		= split[2];
+		const resource_name		= split.slice(3).join("/");
 
 		providers			[provider_id_in_db]	= true;
 
@@ -946,9 +949,10 @@ app.all('/auth/v1/token', function (req, res) {
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
 			const group_rows = pg.querySync(
-				'SELECT DISTINCT group_name FROM groups '	+
-				'WHERE id = $1::text '				+
-				'AND consumer = $2::text '			+
+				'SELECT DISTINCT group_name '	+
+				'FROM groups '			+
+				'WHERE id = $1::text '		+
+				'AND consumer = $2::text '	+
 				'AND valid_till > NOW()',
 				[
 					provider_id_in_db,
@@ -970,7 +974,7 @@ app.all('/auth/v1/token', function (req, res) {
 				'SELECT COUNT(*) FROM token '		+
 				'WHERE id=$1::text '			+
 				'AND resource_ids @> $2 '		+
-				"AND DATE_TRUNC('day',issued_at) = DATE_TRUNC('day',NOW())",
+				"AND issued_at > DATE_TRUNC('day',NOW())",
 				[
 					consumer_id,
 					'{"' + resource + '":true}'

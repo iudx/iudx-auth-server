@@ -14,9 +14,9 @@ syspatch
 pkg_add postgresql-server postgresql-client node
 rcctl enable postgresql
 
-head /dev/random | sha256 > crl.db.password
-head /dev/random | sha256 > auth.db.password
-head /dev/random | sha256 > postgres.db.password
+head /dev/urandom | sha256 > crl.db.password
+head /dev/urandom | sha256 > auth.db.password
+head /dev/urandom | sha256 > postgres.db.password
 
 echo your-telegram-api-key > telegram.apikey
 echo your-telegram-chat-id > telegram.chatid
@@ -27,6 +27,7 @@ sed -i "s/XXXcrlXXX/$crl_password/" postgres.sql
 auth_password=`cat auth.db.password`
 sed -i "s/XXXauthXXX/$auth_password/" postgres.sql 
 
+# setup postgres
 cp postgres.db.password /var/postgresql
 cp setup.postgres.openbsd /var/postgresql
 chmod a+x /var/postgresql/setup.postgres.openbsd
@@ -38,8 +39,6 @@ until su _postgresql -c pg_isready
 do
 	sleep 0.1
 done
-
-# setup postgres
 
 cp rc.local /etc/
 cp pf.conf /etc/
@@ -59,8 +58,5 @@ echo syspatch >> /etc/daily.local
 echo boot >> /etc/boot.conf
 
 rcctl disable sndiod slaacd smtpd xenodm 
-
-echo "Will reboot now"
-sleep 1
 
 reboot
