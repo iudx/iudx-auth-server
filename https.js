@@ -258,7 +258,6 @@ function END_ERROR (res, http_status, msg, exception = null)
 
 	res.socket.end();
 	res.socket.destroy();
-
 }
 
 function is_valid_email (email)
@@ -974,7 +973,7 @@ app.all('/auth/v1/token', function (req, res) {
 				'SELECT COUNT(*) FROM token '		+
 				'WHERE id=$1::text '			+
 				'AND resource_ids @> $2 '		+
-				"AND issued_at > DATE_TRUNC('day',NOW())",
+				"AND issued_at >= DATE_TRUNC('day',NOW())",
 				[
 					consumer_id,
 					'{"' + resource + '":true}'
