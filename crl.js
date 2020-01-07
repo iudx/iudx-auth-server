@@ -1,5 +1,7 @@
 /* vim: set ts=8 sw=4 tw=0 noet : */
 
+/*eslint camelcase: ["error", {properties: "never"}]*/
+
 "use strict";
 
 const fs		= require("fs");
@@ -82,7 +84,7 @@ function update_crl (body)
 		);
 
 		if (results.rowCount === 0)
-			console.log("error");
+			log("red","CRL update failed!");
 		else
 		{
 			crl = new_crl;
