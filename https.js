@@ -19,26 +19,26 @@
 
 "use strict";
 
-const fs		= require('fs');
-const os		= require('os');
-const dns 		= require('dns');
-const url		= require('url');
-const cors		= require('cors');
-const ocsp		= require('ocsp');
-const Pool		= require('pg').Pool;
-const https		= require('https');
-const chroot		= require('chroot');
-const crypto		= require('crypto');
-const logger		= require('node-color-log');
-const cluster		= require('cluster');
-const request		= require('request');
-const express		= require('express');
-const aperture		= require('./node-aperture');
-const immutable		= require('immutable');
-const geoip_lite	= require('geoip-lite');
-const bodyParser	= require('body-parser');
-const compression	= require('compression');
-const pgNativeClient 	= require('pg-native');
+const fs		= require("fs");
+const os		= require("os");
+const dns 		= require("dns");
+const url		= require("url");
+const cors		= require("cors");
+const ocsp		= require("ocsp");
+const Pool		= require("pg").Pool;
+const https		= require("https");
+const chroot		= require("chroot");
+const crypto		= require("crypto");
+const logger		= require("node-color-log");
+const cluster		= require("cluster");
+const request		= require("request");
+const express		= require("express");
+const aperture		= require("./node-aperture");
+const immutable		= require("immutable");
+const geoip_lite	= require("geoip-lite");
+const bodyParser	= require("body-parser");
+const compression	= require("compression");
+const pgNativeClient 	= require("pg-native");
 const pg		= new pgNativeClient();
 
 const TOKEN_LENGTH	= 16;
@@ -46,39 +46,39 @@ const TOKEN_LENGTH_HEX	= 2 * TOKEN_LENGTH;
 const MAX_TOKEN_TIME	= 31536000; // in seconds (1 year)
 
 const EUID		= process.geteuid();
-const is_openbsd	= os.type() === 'OpenBSD';
+const is_openbsd	= os.type() === "OpenBSD";
 const pledge 		= is_openbsd ? require("node-pledge")	: null;
 const unveil		= is_openbsd ? require("openbsd-unveil"): null;
 
 const SUCCESS		= '{"success":true}';
 const NUM_CPUS		= os.cpus().length;
-const SERVER_NAME	= 'auth.iudx.org.in';
+const SERVER_NAME	= "auth.iudx.org.in";
 
 const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 
-	'/auth/v1/token/introspect'	: 1,
-	'/auth/v1/token'		: 2,
-	'/auth/v1/token/revoke'		: 3,
-	'/auth/v1/token/revoke-all'	: 3,
-	'/auth/v1/acl'			: 3,
-	'/auth/v1/acl/set'		: 3,
-	'/auth/v1/acl/append'		: 3,
-	'/auth/v1/audit/tokens'		: 3,
-	'/auth/v1/group/add'		: 3,
-	'/auth/v1/group/delete'		: 3,
-	'/auth/v1/group/list'		: 3,
+	"/auth/v1/token/introspect"	: 1,
+	"/auth/v1/token"		: 2,
+	"/auth/v1/token/revoke"		: 3,
+	"/auth/v1/token/revoke-all"	: 3,
+	"/auth/v1/acl"			: 3,
+	"/auth/v1/acl/set"		: 3,
+	"/auth/v1/acl/append"		: 3,
+	"/auth/v1/audit/tokens"		: 3,
+	"/auth/v1/group/add"		: 3,
+	"/auth/v1/group/delete"		: 3,
+	"/auth/v1/group/list"		: 3,
 });
 
 dns.setServers ([
-	'1.1.1.1',
-	'4.4.4.4',
-	'8.8.8.8',
-	'[2001:4860:4860::8888]',
-	'[2001:4860:4860::8844]',
+	"1.1.1.1",
+	"4.4.4.4",
+	"8.8.8.8",
+	"[2001:4860:4860::8888]",
+	"[2001:4860:4860::8844]",
 ]);
 
-const telegram_apikey	= fs.readFileSync ('telegram.apikey','ascii').trim();
-const telegram_chat_id	= fs.readFileSync ('telegram.chatid','ascii').trim();
+const telegram_apikey	= fs.readFileSync ("telegram.apikey","ascii").trim();
+const telegram_chat_id	= fs.readFileSync ("telegram.chatid","ascii").trim();
 
 const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 				"/sendMessage?chat_id="	+ telegram_chat_id +
@@ -86,21 +86,21 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 
 /* postgres */
 
-const db_password	= fs.readFileSync ('auth.db.password','ascii').trim();
+const db_password	= fs.readFileSync ("auth.db.password","ascii").trim();
 
 // async postgres connection
 const pool = new Pool ({
-	host		: '127.0.0.1',
+	host		: "127.0.0.1",
 	port		: 5432,
-	user		: 'auth',
-	database	: 'postgres',
+	user		: "auth",
+	database	: "postgres",
 	password	: db_password,
 });
 pool.connect();
 
 // sync postgres connection
 pg.connectSync (
-	'postgresql://auth:'+ db_password+ '@127.0.0.1:5432/postgres',
+	"postgresql://auth:"+ db_password+ "@127.0.0.1:5432/postgres",
 		function(err)
 		{
 			if(err) {
@@ -114,7 +114,7 @@ pg.connectSync (
 const app = express();
 app.use (
 	cors ({
-		methods		: ['POST','GET'],
+		methods		: ["POST","GET"],
 		credentials	: true,
 		origin		: function (origin, callback)
 				{
@@ -123,26 +123,26 @@ app.use (
 	})
 );
 
-app.use(bodyParser.raw({type:'*/*'}));
+app.use(bodyParser.raw({type:"*/*"}));
 app.use(compression());
 app.use(security);
 
-app.disable('x-powered-by');
+app.disable("x-powered-by");
 
-app.all('/', function (req, res) {
-	res.sendFile(__dirname + '/public/hyperspace/index.html');
+app.all("/", function (req, res) {
+	res.sendFile(__dirname + "/public/hyperspace/index.html");
 });
 
-app.all('/apis', function (req, res) {
-	res.sendFile(__dirname + '/public/help/apis.html');
+app.all("/apis", function (req, res) {
+	res.sendFile(__dirname + "/public/help/apis.html");
 });
 
-app.all('/favicon.ico', function (req, res) {
-	res.sendFile(__dirname + '/public/favicon.ico');
+app.all("/favicon.ico", function (req, res) {
+	res.sendFile(__dirname + "/public/favicon.ico");
 });
 
-app.all('/doc', function (req, res) {
-	res.sendFile(__dirname + '/public/output/auth-api-doc.html');
+app.all("/doc", function (req, res) {
+	res.sendFile(__dirname + "/public/output/auth-api-doc.html");
 });
 
 app.use("/assets", express.static(__dirname + "/public/hyperspace/assets"));
@@ -155,39 +155,39 @@ const apertureOpts = {
     types	: aperture.types,
     typeTable	: {
 
-        ip				: 'ip',
-	time				: 'time',
+        ip				: "ip",
+	time				: "time",
 
-	tokens_per_day			: 'number',	// tokens issued today
+	tokens_per_day			: "number",	// tokens issued today
 
-	api				: 'string',	// the API to be called
-	method				: 'string',	// the method for API
+	api				: "string",	// the API to be called
+	method				: "string",	// the method for API
 
-	'cert.class'			: 'number',	// the certificate class
-	'cert.cn'			: 'string',
-	'cert.o'			: 'string',
-	'cert.ou'			: 'string',
-	'cert.c'			: 'string',
-	'cert.st'			: 'string',
-	'cert.gn'			: 'string',
-	'cert.sn'			: 'string',
-	'cert.title'			: 'string',
+	"cert.class"			: "number",	// the certificate class
+	"cert.cn"			: "string",
+	"cert.o"			: "string",
+	"cert.ou"			: "string",
+	"cert.c"			: "string",
+	"cert.st"			: "string",
+	"cert.gn"			: "string",
+	"cert.sn"			: "string",
+	"cert.title"			: "string",
 
-	'cert.issuer.cn'		: 'string',
-	'cert.issuer.email'		: 'string',
-	'cert.issuer.o'			: 'string',
-	'cert.issuer.ou'		: 'string',
-	'cert.issuer.c'			: 'string',
-	'cert.issuer.st'		: 'string',
+	"cert.issuer.cn"		: "string",
+	"cert.issuer.email"		: "string",
+	"cert.issuer.o"			: "string",
+	"cert.issuer.ou"		: "string",
+	"cert.issuer.c"			: "string",
+	"cert.issuer.st"		: "string",
 
-	groups				: 'string',	// CSV actually
+	groups				: "string",	// CSV actually
 
-	country				: 'string',
-	region				: 'string',
-	timezone			: 'string',
-	city				: 'string',
-	latitude			: 'number',
-	longitude			: 'number',
+	country				: "string",
+	region				: "string",
+	timezone			: "string",
+	city				: "string",
+	latitude			: "number",
+	longitude			: "number",
     }
 };
 
@@ -197,15 +197,15 @@ const evaluator	= aperture.createEvaluator	(apertureOpts);
 /* https */
 
 const trusted_CAs = [
-	fs.readFileSync('ca.iudx.org.in.crt'),
-	fs.readFileSync('/etc/ssl/cert.pem'),
-	fs.readFileSync('CCAIndia2015.cer'),
-	fs.readFileSync('CCAIndia2014.cer'),
+	fs.readFileSync("ca.iudx.org.in.crt"),
+	fs.readFileSync("/etc/ssl/cert.pem"),
+	fs.readFileSync("CCAIndia2015.cer"),
+	fs.readFileSync("CCAIndia2014.cer"),
 ];
 
 const https_options = {
-	key			: fs.readFileSync('key.pem'),
-	cert			: fs.readFileSync('server.pem'),
+	key			: fs.readFileSync("key.pem"),
+	cert			: fs.readFileSync("server.pem"),
 	ca			: trusted_CAs,
 	requestCert		: true,
 	rejectUnauthorized	: true,
@@ -215,7 +215,7 @@ function log(color, msg)
 {
 	const message = new Date() + " | " + msg;
 
-	if (color === 'red') {
+	if (color === "red") {
 		send_telegram(message);
 	}
 
@@ -229,7 +229,7 @@ function send_telegram (message)
 		{
 			if (error)
 			{
-				log ('yellow',
+				log ("yellow",
 					"Telegram failed ! response = " +
 						String(response)	+
 					" body = "			+
@@ -242,17 +242,17 @@ function send_telegram (message)
 
 function END_SUCCESS (res, http_status, msg)
 {
-	res.setHeader('Content-Type', 'application/json');
+	res.setHeader("Content-Type", "application/json");
 	res.status(http_status).end(msg + "\n");
 }
 
 function END_ERROR (res, http_status, msg, exception = null)
 {
 	if (exception)
-		log('red', String(exception).replace(/\n/g," "));
+		log("red", String(exception).replace(/\n/g," "));
 
-	res.setHeader('Content-Type', 'application/json');
-	res.setHeader('Connection', 'close');
+	res.setHeader("Content-Type", "application/json");
+	res.setHeader("Connection", "close");
 
 	res.status(http_status).end('{"error":"' + msg + '"}\n');
 
@@ -262,7 +262,7 @@ function END_ERROR (res, http_status, msg, exception = null)
 
 function is_valid_email (email)
 {
-	if (! email || typeof email !== 'string')
+	if (! email || typeof email !== "string")
 		return false;
 
 	if (email.length < 5 || email.length > 64)
@@ -324,16 +324,16 @@ function is_secure (req, res, cert, validate_email = true)
 				.split(":")[0]	// remove port number
 		);
 
-		if (! origin_domain.toLowerCase().endsWith('.iudx.org.in'))
+		if (! origin_domain.toLowerCase().endsWith(".iudx.org.in"))
 			return "Invalid 'origin' field in the header";
 
-		res.header('X-XSS-Protection', '1; mode=block');
-		res.header('X-Frame-Options', 'deny');
-		res.header('X-Content-Type-Options','nosniff');
-		res.header('Referrer-Policy','no-referrer-when-downgrade');
+		res.header("X-XSS-Protection", "1; mode=block");
+		res.header("X-Frame-Options", "deny");
+		res.header("X-Content-Type-Options","nosniff");
+		res.header("Referrer-Policy","no-referrer-when-downgrade");
 
-		res.header('Access-Control-Allow-Origin', req.headers.origin);
-		res.header('Access-Control-Allow-Methods', 'POST,GET');
+		res.header("Access-Control-Allow-Origin", req.headers.origin);
+		res.header("Access-Control-Allow-Methods", "POST,GET");
 	}
 
 	let cert_err;
@@ -373,7 +373,7 @@ function is_certificate_ok (req, cert, validate_email)
 
 			if (issuer_domain !== issued_to_domain)
 			{
-				log ('red',
+				log ("red",
 					"Invalid certificate: issuer = "+
 						issuer_domain		+
 					" and issued to = "		+
@@ -395,7 +395,7 @@ function is_certificate_ok (req, cert, validate_email)
 function has_iudx_certificate_been_revoked (socket, cert, CRL)
 {
 	const cert_fingerprint	= cert.fingerprint
-					.replace(/:/g,'')
+					.replace(/:/g,"")
 					.toLowerCase();
 
 	const cert_serial	= cert.serialNumber
@@ -423,7 +423,7 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 	// If it was issued by a sub-CA then check the sub-CA's cert too
 	// Assuming depth is <= 3. ca@iudx.org.in -> sub-CA -> user
 
-	if (cert_issuer !== 'ca@iudx.org.in')
+	if (cert_issuer !== "ca@iudx.org.in")
 	{
 		const ISSUERS = [];
 
@@ -457,7 +457,7 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 			{
 				const issuer_fingerprint = issuer
 								.fingerprint
-								.replace(/:/g,'')
+								.replace(/:/g,"")
 								.toLowerCase();
 
 				const issuer_serial = issuer
@@ -466,14 +466,14 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 
 				for (const c of CRL)
 				{
-					if (c.issuer === 'ca@iudx.org.in')
+					if (c.issuer === "ca@iudx.org.in")
 					{
 						const crl_serial = c.serial
 									.toLowerCase()
-									.replace(/^0+/,'');
+									.replace(/^0+/,"");
 
 						const crl_fingerprint = c.fingerprint
-									.replace(/:/g,'')
+									.replace(/:/g,"")
 									.toLowerCase();
 
 						if (crl_serial === issuer_serial && crl_fingerprint == issuer_fingerprint)
@@ -500,7 +500,7 @@ function has_iudx_certificate_been_revoked (socket, cert, CRL)
 
 function is_string_safe (str, exceptions = "")
 {
-	if (! str || typeof str !== 'string')
+	if (! str || typeof str !== "string")
 		return false;
 
 	if (str.length === 0)
@@ -536,8 +536,8 @@ function is_iudx_certificate(cert)
 	const issuer_email = cert.issuer.emailAddress.toLowerCase();
 
 	return (
-		(issuer_email === 'ca@iudx.org.in') ||
-		issuer_email.startsWith('iudx.sub.ca@')
+		(issuer_email === "ca@iudx.org.in") ||
+		issuer_email.startsWith("iudx.sub.ca@")
 	);
 }
 
@@ -550,7 +550,7 @@ function body_to_json (body)
 
 	try
 	{
-		string_body = Buffer.from(body,'utf-8').toString('ascii');
+		string_body = Buffer.from(body,"utf-8").toString("ascii");
 	}
 	catch (x)
 	{
@@ -596,7 +596,7 @@ function security (req, res, next)
 
 	if (is_iudx_certificate(cert))
 	{
-		const cert_class = cert.subject['id-qt-unotice'];
+		const cert_class = cert.subject["id-qt-unotice"];
 
 		let integer_cert_class = 0;
 
@@ -620,7 +620,7 @@ function security (req, res, next)
 			);
 		}
 
-		if (api.endsWith('/introspect') && integer_cert_class !== 1)
+		if (api.endsWith("/introspect") && integer_cert_class !== 1)
 		{
 			return END_ERROR (
 				res, 403,
@@ -681,7 +681,7 @@ function security (req, res, next)
 				if (err)
 					return END_ERROR(res, 403, "Your certificate issuer did not respond to an OCSP request");
 
-				if (ocsp_response.type !== 'good')
+				if (ocsp_response.type !== "good")
 					return END_ERROR(res, 403, "Your certificate has been revoked");
 
 				let error;
@@ -711,7 +711,7 @@ function security (req, res, next)
 	}
 }
 
-app.all('/auth/v1/token', function (req, res) {
+app.all("/auth/v1/token", function (req, res) {
 
 	const cert			= res.locals.cert;
 	const cert_class		= res.locals.cert_class;
@@ -739,10 +739,10 @@ app.all('/auth/v1/token', function (req, res) {
 	}
 
 	const token_rows = pg.querySync (
-		'SELECT COUNT(*)/60.0 '					+
-		'AS rate '						+
-		'FROM token '						+
-		'WHERE id=$1::text '					+
+		"SELECT COUNT(*)/60.0 "					+
+		"AS rate "						+
+		"FROM token "						+
+		"WHERE id=$1::text "					+
 		"AND issued_at >= (NOW() - interval '60 seconds')",
 			[consumer_id],
 	);
@@ -752,7 +752,7 @@ app.all('/auth/v1/token', function (req, res) {
 
 	if (tokens_rate_per_second > 1) // tokens per second
 	{
-		log ('red',
+		log ("red",
 			"Too many requests from user : " + consumer_id +
 			", from ip : " + String (req.connection.remoteAddress)
 		);
@@ -767,28 +767,28 @@ app.all('/auth/v1/token', function (req, res) {
 	const context = {
 
 		principal	: consumer_id,
-		action		: 'access',
+		action		: "access",
 
 		conditions	: {
 			ip			: ip,
 			time			: new Date(),
 
-			'cert.class'		: cert_class,
-			'cert.cn'		: cert.subject.CN 	|| "",
-			'cert.o'		: cert.subject.O	|| "",
-			'cert.ou'		: cert.subject.OU	|| "",
-			'cert.c'		: cert.subject.C	|| "",
-			'cert.st'		: cert.subject.ST	|| "",
-			'cert.gn'		: cert.subject.GN	|| "",
-			'cert.sn'		: cert.subject.SN	|| "",
-			'cert.title'		: cert.subject.title	|| "",
+			"cert.class"		: cert_class,
+			"cert.cn"		: cert.subject.CN 	|| "",
+			"cert.o"		: cert.subject.O	|| "",
+			"cert.ou"		: cert.subject.OU	|| "",
+			"cert.c"		: cert.subject.C	|| "",
+			"cert.st"		: cert.subject.ST	|| "",
+			"cert.gn"		: cert.subject.GN	|| "",
+			"cert.sn"		: cert.subject.SN	|| "",
+			"cert.title"		: cert.subject.title	|| "",
 
-			'cert.issuer.cn'	: issuer.CN		|| "",
-			'cert.issuer.email'	: issuer.emailAddress	|| "",
-			'cert.issuer.o'		: issuer.O		|| "",
-			'cert.issuer.ou'	: issuer.OU		|| "",
-			'cert.issuer.c'		: issuer.C		|| "",
-			'cert.issuer.st'	: issuer.ST		|| "",
+			"cert.issuer.cn"	: issuer.CN		|| "",
+			"cert.issuer.email"	: issuer.emailAddress	|| "",
+			"cert.issuer.o"		: issuer.O		|| "",
+			"cert.issuer.ou"	: issuer.OU		|| "",
+			"cert.issuer.c"		: issuer.C		|| "",
+			"cert.issuer.st"	: issuer.ST		|| "",
 
 			country		 	: geo.country		|| "",
 			region			: geo.region		|| "",
@@ -802,22 +802,22 @@ app.all('/auth/v1/token', function (req, res) {
 	let requested_token_time;	 	// as specified by the consumer
 	let token_time = MAX_TOKEN_TIME;	// to be sent along with token
 
-	if (body['token-time'])
+	if (body["token-time"])
 	{
-		requested_token_time = parseInt(body['token-time'],10);
+		requested_token_time = parseInt(body["token-time"],10);
 
 		if (isNaN(requested_token_time) || requested_token_time < 1 || requested_token_time > MAX_TOKEN_TIME)
 			return END_ERROR (res, 400, "'token-time' field should be > 0 and < " + MAX_TOKEN_TIME);
 	}
 
-	const existing_token	= body['existing-token'];
+	const existing_token	= body["existing-token"];
 	const providers		= {};
 
 	let num_rules_passed	= 0;
 
 	for (const row of request_array)
 	{
-		let resource = row['resource-id'];
+		let resource = row["resource-id"];
 
 		if (! is_string_safe(resource,"* _ ()&")) // allow some chars
 		{
@@ -828,11 +828,11 @@ app.all('/auth/v1/token', function (req, res) {
 			);
 		}
 
-		if (typeof row.method === 'string')
+		if (typeof row.method === "string")
 			row.methods = [row.method];
 
 		if (! row.methods)
-			row.methods = ['*'];
+			row.methods = ["*"];
 
 		if ( ! (row.methods instanceof Array))
 		{
@@ -842,7 +842,7 @@ app.all('/auth/v1/token', function (req, res) {
 			);
 		}
 
-		if (row.api && typeof row.api === 'string')
+		if (row.api && typeof row.api === "string")
 			row.apis = [row.api];
 
 		if (! row.apis)
@@ -858,7 +858,7 @@ app.all('/auth/v1/token', function (req, res) {
 
 		if (row.provider) // the resource-id is not in the catalog ?
 		{
-			if (typeof row.provider !== 'string')
+			if (typeof row.provider !== "string")
 			{
 				return END_ERROR (res, 400,
 					"Invalid 'provider': " + row.provider
@@ -877,9 +877,9 @@ app.all('/auth/v1/token', function (req, res) {
 
 			const provider_email_domain	= row.provider.split("@")[1];
 
-			const sha256_of_provider_email_id	= crypto.createHash('sha256')
+			const sha256_of_provider_email_id	= crypto.createHash("sha256")
 								.update(row.provider)
-								.digest('hex');
+								.digest("hex");
 
 			resource =	provider_email_domain 		+
 						"/"			+
@@ -907,7 +907,7 @@ app.all('/auth/v1/token', function (req, res) {
 
 		const split 			= resource.split("/");
 
-		const provider_id_in_db		= split[1] + '@' + split[0];
+		const provider_id_in_db		= split[1] + "@" + split[0];
 		const resource_server		= split[2];
 		const resource_name		= split.slice(3).join("/");
 
@@ -920,8 +920,8 @@ app.all('/auth/v1/token', function (req, res) {
 		sha256_of_resource_server_token	[resource_server]	= true;
 
 		const policy_rows = pg.querySync (
-			'SELECT policy,policy_in_json FROM policy ' +
-			'WHERE id = $1::text',
+			"SELECT policy,policy_in_json FROM policy " +
+			"WHERE id = $1::text",
 				[provider_id_in_db]
 		);
 
@@ -934,9 +934,9 @@ app.all('/auth/v1/token', function (req, res) {
 		}
 
 		const policy_in_text = Buffer.from (
-						policy_rows[0].policy, 'base64'
+						policy_rows[0].policy, "base64"
 					)
-					.toString('ascii')
+					.toString("ascii")
 					.toLowerCase();
 
 		const policy_in_json	= policy_rows[0].policy_in_json;
@@ -948,11 +948,11 @@ app.all('/auth/v1/token', function (req, res) {
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
 			const group_rows = pg.querySync(
-				'SELECT DISTINCT group_name '	+
-				'FROM groups '			+
-				'WHERE id = $1::text '		+
-				'AND consumer = $2::text '	+
-				'AND valid_till > NOW()',
+				"SELECT DISTINCT group_name "	+
+				"FROM groups "			+
+				"WHERE id = $1::text "		+
+				"AND consumer = $2::text "	+
+				"AND valid_till > NOW()",
 				[
 					provider_id_in_db,
 					consumer_id
@@ -970,9 +970,9 @@ app.all('/auth/v1/token', function (req, res) {
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
 			const tokens_per_day_rows = pg.querySync (
-				'SELECT COUNT(*) FROM token '		+
-				'WHERE id=$1::text '			+
-				'AND resource_ids @> $2 '		+
+				"SELECT COUNT(*) FROM token "		+
+				"WHERE id=$1::text "			+
+				"AND resource_ids @> $2 "		+
 				"AND issued_at >= DATE_TRUNC('day',NOW())",
 				[
 					consumer_id,
@@ -997,7 +997,7 @@ app.all('/auth/v1/token', function (req, res) {
 
 		for (const api of row.apis)
 		{
-			if (typeof api !== 'string')
+			if (typeof api !== "string")
 			{
 				return END_ERROR (
 					res, 400, "Invalid 'api' :" + api
@@ -1008,7 +1008,7 @@ app.all('/auth/v1/token', function (req, res) {
 
 			for (const method of row.methods)
 			{
-				if (typeof method !== 'string')
+				if (typeof method !== "string")
 				{
 					return END_ERROR (res, 400,
 						"Invalid 'method' :" + method
@@ -1093,17 +1093,17 @@ app.all('/auth/v1/token', function (req, res) {
 				return END_ERROR (res, 403, "Invalid existing-token");
 			}
 
-			const sha256_of_existing_token	= crypto.createHash('sha256')
+			const sha256_of_existing_token	= crypto.createHash("sha256")
 								.update(random_part_of_token)
-								.digest('hex');
+								.digest("hex");
 
 			existing_row = pg.querySync (
 				"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) AS token_time,request,resource_ids,server_token "	+
-					'FROM token WHERE '					+
-					'id = $1::text AND '					+
-					'token = $2::text AND '					+
-					'revoked = false AND '					+
-					'expiry > NOW()',
+					"FROM token WHERE "					+
+					"id = $1::text AND "					+
+					"token = $2::text AND "					+
+					"revoked = false AND "					+
+					"expiry > NOW()",
 				[
 					consumer_id,
 					sha256_of_existing_token,
@@ -1129,7 +1129,7 @@ app.all('/auth/v1/token', function (req, res) {
 		}
 		else
 		{
-			token = crypto.randomBytes(TOKEN_LENGTH).toString('hex');
+			token = crypto.randomBytes(TOKEN_LENGTH).toString("hex");
 		}
 
 		const response = {
@@ -1152,20 +1152,20 @@ app.all('/auth/v1/token', function (req, res) {
 			{
 				resource_server_token[key] = crypto
 								.randomBytes(TOKEN_LENGTH)
-								.toString('hex');
+								.toString("hex");
 
 				sha256_of_resource_server_token[key] = crypto
-									.createHash('sha256')
+									.createHash("sha256")
 									.update(resource_server_token[key])
-									.digest('hex');
+									.digest("hex");
 			}
 
 			response["server-token"] = resource_server_token;
 		}
 
-		const sha256_of_token	= crypto.createHash('sha256')
+		const sha256_of_token	= crypto.createHash("sha256")
 						.update(token)
-						.digest('hex');
+						.digest("hex");
 
 		let query;
 		let parameters;
@@ -1179,15 +1179,15 @@ app.all('/auth/v1/token', function (req, res) {
 
 			const new_resource_ids_dict = Object.assign({},existing_row[0].resource_ids, resource_id_dict);
 
-			query = 'UPDATE token SET ' 							+
-					'request = $1,'							+
-					'resource_ids = $2,'						+
-					'server_token = $3,'						+
+			query = "UPDATE token SET " 							+
+					"request = $1,"							+
+					"resource_ids = $2,"						+
+					"server_token = $3,"						+
 					"expiry = NOW() + interval '" + token_time + " seconds' "	+
-					'WHERE '							+
-					'id = $4::text AND '						+
-					'token = $5::text AND '						+
-					'expiry > NOW()';
+					"WHERE "							+
+					"id = $4::text AND "						+
+					"token = $5::text AND "						+
+					"expiry > NOW()";
 
 			parameters = [
 					JSON.stringify(new_request),
@@ -1202,21 +1202,21 @@ app.all('/auth/v1/token', function (req, res) {
 		{
 			const request = response_array;
 
-			query = 'INSERT INTO token VALUES(' 					+
-					'$1::text,'						+
-					'$2::text,'						+
+			query = "INSERT INTO token VALUES(" 					+
+					"$1::text,"						+
+					"$2::text,"						+
 					"NOW() + interval '" + token_time + " seconds',"	+
-					'$3,'							+
-					'$4::text,'						+
-					'$5::text,'						+
-					'NOW(),'						+
-					'$6,'							+
-					'$7,'							+
-					'$8,'							+
-					'$9,'							+
-					'$10,'							+
-					'$11'							+
-				')';
+					"$3,"							+
+					"$4::text,"						+
+					"$5::text,"						+
+					"NOW(),"						+
+					"$6,"							+
+					"$7,"							+
+					"$8,"							+
+					"$9,"							+
+					"$10,"							+
+					"$11"							+
+				")";
 
 			parameters = [
 					consumer_id,
@@ -1225,8 +1225,8 @@ app.all('/auth/v1/token', function (req, res) {
 					cert.serialNumber,
 					cert.fingerprint,
 					JSON.stringify(resource_id_dict),
-					'false',	// not yet introspected
-					'false',	// not yet revoked
+					"false",	// not yet introspected
+					"false",	// not yet revoked
 					cert_class,
 					JSON.stringify(sha256_of_resource_server_token),
 					JSON.stringify(providers)
@@ -1251,7 +1251,7 @@ app.all('/auth/v1/token', function (req, res) {
 	}
 });
 
-app.all('/auth/v1/token/introspect', function (req, res) {
+app.all("/auth/v1/token/introspect", function (req, res) {
 
 	const cert	= res.locals.cert;
 	const body	= res.locals.body;
@@ -1267,7 +1267,7 @@ app.all('/auth/v1/token/introspect', function (req, res) {
 	if ((token.match(/\//g) || []).length !== 2)
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
-	const server_token = body['server-token'];
+	const server_token = body["server-token"];
 
 	if (server_token)
 	{
@@ -1286,9 +1286,9 @@ app.all('/auth/v1/token/introspect', function (req, res) {
 		return END_ERROR (res, 400, "Invalid token");
 	}
 
-	const sha256_of_token	= crypto.createHash('sha256')
+	const sha256_of_token	= crypto.createHash("sha256")
 					.update(random_part_of_token)
-					.digest('hex');
+					.digest("hex");
 
 	const ip 		= req.connection.remoteAddress;
 	let ip_matched		= false;
@@ -1322,12 +1322,12 @@ app.all('/auth/v1/token/introspect', function (req, res) {
 		}
 
 		pool.query (
-				'SELECT expiry,request,cert_class,'	+
-				'server_token,providers '		+
-					'FROM token '			+
-					'WHERE token = $1::text '	+
-					'AND revoked = false '		+
-					'AND expiry > NOW()',
+				"SELECT expiry,request,cert_class,"	+
+				"server_token,providers "		+
+					"FROM token "			+
+					"WHERE token = $1::text "	+
+					"AND revoked = false "		+
+					"AND expiry > NOW()",
 						[sha256_of_token],
 		(error, results) =>
 		{
@@ -1350,9 +1350,9 @@ app.all('/auth/v1/token/introspect', function (req, res) {
 				if (! expected_server_token) // token doesn't belong to this server
 					return END_ERROR (res, 403, "Invalid token");
 
-				const sha256_of_server_token = crypto.createHash('sha256')
+				const sha256_of_server_token = crypto.createHash("sha256")
 								.update(server_token)
-								.digest('hex');
+								.digest("hex");
 
 				if (sha256_of_server_token !== expected_server_token)
 					return END_ERROR (res, 403, "Invalid 'server-token' field in the body");
@@ -1387,19 +1387,19 @@ app.all('/auth/v1/token/introspect', function (req, res) {
 				return END_ERROR (res, 403, "Invalid token");
 
 			const output = {
-				'consumer'			: email_id_in_token,
-				'expiry'			: results.rows[0].expiry,
-				'request'			: request_for_resource_server,
-				'consumer-certificate-class'	: results.rows[0].cert_class,
+				"consumer"			: email_id_in_token,
+				"expiry"			: results.rows[0].expiry,
+				"request"			: request_for_resource_server,
+				"consumer-certificate-class"	: results.rows[0].cert_class,
 			};
 
 			// TODO introspected should be a map introspected[resource-server] = true/false
 
 			pool.query (
 				"UPDATE token SET introspected = true "		+
-				'WHERE token = $1::text '			+
-				'AND revoked = false '				+
-				'AND expiry > NOW()',
+				"WHERE token = $1::text "			+
+				"AND revoked = false "				+
+				"AND expiry > NOW()",
 					[sha256_of_token],
 				(error_1, results_1) =>
 				{
@@ -1413,13 +1413,13 @@ app.all('/auth/v1/token/introspect', function (req, res) {
 	});
 });
 
-app.all('/auth/v1/token/revoke', function (req, res) {
+app.all("/auth/v1/token/revoke", function (req, res) {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
 
 	const tokens		= body.tokens;
-	const token_hashes	= body['token-hashes'];
+	const token_hashes	= body["token-hashes"];
 
 	if (tokens && token_hashes)
 		return END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes', not both");
@@ -1458,15 +1458,15 @@ app.all('/auth/v1/token/revoke', function (req, res) {
 				);
 			}
 
-			const sha256_of_token = crypto.createHash('sha256')
+			const sha256_of_token = crypto.createHash("sha256")
 						.update(random_part_of_token)
-						.digest('hex');
+						.digest("hex");
 
 			const select_rows = pg.querySync (
-				'SELECT 1 from token '	+
-				'WHERE id = $1::text ' 	+
-				'AND token = $2::text '	+
-				'AND expiry > NOW()',
+				"SELECT 1 from token "	+
+				"WHERE id = $1::text " 	+
+				"AND token = $2::text "	+
+				"AND expiry > NOW()",
 					[id, sha256_of_token]
 			);
 
@@ -1474,9 +1474,9 @@ app.all('/auth/v1/token/revoke', function (req, res) {
 				return END_ERROR (res, 400, "Invalid token: " + token + ". " + String(num_tokens_revoked) + " tokens revoked");
 
 			pg.querySync (
-				'UPDATE token SET revoked = true WHERE id = $1::text ' 	+
-				'AND token = $2::text '					+
-				'AND expiry > NOW()',
+				"UPDATE token SET revoked = true WHERE id = $1::text " 	+
+				"AND token = $2::text "					+
+				"AND expiry > NOW()",
 					[id, sha256_of_token]
 			);
 
@@ -1490,9 +1490,9 @@ app.all('/auth/v1/token/revoke', function (req, res) {
 		if (! (token_hashes instanceof Array))
 			return END_ERROR (res, 400, "Invalid 'token-hashes' field in body");
 
-		const sha256_id 	= crypto.createHash('sha256')
+		const sha256_id 	= crypto.createHash("sha256")
 						.update(id)
-						.digest('hex');
+						.digest("hex");
 
 		const email_domain	= id.split("@")[1];
 
@@ -1506,10 +1506,10 @@ app.all('/auth/v1/token/revoke', function (req, res) {
 				return END_ERROR (res, 400, "Invalid token-hash: " + token_hash + ". " + String(num_tokens_revoked) + " tokens revoked.");
 
 			const select_rows = pg.querySync (
-				'SELECT 1 from token '							+
-				'WHERE token = $1::text '						+
+				"SELECT 1 from token "							+
+				"WHERE token = $1::text "						+
 				"AND providers->'" + provider_id_in_db + "' = 'true' "			+
-				'AND expiry > NOW()',
+				"AND expiry > NOW()",
 					[token_hash]
 			);
 
@@ -1517,11 +1517,11 @@ app.all('/auth/v1/token/revoke', function (req, res) {
 				return END_ERROR (res, 400, "Invalid token-hash: " + token_hash + ". " + String(num_tokens_revoked) + " tokens revoked");
 
 			pg.querySync (
-				'UPDATE token '								+
+				"UPDATE token "								+
 				"SET providers = providers || '{\"" + provider_id_in_db + "\":false}'"	+
-				'WHERE token = $1::text '						+
+				"WHERE token = $1::text "						+
 				"AND providers->'" + provider_id_in_db + "' = 'true' "			+
-				'AND expiry > NOW()',
+				"AND expiry > NOW()",
 					[token_hash]
 			);
 
@@ -1532,7 +1532,7 @@ app.all('/auth/v1/token/revoke', function (req, res) {
 	return END_SUCCESS (res, 200, SUCCESS);
 });
 
-app.all('/auth/v1/token/revoke-all', function (req, res) {
+app.all("/auth/v1/token/revoke-all", function (req, res) {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
@@ -1558,12 +1558,12 @@ app.all('/auth/v1/token/revoke-all', function (req, res) {
 		return END_ERROR (res, 400, "invalid 'fingerprint' field");
 
 	pool.query (
-		'UPDATE token SET revoked = true '	+
-		'WHERE id = $1::text '			+
-		'AND cert_serial = $2::text '		+
-		'AND cert_fingerprint = $3::text '	+
-		'AND expiry > NOW() '			+
-		'AND revoked = false',
+		"UPDATE token SET revoked = true "	+
+		"WHERE id = $1::text "			+
+		"AND cert_serial = $2::text "		+
+		"AND cert_fingerprint = $3::text "	+
+		"AND expiry > NOW() "			+
+		"AND revoked = false",
 
 		[id, fingerprint, serial],
 
@@ -1575,7 +1575,7 @@ app.all('/auth/v1/token/revoke-all', function (req, res) {
 			{
 				const out = {
 					success			: true,
-					'num-tokens-revoked'	: results.rowCount
+					"num-tokens-revoked"	: results.rowCount
 				};
 
 				return END_SUCCESS (res,200,JSON.stringify(out));
@@ -1584,7 +1584,7 @@ app.all('/auth/v1/token/revoke-all', function (req, res) {
 	);
 });
 
-app.all('/auth/v1/acl/set', function (req, res) {
+app.all("/auth/v1/acl/set", function (req, res) {
 
 	// TODO: add 3 more boolean columns in DB,
 	// rule_has_body, rule_has_group, rule_has_tokens_per_second
@@ -1597,18 +1597,18 @@ app.all('/auth/v1/acl/set', function (req, res) {
 
 	const policy = body.policy;
 
-	if (typeof policy !== 'string')
+	if (typeof policy !== "string")
 		return END_ERROR (res, 400, "Invalid policy");
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash('sha256')
+	const sha256_id 	= crypto.createHash("sha256")
 					.update(provider_id)
-					.digest('hex');
+					.digest("hex");
 
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
-	const base64policy	= Buffer.from(policy).toString('base64');
+	const base64policy	= Buffer.from(policy).toString("base64");
 	const rules		= policy.split(";");
 
 	let policy_in_json;
@@ -1623,7 +1623,7 @@ app.all('/auth/v1/acl/set', function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
 
-	pool.query('SELECT 1 FROM policy WHERE id = $1::text',
+	pool.query("SELECT 1 FROM policy WHERE id = $1::text",
 		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -1665,7 +1665,7 @@ app.all('/auth/v1/acl/set', function (req, res) {
 	});
 });
 
-app.all('/auth/v1/acl/append', function (req, res) {
+app.all("/auth/v1/acl/append", function (req, res) {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -1675,14 +1675,14 @@ app.all('/auth/v1/acl/append', function (req, res) {
 
 	const policy = body.policy;
 
-	if (typeof policy !== 'string')
+	if (typeof policy !== "string")
 		return END_ERROR (res, 400, "Invalid policy");
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash('sha256')
+	const sha256_id 	= crypto.createHash("sha256")
 					.update(provider_id)
-					.digest('hex');
+					.digest("hex");
 
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
@@ -1699,7 +1699,7 @@ app.all('/auth/v1/acl/append', function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
 
-	pool.query('SELECT policy FROM policy WHERE id = $1::text',
+	pool.query("SELECT policy FROM policy WHERE id = $1::text",
 		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -1712,13 +1712,13 @@ app.all('/auth/v1/acl/append', function (req, res) {
 		{
 			const old_policy	= Buffer.from (
 							results.rows[0].policy,
-							'base64'
-						).toString('ascii');
+							"base64"
+						).toString("ascii");
 
 			const new_policy	= old_policy + ";" + policy;
 
 			const base64policy	= Buffer.from(new_policy)
-							.toString('base64');
+							.toString("base64");
 
 			const new_rules = new_policy.split(";");
 
@@ -1750,7 +1750,7 @@ app.all('/auth/v1/acl/append', function (req, res) {
 		{
 			const base64policy = Buffer
 						.from(policy)
-						.toString('base64');
+						.toString("base64");
 
 			query = "INSERT INTO policy VALUES($1::text,$2::text,$3)";
 
@@ -1771,19 +1771,19 @@ app.all('/auth/v1/acl/append', function (req, res) {
 	});
 });
 
-app.all('/auth/v1/acl', function (req, res) {
+app.all("/auth/v1/acl", function (req, res) {
 
 	const provider_id	= res.locals.email;
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash('sha256')
+	const sha256_id 	= crypto.createHash("sha256")
 					.update(provider_id)
-					.digest('hex');
+					.digest("hex");
 
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
-	pool.query('SELECT policy FROM policy WHERE id = $1::text',
+	pool.query("SELECT policy FROM policy WHERE id = $1::text",
 			[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -1793,15 +1793,15 @@ app.all('/auth/v1/acl', function (req, res) {
 			return END_ERROR (res, 400, "No policies set yet!");
 
 		const out = {
-			'policy' : Buffer.from(results.rows[0].policy,'base64')
-					.toString('ascii')
+			"policy" : Buffer.from(results.rows[0].policy,"base64")
+					.toString("ascii")
 		};
 
 		return END_SUCCESS (res, 200, JSON.stringify(out));
 	});
 });
 
-app.all('/auth/v1/audit/tokens', function (req, res) {
+app.all("/auth/v1/audit/tokens", function (req, res) {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
@@ -1820,10 +1820,10 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 	const as_provider = [];
 
 	pool.query (
-		'SELECT issued_at,expiry,request,cert_serial,'		+
-		'cert_fingerprint,introspected,revoked '		+
-		'FROM token '						+
-		'WHERE id = $1::text '					+
+		"SELECT issued_at,expiry,request,cert_serial,"		+
+		"cert_fingerprint,introspected,revoked "		+
+		"FROM token "						+
+		"WHERE id = $1::text "					+
 		"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
 			[id], (error, results) =>
@@ -1834,19 +1834,19 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 		for (const row of results.rows)
 		{
 			as_consumer.push ({
-				'token-issued-at'		: row.issued_at,
-				'introspected'			: row.introspected	=== 't',
-				'revoked'			: row.revoked		=== 't',
-				'expiry'			: row.expiry,
-				'certificate-serial-number'	: row.cert_serial,
-				'certificate-fingerprint'	: row.cert_fingerprint,
-				'request'			: row.request,
+				"token-issued-at"		: row.issued_at,
+				"introspected"			: row.introspected	=== 't',
+				"revoked"			: row.revoked		=== 't',
+				"expiry"			: row.expiry,
+				"certificate-serial-number"	: row.cert_serial,
+				"certificate-fingerprint"	: row.cert_fingerprint,
+				"request"			: row.request,
 			});
 		}
 
-		const sha256_id 	= crypto.createHash('sha256')
+		const sha256_id 	= crypto.createHash("sha256")
 						.update(id)
-						.digest('hex');
+						.digest("hex");
 
 		const email_domain	= id.split("@")[1];
 		const provider_id_in_db	= sha256_id + "@" + email_domain;
@@ -1855,7 +1855,7 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 
 		"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,revoked,"	+
 		"introspected,providers->'" + provider_id_in_db + "' AS has_provider_revoked "		+
-		'FROM token '										+
+		"FROM token "										+
 		"WHERE providers->'" + provider_id_in_db + "' IS NOT NULL "				+
 		"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
@@ -1871,21 +1871,21 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 				const introspected	= (row.introspected === 't');
 
 				as_provider.push ({
-					'consumer'			: row.id,
-					'token-hash'			: row.token,
-					'token-issued-at'		: row.issued_at,
-					'introspected'			: introspected,
-					'revoked'			: revoked,
-					'expiry'			: row.expiry,
-					'certificate-serial-number'	: row.cert_serial,
-					'certificate-fingerprint'	: row.cert_fingerprint,
-					'request'			: row.request,
+					"consumer"			: row.id,
+					"token-hash"			: row.token,
+					"token-issued-at"		: row.issued_at,
+					"introspected"			: introspected,
+					"revoked"			: revoked,
+					"expiry"			: row.expiry,
+					"certificate-serial-number"	: row.cert_serial,
+					"certificate-fingerprint"	: row.cert_fingerprint,
+					"request"			: row.request,
 				});
 			}
 
 			const output = {
-				'as-consumer'		: as_consumer,
-				'as-resource-owner'	: as_provider,
+				"as-consumer"		: as_consumer,
+				"as-resource-owner"	: as_provider,
 			};
 
 			return END_SUCCESS (
@@ -1895,7 +1895,7 @@ app.all('/auth/v1/audit/tokens', function (req, res) {
 	});
 });
 
-app.all('/auth/v1/group/add', function (req, res) {
+app.all("/auth/v1/group/add", function (req, res) {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -1919,7 +1919,7 @@ app.all('/auth/v1/group/add', function (req, res) {
 	if (! body["valid-till"])
 		return END_ERROR (res,400,"No 'valid-till' found in the body");
 
-	const valid_till = parseInt(body['valid-till'],10);
+	const valid_till = parseInt(body["valid-till"],10);
 
 	// 1 year max
 	if (isNaN(valid_till) || valid_till < 0 || valid_till > 8760) {
@@ -1928,9 +1928,9 @@ app.all('/auth/v1/group/add', function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash('sha256')
+	const sha256_id 	= crypto.createHash("sha256")
 					.update(provider_id)
-					.digest('hex');
+					.digest("hex");
 
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
@@ -1948,7 +1948,7 @@ app.all('/auth/v1/group/add', function (req, res) {
 	});
 });
 
-app.all('/auth/v1/group/list', function (req, res) {
+app.all("/auth/v1/group/list", function (req, res) {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -1964,9 +1964,9 @@ app.all('/auth/v1/group/list', function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash('sha256')
+	const sha256_id 	= crypto.createHash("sha256")
 					.update(provider_id)
-					.digest('hex');
+					.digest("hex");
 
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
@@ -2030,7 +2030,7 @@ app.all('/auth/v1/group/list', function (req, res) {
 	}
 });
 
-app.all('/auth/v1/group/delete', function (req, res) {
+app.all("/auth/v1/group/delete", function (req, res) {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2056,9 +2056,9 @@ app.all('/auth/v1/group/delete', function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash('sha256')
+	const sha256_id 	= crypto.createHash("sha256")
 					.update(provider_id)
-					.digest('hex');
+					.digest("hex");
 
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
@@ -2086,7 +2086,7 @@ app.all('/auth/v1/group/delete', function (req, res) {
 		{
 			const out = {
 				success			: true,
-				'num-consumers-deleted'	: results.rowCount
+				"num-consumers-deleted"	: results.rowCount
 			};
 
 			return END_SUCCESS (res, 200, JSON.stringify(out));
@@ -2101,8 +2101,8 @@ app.all("/auth/v1/[^.]*/help", function (req, res) {
 
 	if (api)
 	{
-		res.setHeader('content-type', 'text/plain');
-		res.sendFile(__dirname + '/public/help/' + api + ".txt");
+		res.setHeader("content-type", "text/plain");
+		res.sendFile(__dirname + "/public/help/" + api + ".txt");
 	}
 	else
 	{
@@ -2114,7 +2114,7 @@ app.all("/auth/v1/[^.]*/help", function (req, res) {
 	}
 });
 
-app.all('/*', function (req, res) {
+app.all("/*", function (req, res) {
 
 	const pathname = url.parse(req.url).pathname;
 	console.log("=>>> API not found :",pathname);
@@ -2126,7 +2126,7 @@ app.all('/*', function (req, res) {
 	);
 });
 
-app.on('error', function(e) {
+app.on("error", function(e) {
 	console.error(e);
 });
 
@@ -2144,9 +2144,9 @@ if (! is_openbsd)
 
 	dns.lookup("google.com", {all:true}, (error, address) => {
 		if (error)
-			log('red',"DNS to google.com failed ");
+			log("red","DNS to google.com failed ");
 		else
-			log('green',"google.com = " + JSON.stringify(address));
+			log("green","google.com = " + JSON.stringify(address));
 	});
 
 	// ======================== END preload code for chroot   =============
@@ -2163,15 +2163,15 @@ function drop_privileges()
 	{
 		if (EUID === 0)
 		{
-			process.setgid('nogroup');
-			process.setuid('nobody');
+			process.setgid("nogroup");
+			process.setuid("nobody");
 		}
 
-		unveil('/usr/lib',			'r' );
-		unveil('/usr/libexec/ld.so',		'r' );
-		unveil(__dirname + '/node_modules',	'r' );
-		unveil(__dirname + '/node-aperture',	'r' );
-		unveil(__dirname + '/public',		'r' );
+		unveil("/usr/lib",			"r" );
+		unveil("/usr/libexec/ld.so",		"r" );
+		unveil(__dirname + "/node_modules",	"r" );
+		unveil(__dirname + "/node-aperture",	"r" );
+		unveil(__dirname + "/public",		"r" );
 
 		unveil();
 	}
@@ -2179,11 +2179,11 @@ function drop_privileges()
 	{
 		if (EUID === 0)
 		{
-			chroot('/var/iudx-chroot','nobody');
-			process.chdir ('/');
+			chroot("/var/iudx-chroot","nobody");
+			process.chdir ("/");
 
-			process.setgid('nogroup');
-			process.setuid('nobody');
+			process.setgid("nogroup");
+			process.setuid("nobody");
 		}
 	}
 
@@ -2195,9 +2195,9 @@ if (cluster.isMaster)
 {
 	if (is_openbsd)
 	{
-		unveil('/usr/local/bin/node',	'x');
-		unveil('/usr/lib',		'r');
-		unveil('/usr/libexec/ld.so',	'r');
+		unveil("/usr/local/bin/node",	"x");
+		unveil("/usr/lib",		"r");
+		unveil("/usr/libexec/ld.so",	"r");
 
 		unveil();
 
@@ -2207,27 +2207,27 @@ if (cluster.isMaster)
 		);
 	}
 
-	log('yellow',`Master ${process.pid} started`);
+	log("yellow",`Master ${process.pid} started`);
 
 	for (let i = 0; i < NUM_CPUS; i++) {
 		cluster.fork();
 	}
 
-	cluster.on('exit', (worker, code, signal) => {
+	cluster.on("exit", (worker, code, signal) => {
 
-		log('red',`Worker ${worker.process.pid} died. Restarting it.`);
-		log('yellow',`code = ${code}; signal = ${signal}.`);
+		log("red",`Worker ${worker.process.pid} died. Restarting it.`);
+		log("yellow",`code = ${code}; signal = ${signal}.`);
 
 		cluster.fork();
 	});
 }
 else
 {
-	https.createServer (https_options,app).listen(443,'0.0.0.0');
+	https.createServer (https_options,app).listen(443,"0.0.0.0");
 
 	drop_privileges();
 
-	log('green',`Worker ${process.pid} started`);
+	log("green",`Worker ${process.pid} started`);
 }
 
 //////////////////////////////////////////////////////////////
