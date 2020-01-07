@@ -274,9 +274,9 @@ function is_valid_email (email)
 	for (const chr of email)
 	{
 		if (
-			(chr >= 'a' && chr <= 'z') ||
-			(chr >= 'A' && chr <= 'Z') ||
-			(chr >= '0' && chr <= '9')
+			(chr >= "a" && chr <= "z") ||
+			(chr >= "A" && chr <= "Z") ||
+			(chr >= "0" && chr <= "9")
 		)
 		{
 			// ok;
@@ -285,15 +285,15 @@ function is_valid_email (email)
 		{
 			switch (chr)
 			{
-				case '-':
-				case '_':
+				case "-":
+				case "_":
 					break;
 
-				case '@':
+				case "@":
 					++num_ats;
 					break;
 
-				case '.':
+				case ".":
 					++num_dots;
 					break;
 
@@ -511,9 +511,9 @@ function is_string_safe (str, exceptions = "")
 	for (const ch of str)
 	{
 		if (
-			(ch >= 'a' && ch <= 'z') ||
-			(ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9')
+			(ch >= "a" && ch <= "z") ||
+			(ch >= "A" && ch <= "Z") ||
+			(ch >= "0" && ch <= "9")
 		)
 		{
 			// ok
@@ -1835,8 +1835,8 @@ app.all("/auth/v1/audit/tokens", function (req, res) {
 		{
 			as_consumer.push ({
 				"token-issued-at"		: row.issued_at,
-				"introspected"			: row.introspected	=== 't',
-				"revoked"			: row.revoked		=== 't',
+				"introspected"			: row.introspected	=== "t",
+				"revoked"			: row.revoked		=== "t",
 				"expiry"			: row.expiry,
 				"certificate-serial-number"	: row.cert_serial,
 				"certificate-fingerprint"	: row.cert_fingerprint,
@@ -1867,8 +1867,8 @@ app.all("/auth/v1/audit/tokens", function (req, res) {
 
 			for (const row of results.rows)
 			{
-				const revoked		= (row.revoked === 't' || row.has_provider_revoked === 't');
-				const introspected	= (row.introspected === 't');
+				const revoked		= (row.revoked === "t" || row.has_provider_revoked === "t");
+				const introspected	= (row.introspected === "t");
 
 				as_provider.push ({
 					"consumer"			: row.id,
@@ -2040,7 +2040,7 @@ app.all("/auth/v1/group/delete", function (req, res) {
 
 	const consumer_id = body.consumer.toLowerCase();
 
-	if (consumer_id !== '*')
+	if (consumer_id !== "*")
 	{
 		if (! is_string_safe (consumer_id))
 			return END_ERROR (res, 400, "Invalid 'consumer' field");
@@ -2069,7 +2069,7 @@ app.all("/auth/v1/group/delete", function (req, res) {
 
 	const parameters = [provider_id_in_db, group_name];
 
-	if (consumer_id !== '*')
+	if (consumer_id !== "*")
 	{
 		query += " AND consumer = $3::text ";
 		parameters.push(consumer_id);
@@ -2080,7 +2080,7 @@ app.all("/auth/v1/group/delete", function (req, res) {
 		if (error)
 			return END_ERROR (res, 500, "Internal error!", error);
 
-		if (consumer_id !== '*' && results.rowCount === 0)
+		if (consumer_id !== "*" && results.rowCount === 0)
 			return END_ERROR (res,400,"Consumer not in the group");
 		else
 		{
