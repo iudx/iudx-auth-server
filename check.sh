@@ -1,3 +1,5 @@
+#!/bin/sh
+
 ./node_modules/jshint/bin/jshint --show-non-errors https.js
 ./node_modules/.bin/eslint https.js
 

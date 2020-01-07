@@ -2,22 +2,22 @@
 
 "use strict";
 
-const fs		= require('fs');
-const os		= require('os');
-const logger		= require('node-color-log');
-const request		= require('sync-request');
-const pgNativeClient 	= require('pg-native');
+const fs		= require("fs");
+const os		= require("os");
+const logger		= require("node-color-log");
+const request		= require("sync-request");
+const pgNativeClient 	= require("pg-native");
 const pg		= new pgNativeClient();
 
-const db_password	= fs.readFileSync ('crl.db.password','ascii').trim();
+const db_password	= fs.readFileSync ("crl.db.password","ascii").trim();
 
-const is_openbsd	= os.type() === 'OpenBSD';
+const is_openbsd	= os.type() === "OpenBSD";
 const EUID		= process.geteuid();
 const pledge 		= is_openbsd ? require("node-pledge")		: null;
 const unveil		= is_openbsd ? require("openbsd-unveil")	: null;
 
 pg.connectSync (
-	'postgresql://crl:'+ db_password+ '@127.0.0.1:5432/postgres',
+	"postgresql://crl:"+ db_password+ "@127.0.0.1:5432/postgres",
 	function(err) {
 		if(err)
 			throw err;
@@ -44,7 +44,7 @@ function update_crl (body)
 	catch (x)
 	{
 		const err = String(x).replace(/\n/g," ");
-		log('red',"CA did not return a valid JSON : " + err);
+		log("red","CA did not return a valid JSON : " + err);
 		return;
 	}
 
@@ -87,34 +87,34 @@ function update_crl (body)
 		else
 		{
 			crl = new_crl;
-			log('yellow',"CRL updated!");
+			log("yellow","CRL updated!");
 		}
 	}
 	else
 	{
-		log('green','CRL is the same');	
+		log("green","CRL is the same");	
 	}
 }
 
 if (EUID === 0)
 {
-	process.setgid('nogroup');
-	process.setuid('nobody');
+	process.setgid("nogroup");
+	process.setuid("nobody");
 }
 
 if (is_openbsd)
 {
-	unveil('/usr/local/bin/node',	'x');
-	unveil('/usr/bin/nc',		'x');
-	unveil('/usr/lib',		'r');
-	unveil('/usr/libexec/ld.so',	'r');
+	unveil("/usr/local/bin/node",	"x");
+	unveil("/usr/bin/nc",		"x");
+	unveil("/usr/lib",		"r");
+	unveil("/usr/libexec/ld.so",	"r");
 
 	pledge.init ("stdio tty prot_exec rpath inet recvfd exec proc");
 }
 
 function run()
 {
-	const res = request('GET','https://ca.iudx.org.in/crl');
+	const res = request("GET","https://ca.iudx.org.in/crl");
 	update_crl(res.getBody());   
 } 
 
