@@ -64,7 +64,6 @@ function update_crl (body)
 			{
 				if (crl[i][key] !== new_crl[i][key])
 				{
-					console.log(key,crl[i][key],new_crl[i][key]);
 					updated = true;
 					break;
 				}
