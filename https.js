@@ -1,7 +1,5 @@
 /* vim: set ts=8 sw=4 tw=0 noet : */
 
-/*eslint camelcase: ["error", {properties: "never"}]*/
-
 /*
  * Copyright (c) 2019
  * Arun Babu {arun <dot> hbni <at> gmail}
