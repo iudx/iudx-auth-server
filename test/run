@@ -1,0 +1,21 @@
+#!/bin/sh
+
+echo "============ Tests started ===========\n" | tee report
+
+for f in `ls test*.py`
+do
+	echo "-----> $f" | tee -a report
+	output=`python2 $f`
+
+	if [ "$?" == "0" ]
+	then
+		echo | tee -a report
+		echo Test [$f] passed | tee -a report	
+	fi
+
+	echo $output | tee -a report
+
+	echo | tee -a report
+done
+
+echo "============ Tests ended =============" | tee -a report
