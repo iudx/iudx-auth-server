@@ -133,9 +133,6 @@ app.all("/", function (req, res) {
 	res.sendFile(__dirname + "/public/hyperspace/index.html");
 });
 
-app.all("/apis", function (req, res) {
-	res.sendFile(__dirname + "/public/help/apis.html");
-});
 
 app.all("/favicon.ico", function (req, res) {
 	res.sendFile(__dirname + "/public/favicon.ico");
@@ -877,13 +874,13 @@ app.all("/auth/v1/token", function (req, res) {
 
 			const provider_email_domain	= row.provider.split("@")[1];
 
-			const sha256_of_provider_email_id	= crypto.createHash("sha256")
+			const sha1_of_provider_email_id	= crypto.createHash('sha1')
 								.update(row.provider)
 								.digest("hex");
 
 			resource =	provider_email_domain 		+
 						"/"			+
-					sha256_of_provider_email_id	+
+					sha1_of_provider_email_id	+
 						"/"			+
 					resource;
 		}
@@ -1490,13 +1487,13 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 		if (! (token_hashes instanceof Array))
 			return END_ERROR (res, 400, "Invalid 'token-hashes' field in body");
 
-		const sha256_id 	= crypto.createHash("sha256")
+		const sha1_id 		= crypto.createHash("sha1")
 						.update(id)
 						.digest("hex");
 
 		const email_domain	= id.split("@")[1];
 
-		const provider_id_in_db	= sha256_id + "@" + email_domain;
+		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 		for (const token_hash of token_hashes)
 		{
@@ -1602,11 +1599,11 @@ app.all("/auth/v1/acl/set", function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash("sha256")
+	const sha1_id 		= crypto.createHash(:dha1")
 					.update(provider_id)
 					.digest("hex");
 
-	const provider_id_in_db	= sha256_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	const base64policy	= Buffer.from(policy).toString("base64");
 	const rules		= policy.split(";");
@@ -1680,11 +1677,11 @@ app.all("/auth/v1/acl/append", function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash("sha256")
+	const sha1_id 		= crypto.createHash("sha1")
 					.update(provider_id)
 					.digest("hex");
 
-	const provider_id_in_db	= sha256_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	const rules = policy.split(";");
 	let policy_in_json;
@@ -1777,11 +1774,11 @@ app.all("/auth/v1/acl", function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash("sha256")
+	const sha1_id 		= crypto.createHash("sha1")
 					.update(provider_id)
 					.digest("hex");
 
-	const provider_id_in_db	= sha256_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	pool.query("SELECT policy FROM policy WHERE id = $1::text",
 			[provider_id_in_db], (error, results) =>
@@ -1844,12 +1841,12 @@ app.all("/auth/v1/audit/tokens", function (req, res) {
 			});
 		}
 
-		const sha256_id 	= crypto.createHash("sha256")
+		const sha1_id 		= crypto.createHash("sha1")
 						.update(id)
 						.digest("hex");
 
 		const email_domain	= id.split("@")[1];
-		const provider_id_in_db	= sha256_id + "@" + email_domain;
+		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 		pool.query (
 
@@ -1928,11 +1925,11 @@ app.all("/auth/v1/group/add", function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash("sha256")
+	const sha1_id 		= crypto.createHash("sha1")
 					.update(provider_id)
 					.digest("hex");
 
-	const provider_id_in_db	= sha256_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	pool.query (
 		"INSERT INTO groups "				+
@@ -1964,11 +1961,11 @@ app.all("/auth/v1/group/list", function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash("sha256")
+	const sha1_id 		= crypto.createHash("sha1")
 					.update(provider_id)
 					.digest("hex");
 
-	const provider_id_in_db	= sha256_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	const response = [];
 
@@ -2057,11 +2054,11 @@ app.all("/auth/v1/group/delete", function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha256_id 	= crypto.createHash("sha256")
+	const sha1_id 		= crypto.createHash("sha1")
 					.update(provider_id)
 					.digest("hex");
 
-	const provider_id_in_db	= sha256_id + "@" + email_domain;
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	let query = 	"DELETE FROM groups "		+
 			"WHERE id = $1::text "		+
