@@ -739,11 +739,7 @@ app.all("/auth/v1/token", function (req, res) {
 	}
 
 	const token_rows = pg.querySync (
-		"SELECT COUNT(*)/60.0 "					+
-		"AS rate "						+
-		"FROM token "						+
-		"WHERE id=$1::text "					+
-		"AND issued_at >= (NOW() - interval '60 seconds')",
+		'SELECT get_tokens_rate_per_second($1);',
 			[consumer_id],
 	);
 
@@ -920,8 +916,7 @@ app.all("/auth/v1/token", function (req, res) {
 		sha256_of_resource_server_token	[resource_server]	= true;
 
 		const policy_rows = pg.querySync (
-			"SELECT policy,policy_in_json FROM policy " +
-			"WHERE id = $1::text",
+			'SELECT get_policy($1);',
 				[provider_id_in_db]
 		);
 
@@ -948,11 +943,7 @@ app.all("/auth/v1/token", function (req, res) {
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
 			const group_rows = pg.querySync(
-				"SELECT DISTINCT group_name "	+
-				"FROM groups "			+
-				"WHERE id = $1::text "		+
-				"AND consumer = $2::text "	+
-				"AND valid_till > NOW()",
+				'SELECT get_groups($1,$2);',
 				[
 					provider_id_in_db,
 					consumer_id
@@ -970,10 +961,7 @@ app.all("/auth/v1/token", function (req, res) {
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
 			const tokens_per_day_rows = pg.querySync (
-				"SELECT COUNT(*) FROM token "		+
-				"WHERE id=$1::text "			+
-				"AND resource_ids @> $2 "		+
-				"AND issued_at >= DATE_TRUNC('day',NOW())",
+				'SELECT get_tokens_per_day($1,$2);',
 				[
 					consumer_id,
 					'{"' + resource + '":true}'
@@ -1098,12 +1086,7 @@ app.all("/auth/v1/token", function (req, res) {
 								.digest("hex");
 
 			existing_row = pg.querySync (
-				"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) AS token_time,request,resource_ids,server_token "	+
-					"FROM token WHERE "					+
-					"id = $1::text AND "					+
-					"token = $2::text AND "					+
-					"revoked = false AND "					+
-					"expiry > NOW()",
+				'SELECT get_existing_token_details($1,$2);',
 				[
 					consumer_id,
 					sha256_of_existing_token,
@@ -1322,12 +1305,7 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 		}
 
 		pool.query (
-				"SELECT expiry,request,cert_class,"	+
-				"server_token,providers "		+
-					"FROM token "			+
-					"WHERE token = $1::text "	+
-					"AND revoked = false "		+
-					"AND expiry > NOW()",
+				'SELECT get_token($1);',
 						[sha256_of_token],
 		(error, results) =>
 		{
@@ -1396,10 +1374,7 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			// TODO introspected should be a map introspected[resource-server] = true/false
 
 			pool.query (
-				"UPDATE token SET introspected = true "		+
-				"WHERE token = $1::text "			+
-				"AND revoked = false "				+
-				"AND expiry > NOW()",
+				'SELECT update_token($1);',
 					[sha256_of_token],
 				(error_1, results_1) =>
 				{
@@ -1463,10 +1438,7 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 						.digest("hex");
 
 			const select_rows = pg.querySync (
-				"SELECT 1 from token "	+
-				"WHERE id = $1::text " 	+
-				"AND token = $2::text "	+
-				"AND expiry > NOW()",
+				'SELECT select_rows_token1($1,$2);',
 					[id, sha256_of_token]
 			);
 
@@ -1474,9 +1446,7 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 				return END_ERROR (res, 400, "Invalid token: " + token + ". " + String(num_tokens_revoked) + " tokens revoked");
 
 			pg.querySync (
-				"UPDATE token SET revoked = true WHERE id = $1::text " 	+
-				"AND token = $2::text "					+
-				"AND expiry > NOW()",
+				'SELECT update_token2($1,$2);',
 					[id, sha256_of_token]
 			);
 
@@ -1506,10 +1476,7 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 				return END_ERROR (res, 400, "Invalid token-hash: " + token_hash + ". " + String(num_tokens_revoked) + " tokens revoked.");
 
 			const select_rows = pg.querySync (
-				"SELECT 1 from token "							+
-				"WHERE token = $1::text "						+
-				"AND providers->'" + provider_id_in_db + "' = 'true' "			+
-				"AND expiry > NOW()",
+				'SELECT select_rows_token2($1,provider_id_in_db);',
 					[token_hash]
 			);
 
@@ -1517,12 +1484,8 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 				return END_ERROR (res, 400, "Invalid token-hash: " + token_hash + ". " + String(num_tokens_revoked) + " tokens revoked");
 
 			pg.querySync (
-				"UPDATE token "								+
-				"SET providers = providers || '{\"" + provider_id_in_db + "\":false}'"	+
-				"WHERE token = $1::text "						+
-				"AND providers->'" + provider_id_in_db + "' = 'true' "			+
-				"AND expiry > NOW()",
-					[token_hash]
+				'SELECT update_token3($1,provider_id_in_db);',
+				[token_hash]
 			);
 
 			++num_tokens_revoked;
@@ -1623,7 +1586,7 @@ app.all("/auth/v1/acl/set", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
 
-	pool.query("SELECT 1 FROM policy WHERE id = $1::text",
+	pool.query('SELECT select_policy1($1);',
 		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -1634,8 +1597,7 @@ app.all("/auth/v1/acl/set", function (req, res) {
 
 		if (results.rows.length > 0)
 		{
-			query = "UPDATE policy SET policy = $1::text," +
-				"policy_in_json = $2 WHERE id = $3::text";
+			query = 'select update_policy($1,$2,$3);';
 
 			parameters = [
 				base64policy,
@@ -1645,8 +1607,7 @@ app.all("/auth/v1/acl/set", function (req, res) {
 		}
 		else
 		{
-			query = "INSERT INTO "	+
-				"policy VALUES($1::text,$2::text,$3)";
+			query = "SELECT insert_policy($1,$2,$3);";
 
 			parameters = [
 				provider_id_in_db,
@@ -1699,7 +1660,7 @@ app.all("/auth/v1/acl/append", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
 
-	pool.query("SELECT policy FROM policy WHERE id = $1::text",
+	pool.query('SELECT select_policy1($1);',
 		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -1737,8 +1698,7 @@ app.all("/auth/v1/acl/append", function (req, res) {
 				);
 			}
 
-			query = "UPDATE policy SET policy = $1::text," +
-				"policy_in_json = $2 WHERE id = $3::text";
+			query = "select update_policy($1,$2,$3);";
 
 			parameters = [
 				base64policy,
@@ -1752,7 +1712,7 @@ app.all("/auth/v1/acl/append", function (req, res) {
 						.from(policy)
 						.toString("base64");
 
-			query = "INSERT INTO policy VALUES($1::text,$2::text,$3)";
+			query = "SELECT insert_policy($1,$2,$3);";
 
 			parameters = [
 				provider_id_in_db,
@@ -1783,7 +1743,7 @@ app.all("/auth/v1/acl", function (req, res) {
 
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
-	pool.query("SELECT policy FROM policy WHERE id = $1::text",
+	pool.query('SELECT select_policy2($1);',
 			[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -1820,11 +1780,7 @@ app.all("/auth/v1/audit/tokens", function (req, res) {
 	const as_provider = [];
 
 	pool.query (
-		"SELECT issued_at,expiry,request,cert_serial,"		+
-		"cert_fingerprint,introspected,revoked "		+
-		"FROM token "						+
-		"WHERE id = $1::text "					+
-		"AND issued_at >= (NOW() + '-" + hours + " hours')",
+		    'SELECT get_token_details($1);',
 
 			[id], (error, results) =>
 	{
@@ -1852,12 +1808,8 @@ app.all("/auth/v1/audit/tokens", function (req, res) {
 		const provider_id_in_db	= sha256_id + "@" + email_domain;
 
 		pool.query (
-
-		"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,revoked,"	+
-		"introspected,providers->'" + provider_id_in_db + "' AS has_provider_revoked "		+
-		"FROM token "										+
-		"WHERE providers->'" + provider_id_in_db + "' IS NOT NULL "				+
-		"AND issued_at >= (NOW() + '-" + hours + " hours')",
+		
+		'SELECT select_token_details(provider_id_in_db,hours);',
 
 		[], (error, results) =>
 		{
@@ -1935,9 +1887,7 @@ app.all("/auth/v1/group/add", function (req, res) {
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
 	pool.query (
-		"INSERT INTO groups "				+
-			"VALUES ($1::text, $2::text, $3::text,"	+
-			"NOW() + '" + valid_till + " hours')",
+			'SELECT add_groups($1,$2,$3,valid_till);',
 				[provider_id_in_db, consumer_id, group_name],
 	(error, results) =>
 	{
@@ -1975,10 +1925,7 @@ app.all("/auth/v1/group/list", function (req, res) {
 	if (group_name)
 	{
 		pool.query (
-			"SELECT consumer, valid_till FROM groups "	+
-			"WHERE id = $1::text "				+
-			"AND group_name = $2::text "			+
-			"AND valid_till > NOW()",
+			   'SELECT get_groups_list($1,$2);'
 				[provider_id_in_db, group_name],
 		(error, results) =>
 		{
@@ -2002,10 +1949,7 @@ app.all("/auth/v1/group/list", function (req, res) {
 	else
 	{
 		pool.query (
-			"SELECT consumer,group_name,valid_till "	+
-			"FROM groups "					+
-			"WHERE id = $1::text "				+
-			"AND valid_till > NOW()",
+			'SELECT get_groups_list_details($1);',
 				[provider_id_in_db],
 		(error, results) =>
 		{
@@ -2062,10 +2006,7 @@ app.all("/auth/v1/group/delete", function (req, res) {
 
 	const provider_id_in_db	= sha256_id + "@" + email_domain;
 
-	let query = 	"DELETE FROM groups "		+
-			"WHERE id = $1::text "		+
-			"AND group_name = $2::text "	+
-			"AND valid_till > NOW()";
+	let query = 	'SELECT delete_groups($1,$2);';
 
 	const parameters = [provider_id_in_db, group_name];
 
