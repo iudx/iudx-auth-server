@@ -947,7 +947,7 @@ app.all("/auth/v1/token", function (req, res) {
 		context.conditions.groups = "";
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
-			const group_rows = pg.querySync(
+			const group_rows = pg.querySync (
 				"SELECT DISTINCT group_name "	+
 				"FROM groups "			+
 				"WHERE id = $1::text "		+
@@ -1386,7 +1386,7 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			if (request_for_resource_server.length === 0)
 				return END_ERROR (res, 403, "Invalid token");
 
-			const output = {
+			const response = {
 				"consumer"			: email_id_in_token,
 				"expiry"			: results.rows[0].expiry,
 				"request"			: request_for_resource_server,
@@ -1406,7 +1406,7 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 					if (error_1 || results_1.rowCount === 0)
 						return END_ERROR (res, 500, "Internal error!", error_1);
 					else
-						return END_SUCCESS (res, 200, JSON.stringify(output));
+						return END_SUCCESS (res, 200, JSON.stringify(response));
 				}
 			);
 		});
@@ -1883,13 +1883,13 @@ app.all("/auth/v1/audit/tokens", function (req, res) {
 				});
 			}
 
-			const output = {
+			const response = {
 				"as-consumer"		: as_consumer,
 				"as-resource-owner"	: as_provider,
 			};
 
 			return END_SUCCESS (
-				res, 200, JSON.stringify(output)
+				res, 200, JSON.stringify(response)
 			);
 		});
 	});
@@ -1989,7 +1989,8 @@ app.all("/auth/v1/group/list", function (req, res) {
 				);
 			}
 
-			for (const row of results.rows) {
+			for (const row of results.rows)
+			{
 				response.push ({
 					"consumer"	: row.consumer,
 					"valid-till"	: row.valid_till
