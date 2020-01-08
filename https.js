@@ -1599,7 +1599,7 @@ app.all("/auth/v1/acl/set", function (req, res) {
 
 	const email_domain	= provider_id.split("@")[1];
 
-	const sha1_id 		= crypto.createHash(:dha1")
+	const sha1_id 		= crypto.createHash("sha1")
 					.update(provider_id)
 					.digest("hex");
 
