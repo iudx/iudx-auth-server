@@ -61,4 +61,7 @@ rcctl disable sndiod slaacd smtpd xenodm
 
 echo boot > /etc/boot.conf
 
+echo /usr/bin/pkill tmux >> /etc/rc.shutdown
+echo /usr/sbin/rcctl stop postgresql >> /etc/rc.shutdown
+
 reboot
