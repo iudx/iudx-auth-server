@@ -42,11 +42,11 @@ Aperture policy language:
 
 	Examples:
 
-	arun@iisc.ac.in can access resource-server.com/streetlights.1 for 2 hours
+		arun@iisc.ac.in can access resource-server.com/streetlights.1 for 2 hours
 
-	*@rbcps.org, *@iisc.ac.in can access * if time > 18:00:00 AND time < 24:00:00
+		*@rbcps.org, *@iisc.ac.in can access * if time > 18:00:00 AND time < 24:00:00
 
-	all can access resource-server.com/public.* if api = '/latest' AND country = "IN"
+		all can access resource-server.com/public.* if api = '/latest' AND country = "IN"
 
 	Aperture also supports conditions such as:
 
