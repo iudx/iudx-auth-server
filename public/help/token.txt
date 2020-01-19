@@ -192,6 +192,9 @@ CURL examples:
 				The "server-token" ensures that a malicious resource server cannot
 				reuse a consumer's token and present it to another resource server.
 
+				[NOTE] The "server-token"s in the response may change if "existing-token" is used with 
+				multiple resource servers. Hence, a consumer should update their "server-token"s in such cases.
+
 See also:
 
 	introspect API:
