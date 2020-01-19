@@ -1,6 +1,8 @@
+#!/bin/sh
+
 cat header > input
 
-cat ../https.js | grep prover9: | cut -f2- -d':' >> input
+grep prover9: ../https.js | cut -f2- -d':' >> input
 
 echo end_of_list. >> input
 echo  >> input
