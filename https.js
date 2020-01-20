@@ -1331,6 +1331,8 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 		return END_ERROR (res, 400, "Invalid token");
 	}
 
+	// TODO read body.request 
+
 	const sha256_of_token	= crypto.createHash("sha256")
 					.update(random_part_of_token)
 					.digest("hex");
@@ -1430,9 +1432,9 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 
 			for (const r of request)
 			{
-				const a			= r["resource-id"].split("/");
-				const provider 		= a[1] + "@" + a[0];
-				const resource_server	= a[2];
+				const split		= r["resource-id"].split("/");
+				const provider 		= split[1] + "@" + split[0];
+				const resource_server	= split[2];
 
 				if (providers[provider]) // if provider exists in providers dictionary
 				{
@@ -1443,6 +1445,8 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 
 			if (request_for_resource_server.length === 0)
 				return END_ERROR (res, 403, "Invalid token");
+
+			// TODO: if body.request then .. check if request is subset of request_for_resource_server
 
 			const response = {
 				"consumer"			: email_id_in_token,

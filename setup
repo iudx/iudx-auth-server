@@ -18,6 +18,8 @@ head /dev/urandom | sha256 > crl.db.password
 head /dev/urandom | sha256 > auth.db.password
 head /dev/urandom | sha256 > postgres.db.password
 
+chmod 500 *.password
+
 echo your-telegram-api-key > telegram.apikey
 echo your-telegram-chat-id > telegram.chatid
 
