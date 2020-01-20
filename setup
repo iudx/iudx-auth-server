@@ -40,6 +40,9 @@ do
 	sleep 0.1
 done
 
+rm -rf /var/postgresql/setup.postgres.openbsd
+rm -rf postgres.sql
+
 cp rc.local /etc/
 cp pf.conf /etc/
 
@@ -53,9 +56,8 @@ cd ..
 npm install
 npm audit fix
 
-echo /sbin/pfctl -t bruteforce -T expire 86400 >> /etc/daily.local
+echo /sbin/pfctl -t bruteforce -T expire 86400 > /etc/daily.local
 echo syspatch >> /etc/daily.local
-echo boot >> /etc/boot.conf
 
 rcctl disable sndiod slaacd smtpd xenodm 
 
