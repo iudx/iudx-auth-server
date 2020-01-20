@@ -130,20 +130,8 @@ app.use(security);
 app.disable("x-powered-by");
 
 app.all("/", function (req, res) {
-	res.sendFile(__dirname + "/public/hyperspace/index.html");
+	res.redirect('http://auth.iudx.org.in');
 });
-
-
-app.all("/favicon.ico", function (req, res) {
-	res.sendFile(__dirname + "/public/favicon.ico");
-});
-
-app.all("/doc", function (req, res) {
-	res.sendFile(__dirname + "/public/output/auth-api-doc.html");
-});
-
-app.use("/assets", express.static(__dirname + "/public/hyperspace/assets"));
-app.use("/images", express.static(__dirname + "/public/hyperspace/images"));
 
 /* aperture */
 
@@ -389,7 +377,7 @@ function is_certificate_ok (req, cert, validate_email)
 	return "OK";
 }
 
-function has_iudx_certificate_been_revoked (socket, cert, CRL)
+function has_certificate_been_revoked (socket, cert, CRL)
 {
 	const cert_fingerprint	= cert.fingerprint
 					.replace(/:/g,"")
@@ -643,7 +631,7 @@ function security (req, res, next)
 
 				const CRL = results.rows[0].crl;
 
-				if (has_iudx_certificate_been_revoked (req.socket,cert,CRL))
+				if (has_certificate_been_revoked(req.socket,cert,CRL))
 				{
 					return END_ERROR (
 						res, 403,
@@ -676,13 +664,27 @@ function security (req, res, next)
 			function (err, ocsp_response)
 			{
 				if (err)
-					return END_ERROR(res, 403, "Your certificate issuer did not respond to an OCSP request");
+				{
+					return END_ERROR (
+						res, 403,
+						"Your certificate issuer did "	+
+						"NOT respond to an OCSP request"
+					);
+				}
 
 				if (ocsp_response.type !== "good")
-					return END_ERROR(res, 403, "Your certificate has been revoked");
+				{
+					return END_ERROR (
+						res, 403,
+						"Your certificate has been "	+
+						"revoked by your certificate issuer"
+					);
+				}
 
 				let error;
-				if ((error = is_secure(req,res,cert,false)) !== "OK") // false as it may not have email id
+				
+				// certificate may not have a "emailAddress" field 
+				if ((error = is_secure(req,res,cert,false)) !== "OK")
 					return END_ERROR (res,403, error);
 
 				res.locals.cert_class	= 1;
@@ -691,14 +693,27 @@ function security (req, res, next)
 				if (is_valid_email(cert.subject.emailAddress))
 				{
 					res.locals.cert_class	= 2;
-					res.locals.email	= cert.subject.emailAddress.toLowerCase();
+					res.locals.email	= cert.subject
+									.emailAddress
+									.toLowerCase();
 				}
 
 				if (res.locals.cert_class < min_class_required)
-					return END_ERROR(res, 403, "A class-" + min_class_required + " or above certificate is required to call this API");
+				{
+					return END_ERROR (
+						res, 403,
+						"A class-" + min_class_required		+
+						" or above certificate is required "	+
+						"to call this API"
+					);
+				}
 
 				if (! (res.locals.body = body_to_json(req.body)))
-					return END_ERROR (res,400, "Body is not a valid JSON");
+				{
+					return END_ERROR (
+						res,400, "Body is not a valid JSON"
+					);
+				}
 
 				res.locals.cert	= cert;
 
@@ -803,8 +818,18 @@ app.all("/auth/v1/token", function (req, res) {
 	{
 		requested_token_time = parseInt(body["token-time"],10);
 
-		if (isNaN(requested_token_time) || requested_token_time < 1 || requested_token_time > MAX_TOKEN_TIME)
-			return END_ERROR (res, 400, "'token-time' field should be > 0 and < " + MAX_TOKEN_TIME);
+		if (
+			isNaN(requested_token_time)		||
+			requested_token_time < 1		||
+			requested_token_time > MAX_TOKEN_TIME
+		)
+		{
+			return END_ERROR (
+				res, 400,
+				"'token-time' field should be > 0 and < " +
+				MAX_TOKEN_TIME
+			);
+		}
 	}
 
 	const existing_token	= body["existing-token"];
@@ -1016,9 +1041,15 @@ app.all("/auth/v1/token", function (req, res) {
 
 				try
 				{
-					let token_time_in_policy; // as specified by the resource-owner in rules
+					// token expiry time as specified by the provider
+					// in the policy
 
-					if (! (token_time_in_policy = evaluator.evaluate (policy_in_json,CTX)))
+					const token_time_in_policy = evaluator.evaluate (
+						policy_in_json,
+						CTX
+					);
+
+					if (! token_time_in_policy)
 					{
 						return END_ERROR (res, 403,
 							"Unauthorized to access id :'"	+
@@ -1031,7 +1062,10 @@ app.all("/auth/v1/token", function (req, res) {
 						);
 					}
 
-					token_time = Math.min(token_time, token_time_in_policy);
+					token_time = Math.min (
+						token_time,
+						token_time_in_policy
+					);
 				}
 				catch (x)
 				{
@@ -1051,14 +1085,14 @@ app.all("/auth/v1/token", function (req, res) {
 		if (requested_token_time)
 			token_time = Math.min(requested_token_time,token_time);
 
-		const out = {
+		const response = {
 			"resource-id"	: resource,
 			"methods"	: row.methods,
 			"apis"		: row.apis,
 			"body"		: row.body ? row.body : null,
 		};
 
-		response_array.push (out);
+		response_array.push (response);
 
 		resource_id_dict[resource] = true;
 
@@ -1072,11 +1106,22 @@ app.all("/auth/v1/token", function (req, res) {
 
 		if (existing_token)
 		{
-			if ((! is_string_safe(existing_token)) || (! existing_token.startsWith(SERVER_NAME + "/")))
-				return END_ERROR (res, 400, "Invalid 'existing-token' field");
+			if (
+				(! is_string_safe(existing_token))	||
+				(! existing_token.startsWith(SERVER_NAME + "/"))
+			)
+			{
+				return END_ERROR (
+					res, 400, "Invalid 'existing-token' field"
+				);
+			}
 
 			if ((existing_token.match(/\//g) || []).length !== 2)
-				return END_ERROR (res, 400, "Invalid 'existing-token' field");
+			{
+				return END_ERROR (
+					res, 400, "Invalid 'existing-token' field"
+				);
+			}
 
 			const issued_by			= existing_token.split("/")[0];
 			const issued_to			= existing_token.split("/")[1];
@@ -1095,11 +1140,12 @@ app.all("/auth/v1/token", function (req, res) {
 								.digest("hex");
 
 			existing_row = pg.querySync (
-				"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) AS token_time,request,resource_ids,server_token "	+
-					"FROM token WHERE "					+
-					"id = $1::text AND "					+
-					"token = $2::text AND "					+
-					"revoked = false AND "					+
+				"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "		+
+				"AS token_time,request,resource_ids,server_token "	+
+					"FROM token WHERE "				+
+					"id = $1::text AND "				+
+					"token = $2::text AND "				+
+					"revoked = false AND "				+
 					"expiry > NOW()",
 				[
 					consumer_id,
@@ -1174,7 +1220,9 @@ app.all("/auth/v1/token", function (req, res) {
 			const old_request 	= existing_row[0].request;
 			const new_request	= old_request.concat(request_array);
 
-			const new_resource_ids_dict = Object.assign({},existing_row[0].resource_ids, resource_id_dict);
+			const new_resource_ids_dict = Object.assign(
+				{}, existing_row[0].resource_ids, resource_id_dict
+			);
 
 			query = "UPDATE token SET " 							+
 					"request = $1,"							+
@@ -1299,7 +1347,12 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 	(error, ip_addresses) =>
 	{
 		if (error)
-			return END_ERROR (res, 400, "Invalid hostname : " + resource_server_name_in_cert);
+		{
+			return END_ERROR (
+				res, 400,
+				"Invalid hostname : " + resource_server_name_in_cert
+			);
+		}
 
 		for (const a of ip_addresses)
 		{
@@ -1334,7 +1387,10 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			if (results.rows.length === 0)
 				return END_ERROR (res, 403, "Invalid token");
 
-			const expected_server_token	= results.rows[0].server_token[resource_server_name_in_cert];
+			const expected_server_token	= results
+								.rows[0]
+								.server_token[resource_server_name_in_cert];
+
 			const num_resource_servers	= Object.keys(results.rows[0].server_token).length;
 
 			if (num_resource_servers > 1)
@@ -1352,7 +1408,12 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 								.digest("hex");
 
 				if (sha256_of_server_token !== expected_server_token)
-					return END_ERROR (res, 403, "Invalid 'server-token' field in the body");
+				{
+					return END_ERROR (
+						res, 403,
+						"Invalid 'server-token' field in the body"
+					);
+				}
 			}
 			else
 			{
@@ -1390,7 +1451,8 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 				"consumer-certificate-class"	: results.rows[0].cert_class,
 			};
 
-			// TODO introspected should be a map introspected[resource-server] = true/false
+			// TODO
+			// introspected should be introspected[resource-server] = bool 
 
 			pool.query (
 				"UPDATE token SET introspected = true "		+
@@ -1401,9 +1463,18 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 				(error_1, results_1) =>
 				{
 					if (error_1 || results_1.rowCount === 0)
-						return END_ERROR (res, 500, "Internal error!", error_1);
+					{
+						return END_ERROR (
+							res, 500,
+							"Internal error!", error_1
+						);
+					}
 					else
-						return END_SUCCESS (res, 200, JSON.stringify(response));
+					{
+						return END_SUCCESS (
+							res, 200, JSON.stringify(response)
+						);
+					}
 				}
 			);
 		});
@@ -1419,7 +1490,12 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 	const token_hashes	= body["token-hashes"];
 
 	if (tokens && token_hashes)
-		return END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes', not both");
+	{
+		return END_ERROR (
+			res, 400,
+			"Provide either 'tokens' or 'token-hashes', not both"
+		);
+	}
 
 	if ( (! tokens) && (! token_hashes))
 		return END_ERROR (res, 400, "Provide either 'tokens' or 'token-hashes'");
@@ -1435,8 +1511,16 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 
 		for (const token of tokens)
 		{
-			if ((! is_string_safe(token)) || (! token.startsWith(SERVER_NAME + "/")))
-				return END_ERROR (res, 400, "Invalid token: " + token + ". " + String(num_tokens_revoked) + " tokens revoked.");
+			if (
+				(! is_string_safe(token))		||
+				(! token.startsWith(SERVER_NAME + "/"))
+			)
+			{
+				return END_ERROR (
+					res, 400, "Invalid token: " + token + ". " +
+					String(num_tokens_revoked) + " tokens revoked."
+				);
+			}
 
 			if ((token.match(/\//g) || []).length !== 2)
 				return END_ERROR (res, 400, "Invalid token: " + token);
@@ -1468,7 +1552,13 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 			);
 
 			if (select_rows.length === 0)
-				return END_ERROR (res, 400, "Invalid token: " + token + ". " + String(num_tokens_revoked) + " tokens revoked");
+			{
+				return END_ERROR (
+					res, 400,
+					"Invalid token: " + token + ". " +
+					String(num_tokens_revoked) + " tokens revoked"
+				);
+			}
 
 			pg.querySync (
 				"UPDATE token SET revoked = true WHERE id = $1::text " 	+
@@ -1500,24 +1590,37 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 			// TODO set revoked = true if all providers keys are false
 
 			if (! is_string_safe(token_hash))
-				return END_ERROR (res, 400, "Invalid token-hash: " + token_hash + ". " + String(num_tokens_revoked) + " tokens revoked.");
+			{
+				return END_ERROR (
+					res, 400,
+					"Invalid token-hash: " + token_hash + ". " +
+					String(num_tokens_revoked) + " tokens revoked."
+				);
+			}
 
 			const select_rows = pg.querySync (
-				"SELECT 1 from token "							+
-				"WHERE token = $1::text "						+
-				"AND providers->'" + provider_id_in_db + "' = 'true' "			+
+				"SELECT 1 from token "					+
+				"WHERE token = $1::text "				+
+				"AND providers->'" + provider_id_in_db + "' = 'true' "	+
 				"AND expiry > NOW()",
 					[token_hash]
 			);
 
 			if (select_rows.length === 0)
-				return END_ERROR (res, 400, "Invalid token-hash: " + token_hash + ". " + String(num_tokens_revoked) + " tokens revoked");
+			{
+				return END_ERROR (
+					res, 400,
+					"Invalid token-hash: " + token_hash + ". " +
+					String(num_tokens_revoked) + " tokens revoked"
+				);
+			}
 
 			pg.querySync (
-				"UPDATE token "								+
-				"SET providers = providers || '{\"" + provider_id_in_db + "\":false}'"	+
-				"WHERE token = $1::text "						+
-				"AND providers->'" + provider_id_in_db + "' = 'true' "			+
+				"UPDATE token "						+
+				"SET providers = "					+
+				"providers || '{\"" + provider_id_in_db + "\":false}'"	+
+				"WHERE token = $1::text "				+
+				"AND providers->'" + provider_id_in_db + "' = 'true' "	+
 				"AND expiry > NOW()",
 					[token_hash]
 			);
@@ -1570,12 +1673,12 @@ app.all("/auth/v1/token/revoke-all", function (req, res) {
 				return END_ERROR (res, 500, "Internal error!", error);
 			else
 			{
-				const out = {
+				const response = {
 					success			: true,
 					"num-tokens-revoked"	: results.rowCount
 				};
 
-				return END_SUCCESS (res,200,JSON.stringify(out));
+				return END_SUCCESS (res,200,JSON.stringify(response));
 			}
 		}
 	);
@@ -1789,12 +1892,12 @@ app.all("/auth/v1/acl", function (req, res) {
 		if (results.rows.length === 0)
 			return END_ERROR (res, 400, "No policies set yet!");
 
-		const out = {
+		const response = {
 			"policy" : Buffer.from(results.rows[0].policy,"base64")
 					.toString("ascii")
 		};
 
-		return END_SUCCESS (res, 200, JSON.stringify(out));
+		return END_SUCCESS (res, 200, JSON.stringify(response));
 	});
 });
 
@@ -1850,22 +1953,31 @@ app.all("/auth/v1/audit/tokens", function (req, res) {
 
 		pool.query (
 
-		"SELECT id,token,issued_at,expiry,request,cert_serial,cert_fingerprint,revoked,"	+
-		"introspected,providers->'" + provider_id_in_db + "' AS has_provider_revoked "		+
-		"FROM token "										+
-		"WHERE providers->'" + provider_id_in_db + "' IS NOT NULL "				+
+		"SELECT id,token,issued_at,expiry,request,cert_serial,"			+
+		"cert_fingerprint,revoked,introspected,"				+
+		"providers->'" + provider_id_in_db + "' AS has_provider_revoked "	+
+		"FROM token "								+
+		"WHERE providers->'" + provider_id_in_db + "' IS NOT NULL "		+
 		"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
 		[], (error, results) =>
 		{
 
 			if (error)
-				return END_ERROR (res, 500, "Internal error!", error);
+			{
+				return END_ERROR (
+					res, 500, "Internal error!", error
+				);
+			}
 
 			for (const row of results.rows)
 			{
-				const revoked		= (row.revoked === "t" || row.has_provider_revoked === "t");
-				const introspected	= (row.introspected === "t");
+				const revoked = (
+					row.revoked			=== "t" ||
+					row.has_provider_revoked	=== "t"
+				);
+
+				const introspected = (row.introspected === "t");
 
 				as_provider.push ({
 					"consumer"			: row.id,
@@ -2082,12 +2194,12 @@ app.all("/auth/v1/group/delete", function (req, res) {
 			return END_ERROR (res,400,"Consumer not in the group");
 		else
 		{
-			const out = {
+			const response = {
 				success			: true,
 				"num-consumers-deleted"	: results.rowCount
 			};
 
-			return END_SUCCESS (res, 200, JSON.stringify(out));
+			return END_SUCCESS (res, 200, JSON.stringify(response));
 		}
 	});
 });
