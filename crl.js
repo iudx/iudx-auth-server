@@ -105,6 +105,7 @@ if (is_openbsd)
 {
 	unveil("/usr/local/bin/node",	"x");
 	unveil("/usr/bin/nc",		"x");
+	unveil("/usr/local/bin/curl",	"x");
 	unveil("/usr/lib",		"r");
 	unveil("/usr/libexec/ld.so",	"r");
 
