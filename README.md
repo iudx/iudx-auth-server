@@ -12,5 +12,10 @@ ready at https://localhost.
 Please read the API documentation at http://auth.iudx.org.in
 
 ## Telegram setup (as root) 
-You may edit the `/home/auth/telegram.apikey` and `/home/auth/telegram.chatid` to
-get telegram notifications.
+You may edit the files:
+
+`/home/auth/iudx-auth-server/telegram.apikey`
+	and
+`/home/auth/iudx-auth-server/telegram.chatid`
+
+to get telegram notifications.
