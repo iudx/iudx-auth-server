@@ -27,6 +27,9 @@ head /dev/urandom | sha256 > postgres.db.password
 echo your-telegram-api-key > telegram.apikey
 echo your-telegram-chat-id > telegram.chatid
 
+chmod 500 telegram.*
+chmod 500 *.sql
+
 crl_password=`cat crl.db.password`
 sed -i "s/XXXcrlXXX/$crl_password/" postgres.sql 
 
