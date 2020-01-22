@@ -11,7 +11,7 @@ fi
 
 syspatch
 
-pkg_add postgresql-server postgresql-client node
+pkg_add curl postgresql-server postgresql-client node
 rcctl enable postgresql
 
 touch crl.db.password
