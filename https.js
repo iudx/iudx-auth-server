@@ -1182,7 +1182,6 @@ app.all("/auth/v1/token", function (req, res) {
 			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
 			"token-type"	: "IUDX",
 			"expires-in"	: token_time,
-			"server-token"	: {},
 		};
 
 		const num_resource_servers = Object
@@ -1202,9 +1201,9 @@ app.all("/auth/v1/token", function (req, res) {
 									.update(resource_server_token[key])
 									.digest("hex");
 			}
-
-			response["server-token"] = resource_server_token;
 		}
+
+		response["server-token"] = resource_server_token;
 
 		const sha256_of_token	= crypto.createHash("sha256")
 						.update(token)
@@ -1312,9 +1311,13 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 	if ((token.match(/\//g) || []).length !== 2)
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
-	const server_token = body["server-token"];
+	let server_token = body["server-token"] || true;
 
-	if (server_token)
+	if (server_token === true || server_token === "true")
+	{
+		server_token = true;
+	}
+	else
 	{
 		if ((! is_string_safe(server_token)) || (server_token.length !== TOKEN_LENGTH_HEX))
 			return END_ERROR (res, 400, "Invalid 'server-token' field");
@@ -1397,10 +1400,8 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 
 			if (num_resource_servers > 1)
 			{
-				// token is shared by many servers
-
-				if (! server_token) // given by the user
-					return END_ERROR (res, 400, "No 'server-token' field found in the body");
+				if (server_token === true) // should be a real token
+					return END_ERROR (res, 403, "No valid 'server-token' field found in the body");
 
 				if (! expected_server_token) // token doesn't belong to this server
 					return END_ERROR (res, 403, "Invalid token");
