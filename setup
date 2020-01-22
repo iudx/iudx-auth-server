@@ -38,10 +38,15 @@ sed -i "s/XXXauthXXX/$auth_password/" postgres.sql
 
 # setup postgres
 cp postgres.db.password /var/postgresql
-cp setup.postgres.openbsd /var/postgresql
-chmod a+x /var/postgresql/setup.postgres.openbsd
+chown _postgresql:_postgresql /var/postgresql/postgresql.db.password
 
 cp postgres.sql /var/postgresql
+chown _postgresql:_postgresql /var/postgresql/postgresql.sql
+
+cp setup.postgres.openbsd /var/postgresql
+chown _postgresql:_postgresql /var/postgresql/setup.postgresql.openbsd
+
+chmod u+x /var/postgresql/setup.postgres.openbsd
 su _postgresql -c /var/postgresql/setup.postgres.openbsd
 
 until su _postgresql -c pg_isready
@@ -50,7 +55,6 @@ do
 done
 
 rm -rf /var/postgresql/setup.postgres.openbsd
-rm -rf postgres.sql
 
 cp rc.local /etc/
 cp pf.conf /etc/
