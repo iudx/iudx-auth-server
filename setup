@@ -38,13 +38,13 @@ sed -i "s/XXXauthXXX/$auth_password/" postgres.sql
 
 # setup postgres
 cp postgres.db.password /var/postgresql
-chown _postgresql:_postgresql /var/postgresql/postgresql.db.password
+chown _postgresql:_postgresql /var/postgresql/postgre.db.password
 
 cp postgres.sql /var/postgresql
-chown _postgresql:_postgresql /var/postgresql/postgresql.sql
+chown _postgresql:_postgresql /var/postgresql/postgres.sql
 
 cp setup.postgres.openbsd /var/postgresql
-chown _postgresql:_postgresql /var/postgresql/setup.postgresql.openbsd
+chown _postgresql:_postgresql /var/postgresql/setup.postgres.openbsd
 
 chmod u+x /var/postgresql/setup.postgres.openbsd
 su _postgresql -c /var/postgresql/setup.postgres.openbsd
