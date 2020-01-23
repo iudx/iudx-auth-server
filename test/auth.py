@@ -14,7 +14,7 @@ class Auth():
 
 	def call(self, api, body=None):
 	#
-		ret = "success"
+		ret = True # success
 
 		body = json.dumps(body)
 
@@ -35,18 +35,18 @@ class Auth():
 				response.text
 			)
 
-			ret = "failed"
+			ret = False
 		#
 
 		if response.headers['content-type'] == 'application/json':
-			return [ret, json.loads(response.text)]
+			return {"success":ret, "response" : json.loads(response.text)}
 		else:
 		#
 			sys.stderr.write (
 				"WARNING: auth did not send 'application/json'"
 			)
 
-			return ["failed", None]
+			return {"success":ret, "response":None}
 		#
 	#
 

@@ -3,44 +3,49 @@
 from auth import *
 from init import *
 
-assert "success"	== provider.delete_consumer_from_group("*","confidential")[0]
+r                       = provider.delete_consumer_from_group("*","confidential")
+assert r["success"]     == True
 
-[ret, members]		= provider.list_group("confidential")
-assert "success"	== ret
-assert 0		== len(members)
+r       		= provider.list_group("confidential")
+assert r["success"]     == True
+assert 0		== len(r["response"])
 
 provider.add_consumer_to_group("barun@iisc.ac.in","confidential",100)
 provider.add_consumer_to_group("xyz@iisc.ac.in","confidential",100)
 
-[ret, members]		= provider.list_group("confidential")
-assert "success"	== ret
+r                       = provider.list_group("confidential")
+assert r["success"]     == True
 
 m1_found = False;
 m2_found = False;
 
+members = r["response"]
+
 for m in members:
 #
 	if m['consumer'] == 'barun@iisc.ac.in':
-		m1_found = True 
+		m1_found = True
 
 	elif m['consumer'] == 'xyz@iisc.ac.in':
-		m2_found = True 
+		m2_found = True
 #
 
 assert m1_found == True and m2_found == True
 
-assert "success"	== provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")[0]
+r                       = provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")
+assert r["success"]     == True
 
-[ret, members]		= provider.list_group("confidential")
-assert "success"	== ret
-assert 1		== len(members)
-assert "xyz@iisc.ac.in"	== members[0]['consumer']
+r                       = provider.list_group("confidential")
+assert r["success"]     == True
+assert 1		== len(r["response"])
+assert "xyz@iisc.ac.in"	== r["response"][0]['consumer']
 
-assert "success"	== provider.delete_consumer_from_group("xyz@iisc.ac.in","confidential")[0]
+r                       = provider.delete_consumer_from_group("xyz@iisc.ac.in","confidential")
+assert r["success"]     == True
 
-[ret, members]		= provider.list_group("confidential")
-assert "success"	== ret
-assert 0		== len(members)
+r		        = provider.list_group("confidential")
+assert r["success"]     == True
+assert 0		== len(r["response"])
 
 provider.set_policy('all can access iisc.iudx.org.in/resource-xyz* if consumer-in-group(xyz,confidential)')
 
@@ -50,10 +55,10 @@ body = {
 
 provider.add_consumer_to_group("barun@iisc.ac.in","confidential",100)
 
-[ret, members]		= provider.list_group("confidential")
-assert "success"	== ret
-assert 1		== len(members)
+r       		= provider.list_group("confidential")
+assert r["success"]     == True
+assert 1		== len(r["response"])
 
-assert "success"	== consumer.get_token(body)[0]
-assert "success"	== provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")[0]
-assert "failed"		== consumer.get_token(body)[0]
+assert True     == consumer.get_token(body)["success"]
+assert True     == provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")["success"]
+assert False    == consumer.get_token(body)["success"]
