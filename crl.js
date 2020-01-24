@@ -113,7 +113,16 @@ if (is_openbsd)
 
 function run()
 {
-	const res = request("GET","https://ca.iudx.org.in/crl");
+	try
+	{
+		const res = request("GET","https://ca.iudx.org.in/crl");
+	}
+	catch(x)
+	{
+		const err = String(x).replace(/\n/g," ");
+		log('red', 'Error in getting CRL :' + err);
+		return;
+	}
 	update_crl(res.getBody());   
 } 
 
