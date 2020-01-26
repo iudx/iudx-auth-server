@@ -1,0 +1,201 @@
+
+Get an access token
+-------------------
+
+Endpoint:
+	https://<server>/auth/v1/token
+
+Methods:
+	POST
+
+Description:
+	This API is used to request an access token from the auth server.
+	This token can be used to get data from a resource server.
+
+Called by:
+	A data consumer with a valid class-2 or above certificate.
+
+Headers:
+
+	content-type	: "application/json"
+
+	Please note that "text/plain" can also be used to avoid CORS issues.
+
+Body:
+
+	{
+		"request" : {
+			"resource-id"	: <a resource id for which access is requested>,			// required
+			"apis"		: <a list of APIs a consumer wishes to access on the resource-id>	// optional
+			"methods"	: <a list of methods a consumer wishes to call on the APIs>		// optional
+			"body"		: <a dictionary of body variables to be called with the API>		// optional
+		},
+
+		"token-time"		: <the time in seconds, till which the token should be valid>		// optional
+		"existing-token"	: <a valid token a consumer already has>				// optional
+	}
+
+	The 'request' field may also be an array of objects.
+
+	The "existing-token" header field is used to indicate that new token
+	should NOT be created; i.e. the existing token will be used to access
+	the new requested list of resource-ids.
+
+	The 'request' fields are:
+
+	1. resouce-id:
+
+		The 'resource-id' is the id of the resource (a data-set) a consumer is intrested in accessing.
+		resource-id consists of at least 4 parts seperated by a '/' indicating:
+
+			1. The email domain of the resource-owner.
+
+			2. SHA1 hash of the resource-owner's email-id.
+
+			3. The hostname (FQDN) of the resource server where the resource is hosted.
+
+			4. The name of the resource (the resource name may also contain '/'s).
+
+		For example: example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/resource-name
+
+	2. apis:
+
+		The 'apis' is the set of APIs a consumer wants to access on a 'resource-id'.
+		Instead of 'apis', just 'api' (a string) could also be used.
+
+		For example: ["/latest", "/query"]
+		As the field is optional, the default value of 'apis' is: ["*"]
+
+	3. methods:
+
+		The 'methods' is the set of methods a consumer wants to access on an 'api'.
+		Instead of 'methods', just 'method' (a string) could also be used.
+
+		For example: ["GET", "POST"]
+		As the field is optional, the default value of 'apis' is: ["/*"]
+
+	4. body:
+
+		The body indicates the JSON body to be passed with the 'apis'.
+
+		For example: {"operation" : "select", "on" : "all"}
+		As the field is optional, the default value of 'body' is: null
+
+
+HTTP response code:
+
+	200
+		If access is allowed.
+
+	403
+		If access is denied.
+
+	429
+		If the client makes too many requests.
+
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	request = [
+		{"resource-id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/r1"},
+		{"resource-id": "example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/resource-server.com/r2"}
+	]
+
+	iudx_auth.get_token(request)
+
+CURL examples:
+
+	1. Requesting token for data from a single resource server
+
+		Request:
+
+			curl -XPOST https://auth.iudx.org.in/auth/v1/token	\
+
+			--cert certificate.pem --key private-key.pem		\
+
+			-H 'content-type: application/json'			\
+
+			-d '{
+				"request" : [												\
+					{"resource-id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/r1"}, \
+					{"resource-id": "example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/resource-server.com/r2"}	\
+				]
+			}'
+
+		Response:
+
+			200 OK
+			content-type	: "application/json"
+
+			{
+				"token"		: "auth.iudx.org.in/user@domain.com/2204adcbc990ffff234689aaabcdef90",
+				"token-type"	: "IUDX",
+				"expires-in"	: 3600
+			}
+
+		Response fields:
+
+		1. token
+			Is the access token required to access data from a resource server
+			(resource-server.com in this case), and is in the format: 'auth-server/consumer/random-bytes'
+
+		2. expires-in
+			Indicates how long the token is valid in seconds.
+
+	2. Requesting token for data from multiple resource servers
+
+		Request:
+
+			curl -XPOST https://auth.iudx.org.in/auth/v1/token		\
+
+				--cert certificate.pem --key private-key.pem		\
+
+				-H 'content-type: application/json'			\
+
+				-d '{
+					"request" : [											\
+						{"resource-id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r1"},	\
+						{"resource-id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2.com/r2"}	\
+					]
+				}'
+		Response:
+
+			200 OK
+			content-type	: "application/json"
+
+			{
+				"token"		: "auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee",
+				"token-type"	: "IUDX",
+				"expires-in"	: 3600,
+				"server-token"	: {
+					"rs1.com" : "91834abcd323924339ab",
+					"rs2.com" : "52338cdfff3222699900"
+				}
+			}
+
+		Other response fields:
+
+			3. server-token:
+
+				The "server-token" field is sent only if the request body
+				contains resource-id's from multiple resource servers
+				(in this example: "rs1.com" and "rs2.com").
+
+				In the above example, when requesting data from a resource server,
+				the consumer must also provide the "server-token" of the respective resource server,
+				along with the consumer's 'token'
+				(in the above example: auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee).
+
+				The "server-token" ensures that a malicious resource server cannot
+				reuse a consumer's token and present it to another resource server.
+
+				[NOTE] The "server-token"s may change if "existing-token" is used with 
+				multiple resource servers. Hence, the consumer should update their "server-token"s in such cases. 
+
+See also:
+
+	introspect API:
+		https://auth.iudx.org.in/auth/v1/introspect/help

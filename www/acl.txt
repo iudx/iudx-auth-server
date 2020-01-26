@@ -1,0 +1,57 @@
+
+Get access control list
+-----------------------
+
+Endpoint:
+	https://<server>/auth/v1/acl
+
+Methods:
+	GET
+
+Description:
+	This API is used to get previously set access control policies.
+
+Called by:
+	A resource-owner with a valid class-3 or above certificate.
+
+HTTP response code:
+
+	200
+		If the policy has been successfully retrieved.
+
+	400
+		If no policies have been set yet.
+
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.get_policy()
+
+CURL example:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/acl \
+
+			--cert certificate.pem --key private-key.pem
+
+	Response:
+
+		200 OK
+		content-type	: "application/json"
+
+		{"policy" : "*@iisc.ac.in can access rs1.com/my-resource-name"}
+
+See also:
+
+	acl/set API:
+		https://auth.iudx.org.in/auth/v1/acl/set/help
+
+	acl/append API:
+		https://auth.iudx.org.in/auth/v1/acl/append/help
+
+	node-aperture at github.com:
+		https://github.com/rbccps-iisc/node-aperture

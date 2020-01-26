@@ -1,0 +1,70 @@
+
+Revoke all valid tokens
+-----------------------
+
+Endpoint:
+
+	https://<server>/auth/v1/token/revoke-all
+
+Methods:
+
+	POST
+
+Description:
+
+	This API is used by a consumer to revoke all valid access tokens issued
+	to the consumer for a given certificate.
+
+Called by:
+
+	A consumer with a valid class-3 or above certificate.
+
+Body in JSON format:
+
+	serial		: the serial number of the certificate for which the tokens have to be revoked.
+	fingerprint	: the fingerprint of the certificate for which the tokens have to be revoked.
+
+	Note: the certificate "serial" and "fingerprint" may be obtained by using the "audit/tokens" API.
+
+HTTP response codes:
+
+	200
+		If all the tokens have been successfully revoked.
+
+	400
+		If the inputs are invalid 
+
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("consumer-certificate.pem","private-key.pem") 
+
+	# serial and fingerprint
+	iudx_auth.revoke_all ("5BADD8F2B7D2C8CB0413883C7D023624543E6802","8B:DD:A4:AB:24:88:21:6A:51:2F:13:49:00:26:1F:CB:DC:86:DF:70")
+
+CURL example:
+
+	Request:
+
+		curl https://auth.iudx.org.in/auth/v1/token/revoke-all	\
+
+		--cert consumer-certificate.pem --key private-key.pem	\
+
+		-d '{"serial":"5BADD8F2B7D2C8CB0413883C7D023624543E6802", "fingerprint":"8B:DD:A4:AB:24:88:21:6A:51:2F:13:49:00:26:1F:CB:DC:86:DF:70"}'
+
+
+	Response:
+
+		HTTP 200 OK
+		content-type	: "application/json"
+
+		{
+			"success"		: true,
+			"num-tokens-revoked"	: 5
+		}
+
+See also:
+	audit tokens API:
+		https://auth.iudx.org.in/auth/v1/audit/tokens/help
+

@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "https://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta https-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>India Urban Data eXchange (IUDX) AAA server</title>
+<style type="text/css">
+<!--
+-->
+</style>
+</head>
+<body>
+
+<center>
+	<img src=iudx.png alt="[ India Urban Data eXchange (IUDX) ]">
+	<h2>Authentication, Authorization, and Accounting (AAA) server</h2>
+</center>
+
+<pre id='vimCodeElement'>
+
+<b>1. Introduction:</b>
+
+	Welcome to the <a href="https://www.iudx.org.in">IUDX</a> Authentication, Authentication, and Accounting (AAA) server.
+
+	This server serves the IUDX AAA REST <a href="#apis">APIs</a> which can be called by:
+
+		1. Data providers   (the resource owners)
+		2. Data consumers   (users who wish to access one or more data provider's data)
+		3. Resource servers (which hosts the data provider's data)
+
+	through <a href="https://auth.iudx.org.in">HTTPS</a> (using a valid client-side X.509 certificate).
+
+<b>2. Setup:</b>
+<p><img src="setup.svg" alt="[Setup]"></p>
+
+<b>3. Data access flow:</b>
+<p><img src="consumer.svg" alt="[Data access flow]"></p>
+
+<b id=apis>4. List of APIs:</b>
+
+	 1. Get an access token (to be called by data consumers):
+		<a href="token.txt">/auth/v1/token</a>
+
+	 2. Set access control polcies (to be called by data providers):
+		<a href="acl-set.txt">/auth/v1/acl/set</a>
+
+	 3. Append to existing access control policies (to be called by data providers):
+		<a href="acl-append.txt">/auth/v1/acl/append</a>
+
+	 4. Get the current access control policies (to be called by data providers):
+		<a href="acl.txt">/auth/v1/acl</a>
+
+	 5. Validate an access token (to be called by resource servers):
+		<a href="token-introspect.txt">/auth/v1/token/introspect</a>
+
+	 6. Revoke tokens (can be called by both data providers and data consumers):
+		<a href="token-revoke.txt">/auth/v1/token/revoke</a>
+
+	 7. Revoke all tokens (to be called by data consumers):
+		<a href="token-revoke-all.txt">/auth/v1/token/revoke-all</a>
+
+	 8. Audit tokens (can be called by both data providers and data consumers):
+		<a href="audit-tokens.txt">/auth/v1/audit/tokens</a>
+
+	 9. Add a consumer to a group (to be called by a data provider):
+		<a href="group-add.txt">/auth/v1/group/add</a>
+
+	10. Delete a consumer from a group (to be called by a data provider):
+		<a href="group-delete.txt">/auth/v1/group/delete</a>
+
+	11. List current consumers in a group (to be called by a data provider):
+		<a href="group-list.txt">/auth/v1/group/list</a>
+
+<b>5. Authentication</b>
+
+	All APIs require a valid client-side certificate (X.509).
+
+	To get a certificate, please visit any of the following certificate authorities (CA):
+
+		1. IUDX certificate authority : <a href=https://ca.iudx.org.in>https://ca.iudx.org.in</a>
+		2. Any licensed CA in India   : <a href=http://cca.gov.in/licensed_ca.html>http://cca.gov.in/licensed_ca.html</a>
+		3. Any standard trusted CA    : <a href=./ca-list.txt>List of trusted certificate authorities</a>
+
+	<b>Please note that</b>: as of now, certificates issued by CAs other than <a href="https://ca.iudx.org.in">IUDX CA</a> will be considered as:
+
+		class-1 for resource servers.
+		class-2 for consumers.
+
+	If you wish to get a class-3 or above certificate, please use the <a href=https://ca.iudx.org.in>IUDX CA</a> or your organization's IUDX-subCA.
+
+<b>6. Certificate classes:</b>
+
+	There are 5 classes of certificates:
+
+		class-1: can only be used by resource servers.
+		class-2: can be used by a data consumer to request access to protected data.
+
+		class-3: can be used by a data consumer to request access to protected data. 
+			 can also be used by a <b>data provider</b> to set access control policies <b>and</b> create/manage catalog entries.
+
+		class-4: can be used by a data consumer to request access to private data.
+		class-5: can be used by a data consumer to request access to confidential data.
+
+
+<b>7. For any queries, please contact us at:</b>
+
+	<a href=https://www.iudx.org.in/#contact-container>https://www.iudx.org.in/#contact-container</a>
+
+</pre>
+
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->

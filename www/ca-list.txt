@@ -1,0 +1,71 @@
+Autoridad de Certificacion Firmaprofesional CIF A62634068
+AC Camerfirma S.A.
+ACCV
+Actalis S.p.A./03358520967
+AddTrust AB
+AffirmTrust
+Agencia Catalana de Certificacio (NIF Q-0801176-I)
+Amazon
+AS Sertifitseerimiskeskus
+Atos
+Baltimore
+Buypass AS-983163327
+Certinomis
+Certplus
+certSIGN
+China Financial Certification Authority
+Chunghwa Telecom Co., Ltd.
+COMODO CA Limited
+Comodo CA Limited
+Cybertrust, Inc
+D-Trust GmbH
+Deutsche Telekom AG
+Dhimyotis
+DigiCert Inc
+Digital Signature Trust Co.
+Disig a.s.
+E-Tu\U011Fra EBG Bili\U015Fim Teknolojileri ve Hizmetleri A.\U015E.
+Entrust, Inc.
+Entrust.net
+FNMT-RCM
+GeoTrust Inc.
+GlobalSign
+GlobalSign nv-sa
+GoDaddy.com, Inc.
+Google Trust Services LLC
+Government Root Certification Authority
+GUANG DONG CERTIFICATE AUTHORITY CO.,LTD.
+Hellenic Academic and Research Institutions Cert. Authority
+Hongkong Post
+IdenTrust
+Internet Security Research Group
+IZENPE S.A.
+Japan Certification Services, Inc.
+Krajowa Izba Rozliczeniowa S.A.
+LuxTrust S.A.
+Microsec Ltd.
+NetLock Kft.
+Network Solutions L.L.C.
+QuoVadis Limited
+SECOM Trust Systems CO.,LTD.
+SECOM Trust.net
+SecureTrust Corporation
+Sonera
+SSL Corporation
+Staat der Nederlanden
+Starfield Technologies, Inc.
+SwissSign AG
+T-Systems Enterprise Services GmbH
+TAIWAN-CA
+TeliaSonera
+thawte, Inc.
+The Go Daddy Group, Inc.
+The USERTRUST Network
+TrustCor Systems S. de R.L.
+Trustis Limited
+Turkiye Bilimsel ve Teknolojik Arastirma Kurumu - TUBITAK
+UniTrust
+Unizeto Technologies S.A.
+VeriSign, Inc.
+WISeKey
+XRamp Security Services Inc
