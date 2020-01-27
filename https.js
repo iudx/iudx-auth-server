@@ -72,11 +72,6 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/list"		: 3,
 });
 
-/* optimizations */
-
-const fastjson	= require("fast-json-stringify");
-JSON.stringify	= fastjson.fastjson || JSON.stringify;
-
 /* dns */
 
 dns.setServers ([
