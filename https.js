@@ -1392,19 +1392,20 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			if (results.rows.length === 0)
 				return END_ERROR (res, 403, "Invalid token");
 
-			const expected_server_token	= results
-								.rows[0]
-								.server_token[resource_server_name_in_cert];
+			const expected_server_token = results
+							.rows[0]
+							.server_token[resource_server_name_in_cert];
 
-			const num_resource_servers	= Object.keys(results.rows[0].server_token).length;
+			if (! expected_server_token) // token doesn't belong to this server
+				return END_ERROR (res, 403, "Invalid token");
+
+			const num_resource_servers = Object.keys(results.rows[0].server_token).length;
 
 			if (num_resource_servers > 1)
 			{
 				if (server_token === true) // should be a real token
 					return END_ERROR (res, 403, "No valid 'server-token' field found in the body");
 
-				if (! expected_server_token) // token doesn't belong to this server
-					return END_ERROR (res, 403, "Invalid token");
 
 				const sha256_of_server_token = crypto.createHash("sha256")
 								.update(server_token)
@@ -1421,9 +1422,6 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			else
 			{
 				// token belongs to only 1 server
-
-				if (! expected_server_token) // must be true or a string
-					return END_ERROR (res, 403, "Invalid token");
 
 				if (server_token === true && expected_server_token === true)
 				{
@@ -1442,6 +1440,13 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 							"Invalid 'server-token' field in the body"
 						);
 					}
+				}
+				else
+				{
+					return END_ERROR (
+						res, 500,
+						"Invalid 'expected_server_token' in DB"
+					);
 				}
 			}
 
