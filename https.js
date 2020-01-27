@@ -1422,8 +1422,23 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			{
 				// token belongs to only 1 server
 
-				if (expected_server_token !== true)
+				if (! expected_server_token) // must be true or a string
 					return END_ERROR (res, 403, "Invalid token");
+
+				if (typeof expected_server_token === "string")
+				{
+					const sha256_of_server_token = crypto.createHash("sha256")
+									.update(server_token)
+									.digest("hex");
+
+					if (sha256_of_server_token !== expected_server_token)
+					{
+						return END_ERROR (
+							res, 403,
+							"Invalid 'server-token' field in the body"
+						);
+					}
+				}
 			}
 
 			const request	= results.rows[0].request;
