@@ -19,40 +19,43 @@
 
 "use strict";
 
-const fs		= require("fs");
-const os		= require("os");
-const dns 		= require("dns");
-const url		= require("url");
-const cors		= require("cors");
-const ocsp		= require("ocsp");
-const Pool		= require("pg").Pool;
-const https		= require("https");
-const chroot		= require("chroot");
-const crypto		= require("crypto");
-const logger		= require("node-color-log");
-const cluster		= require("cluster");
-const request		= require("request");
-const express		= require("express");
-const aperture		= require("./node-aperture");
-const immutable		= require("immutable");
-const geoip_lite	= require("geoip-lite");
-const bodyParser	= require("body-parser");
-const compression	= require("compression");
-const pgNativeClient 	= require("pg-native");
-const pg		= new pgNativeClient();
+const fs			= require("fs");
+const os			= require("os");
+const dns 			= require("dns");
+const url			= require("url");
+const cors			= require("cors");
+const ocsp			= require("ocsp");
+const Pool			= require("pg").Pool;
+const https			= require("https");
+const chroot			= require("chroot");
+const crypto			= require("crypto");
+const logger			= require("node-color-log");
+const cluster			= require("cluster");
+const request			= require("request");
+const express			= require("express");
+const aperture			= require("./node-aperture");
+const immutable			= require("immutable");
+const geoip_lite		= require("geoip-lite");
+const bodyParser		= require("body-parser");
+const compression		= require("compression");
+const pgNativeClient 		= require("pg-native");
+const pg			= new pgNativeClient();
 
-const TOKEN_LENGTH	= 16;
-const TOKEN_LENGTH_HEX	= 2 * TOKEN_LENGTH;
-const MAX_TOKEN_TIME	= 31536000; // in seconds (1 year)
+const TOKEN_LENGTH		= 16;
+const TOKEN_LENGTH_HEX		= 2 * TOKEN_LENGTH;
 
-const EUID		= process.geteuid();
-const is_openbsd	= os.type() === "OpenBSD";
-const pledge 		= is_openbsd ? require("node-pledge")	: null;
-const unveil		= is_openbsd ? require("openbsd-unveil"): null;
+const EUID			= process.geteuid();
+const is_openbsd		= os.type() === "OpenBSD";
+const pledge 			= is_openbsd ? require("node-pledge")	: null;
+const unveil			= is_openbsd ? require("openbsd-unveil"): null;
 
-const SUCCESS		= '{"success":true}';
-const NUM_CPUS		= os.cpus().length;
-const SERVER_NAME	= "auth.iudx.org.in";
+const SUCCESS			= '{"success":true}';
+const NUM_CPUS			= os.cpus().length;
+const SERVER_NAME		= "auth.iudx.org.in";
+
+const MAX_TOKEN_TIME		= 31536000; // in seconds (1 year)
+const MAX_TOKEN_HASH_LENGTH	= 64;
+const MAX_SAFE_STRING_LENGTH	= 512;
 
 const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 
@@ -488,7 +491,7 @@ function is_string_safe (str, exceptions = "")
 	if (! str || typeof str !== "string")
 		return false;
 
-	if (str.length === 0)
+	if (str.length === 0 || str.length > MAX_SAFE_STRING_LENGTH)
 		return false;
 
 	exceptions = exceptions + "-/.@";
@@ -1618,7 +1621,7 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 		{
 			// TODO set revoked = true if all providers keys are false
 
-			if (! is_string_safe(token_hash))
+			if ((! is_string_safe(token_hash)) || (token_hash.length > MAX_TOKEN_HASH_LENGTH))
 			{
 				return END_ERROR (
 					res, 400,
