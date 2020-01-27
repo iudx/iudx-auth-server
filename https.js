@@ -1425,7 +1425,11 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 				if (! expected_server_token) // must be true or a string
 					return END_ERROR (res, 403, "Invalid token");
 
-				if (typeof expected_server_token === "string")
+				if (server_token === true && expected_server_token === true)
+				{
+					// ok
+				}
+				else if (typeof expected_server_token === "string")
 				{
 					const sha256_of_server_token = crypto.createHash("sha256")
 									.update(server_token)
