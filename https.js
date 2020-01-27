@@ -72,6 +72,13 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/list"		: 3,
 });
 
+/* optimizations */
+
+const fastjson	= require("fast-json-stringify");
+JSON.stringify	= fastjson.fastjson || JSON.stringify;
+
+/* dns */
+
 dns.setServers ([
 	"1.1.1.1",
 	"4.4.4.4",
@@ -79,6 +86,8 @@ dns.setServers ([
 	"[2001:4860:4860::8888]",
 	"[2001:4860:4860::8844]",
 ]);
+
+/* telegram */
 
 const telegram_apikey	= fs.readFileSync ("telegram.apikey","ascii").trim();
 const telegram_chat_id	= fs.readFileSync ("telegram.chatid","ascii").trim();

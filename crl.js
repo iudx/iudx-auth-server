@@ -122,7 +122,7 @@ function run()
 	catch (x)
 	{
 		const err = String(x).replace(/\n/g," ");
-		log('red', 'Error in getting CRL :' + err);
+		log("red", "Error in getting CRL :" + err);
 		return;
 	}
 
