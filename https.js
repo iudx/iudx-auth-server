@@ -1330,6 +1330,14 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			return END_ERROR (res, 400, "Invalid 'server-token' field");
 	}
 
+	const request = body.request;
+
+	if (request)
+	{
+		if (! (request instanceof Array))
+			return END_ERROR (res, 400, "'request' must be an array");
+	}
+
 	const issued_by			= token.split("/")[0];
 	const email_id_in_token		= token.split("/")[1];
 	const random_part_of_token	= token.split("/")[2];
@@ -1340,8 +1348,6 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 	) {
 		return END_ERROR (res, 400, "Invalid token");
 	}
-
-	// TODO read body.request 
 
 	const sha256_of_token	= crypto.createHash("sha256")
 					.update(random_part_of_token)
@@ -1478,7 +1484,60 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			if (request_for_resource_server.length === 0)
 				return END_ERROR (res, 403, "Invalid token");
 
-			// TODO: if body.request then .. check if request is subset of request_for_resource_server
+			if (request)
+			{
+				const l1 = Object
+						.keys(request)
+						.length;
+
+				const l2 = Object
+						.keys(request_for_resource_server)
+						.length;
+
+				// more number of requests than what is allowed
+
+				if (l1 > l2)
+					return END_ERROR (res, 403, "Unauthorized !");
+
+				for (const r1 in request)
+				{
+					// default values
+
+					if (! r1.methods)
+						r1.methods = ["*"];
+
+					if (! r1.apis)
+						r1.apis = ["/*"];
+
+					let resource_found = false;
+
+					const keys1 = Object
+							.keys(request);
+
+					for (const r2 in request_for_resource_server)
+					{
+						if (r1["resource-id"] === r2["resource-id"])
+						{
+							const keys2 = Object
+								.keys(request_for_resource_server);
+									
+							const keys = new Set(keys1.concat(keys2));
+
+							for (const k of keys)
+							{
+								if (JSON.stringify(r1[k]) !== JSON.stringify[k])
+									return END_ERROR (res, 403, "Unauthorized to access " + JSON.stringify(r1));
+							}
+
+							resource_found = true;
+							break;
+						}
+					}
+
+					if (! resource_found)
+						return END_ERROR (res, 403, "Unauthorized to access " + JSON.stringify(r1));
+				}
+			}
 
 			const response = {
 				"consumer"			: email_id_in_token,
