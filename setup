@@ -64,10 +64,11 @@ openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyou
 git clone https://github.com/rbccps-iisc/node-aperture
 cd node-aperture
 npm install
+npm audit fix --force
 
 cd ..
 npm install
-npm audit fix
+npm audit fix --force
 
 echo /sbin/pfctl -t bruteforce -T expire 86400 > /etc/daily.local
 echo syspatch >> /etc/daily.local

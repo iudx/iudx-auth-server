@@ -6,7 +6,7 @@ ftp -o - https://iudx.org.in/install/auth | sh
 ```
 This will install the AAA server at `/home/auth/`.
 
-The system will reboot after the setup. After which, the auth server should be
+The system will reboot after the setup. After which, the AAA server should be
 ready at https://localhost.
 
 Please read the API documentation at http://auth.iudx.org.in

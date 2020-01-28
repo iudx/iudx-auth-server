@@ -31,13 +31,13 @@ const chroot			= require("chroot");
 const crypto			= require("crypto");
 const logger			= require("node-color-log");
 const cluster			= require("cluster");
-const request			= require("request");
 const express			= require("express");
 const aperture			= require("./node-aperture");
 const immutable			= require("immutable");
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
 const compression		= require("compression");
+const http_request		= require("request");
 const pgNativeClient 		= require("pg-native");
 const pg			= new pgNativeClient();
 
@@ -216,7 +216,7 @@ function log(color, msg)
 
 function send_telegram (message)
 {
-	request( telegram_url + "[ AUTH ] : " + message,
+	http_request ( telegram_url + "[ AUTH ] : " + message,
 		function (error,response,body)
 		{
 			if (error)
@@ -1330,11 +1330,11 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			return END_ERROR (res, 400, "Invalid 'server-token' field");
 	}
 
-	const request = body.request;
+	const consumer_request = body.request;
 
-	if (request)
+	if (consumer_request)
 	{
-		if (! (request instanceof Array))
+		if (! (consumer_request instanceof Array))
 			return END_ERROR (res, 400, "'request' must be an array");
 	}
 
@@ -1484,10 +1484,10 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 			if (request_for_resource_server.length === 0)
 				return END_ERROR (res, 403, "Invalid token");
 
-			if (request)
+			if (consumer_request)
 			{
 				const l1 = Object
-						.keys(request)
+						.keys(consumer_request)
 						.length;
 
 				const l2 = Object
@@ -1499,7 +1499,7 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 				if (l1 > l2)
 					return END_ERROR (res, 403, "Unauthorized !");
 
-				for (const r1 in request)
+				for (const r1 in consumer_request)
 				{
 					// default values
 
@@ -1509,10 +1509,10 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 					if (! r1.apis)
 						r1.apis = ["/*"];
 
-					let resource_found = false;
-
 					const keys1 = Object
 							.keys(request);
+
+					let resource_found = false;
 
 					for (const r2 in request_for_resource_server)
 					{
@@ -1525,8 +1525,8 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 
 							for (const k of keys)
 							{
-								if (JSON.stringify(r1[k]) !== JSON.stringify[k])
-									return END_ERROR (res, 403, "Unauthorized to access " + JSON.stringify(r1));
+								if (JSON.stringify(r1[k]) !== JSON.stringify(r2[k]))
+									return END_ERROR (res, 403, "Unauthorized to access : " + r1["resource-id"] + " for key : " + k);
 							}
 
 							resource_found = true;
