@@ -1499,8 +1499,11 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 				if (l1 > l2)
 					return END_ERROR (res, 403, "Unauthorized !");
 
-				for (const r1 in consumer_request)
+				for (const r1 of consumer_request)
 				{
+					if (! r1 instanceof Object)
+						return END_ERROR (res, 400, "Invalid request : " + r1);
+
 					// default values
 
 					if (! r1.methods)
@@ -1514,7 +1517,7 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 
 					let resource_found = false;
 
-					for (const r2 in request_for_resource_server)
+					for (const r2 of request_for_resource_server)
 					{
 						if (r1["resource-id"] === r2["resource-id"])
 						{
