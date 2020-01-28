@@ -1501,7 +1501,7 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 
 				for (const r1 of consumer_request)
 				{
-					if (! r1 instanceof Object)
+					if (! (r1 instanceof Object))
 						return END_ERROR (res, 400, "Invalid request : " + r1);
 
 					// default values
