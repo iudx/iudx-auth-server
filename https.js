@@ -731,7 +731,7 @@ function security (req, res, next)
 	}
 }
 
-app.all("/auth/v1/token", function (req, res) {
+app.post("/auth/v1/token", function (req, res) {
 
 	const cert			= res.locals.cert;
 	const cert_class		= res.locals.cert_class;
@@ -1303,7 +1303,7 @@ app.all("/auth/v1/token", function (req, res) {
 	}
 });
 
-app.all("/auth/v1/token/introspect", function (req, res) {
+app.post("/auth/v1/token/introspect", function (req, res) {
 
 	const cert	= res.locals.cert;
 	const body	= res.locals.body;
@@ -1580,7 +1580,7 @@ app.all("/auth/v1/token/introspect", function (req, res) {
 	});
 });
 
-app.all("/auth/v1/token/revoke", function (req, res) {
+app.post("/auth/v1/token/revoke", function (req, res) {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
@@ -1731,7 +1731,7 @@ app.all("/auth/v1/token/revoke", function (req, res) {
 	return END_SUCCESS (res, 200, SUCCESS);
 });
 
-app.all("/auth/v1/token/revoke-all", function (req, res) {
+app.post("/auth/v1/token/revoke-all", function (req, res) {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
@@ -1783,7 +1783,7 @@ app.all("/auth/v1/token/revoke-all", function (req, res) {
 	);
 });
 
-app.all("/auth/v1/acl/set", function (req, res) {
+app.post("/auth/v1/acl/set", function (req, res) {
 
 	// TODO: add 3 more boolean columns in DB,
 	// rule_has_body, rule_has_group, rule_has_tokens_per_second
@@ -1864,7 +1864,7 @@ app.all("/auth/v1/acl/set", function (req, res) {
 	});
 });
 
-app.all("/auth/v1/acl/append", function (req, res) {
+app.post("/auth/v1/acl/append", function (req, res) {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -1970,7 +1970,7 @@ app.all("/auth/v1/acl/append", function (req, res) {
 	});
 });
 
-app.all("/auth/v1/acl", function (req, res) {
+app.post("/auth/v1/acl", function (req, res) {
 
 	const provider_id	= res.locals.email;
 
@@ -2000,7 +2000,7 @@ app.all("/auth/v1/acl", function (req, res) {
 	});
 });
 
-app.all("/auth/v1/audit/tokens", function (req, res) {
+app.post("/auth/v1/audit/tokens", function (req, res) {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
@@ -2103,7 +2103,7 @@ app.all("/auth/v1/audit/tokens", function (req, res) {
 	});
 });
 
-app.all("/auth/v1/group/add", function (req, res) {
+app.post("/auth/v1/group/add", function (req, res) {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2156,7 +2156,7 @@ app.all("/auth/v1/group/add", function (req, res) {
 	});
 });
 
-app.all("/auth/v1/group/list", function (req, res) {
+app.post("/auth/v1/group/list", function (req, res) {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2239,7 +2239,7 @@ app.all("/auth/v1/group/list", function (req, res) {
 	}
 });
 
-app.all("/auth/v1/group/delete", function (req, res) {
+app.post("/auth/v1/group/delete", function (req, res) {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2303,7 +2303,7 @@ app.all("/auth/v1/group/delete", function (req, res) {
 	});
 });
 
-app.all("/auth/v1/certificate-info", function (req, res) {
+app.post("/auth/v1/certificate-info", function (req, res) {
 
 	const response = {
 		'id'			: res.locals.email,
@@ -2338,11 +2338,11 @@ app.all("/auth/v1/[^.]*/help", function (req, res) {
 app.all("/*", function (req, res) {
 
 	const pathname = url.parse(req.url).pathname;
-	console.log("=>>> API not found :",pathname);
+	console.log("=>>> Invalid API : ",pathname);
 
 	return END_ERROR (
-		res, 404, 
-			"No such API. Please visit: "	+
+		res, 405, 
+			"Invalid API or method. Please visit: "	+
 			"http://auth.iudx.org.in for API help."
 	);
 });
