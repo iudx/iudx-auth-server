@@ -60,6 +60,7 @@ const MAX_SAFE_STRING_LENGTH	= 512;
 const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 
 	"/auth/v1/token/introspect"	: 1,
+	"/auth/v1/certificate-info"	: 2,
 	"/auth/v1/token"		: 2,
 	"/auth/v1/token/revoke"		: 3,
 	"/auth/v1/token/revoke-all"	: 3,
@@ -2300,6 +2301,18 @@ app.all("/auth/v1/group/delete", function (req, res) {
 			return END_SUCCESS (res, 200, JSON.stringify(response));
 		}
 	});
+});
+
+app.all("/auth/v1/certificate-info", function (req, res) {
+
+	const response = {
+		'id'			: res.locals.email,
+		'certificate-class'	: res.locals.cert_class
+	};
+
+	return END_SUCCESS (
+		res, 200, JSON.stringify(response)
+	);
 });
 
 app.all("/auth/v1/[^.]*/help", function (req, res) {
