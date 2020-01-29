@@ -2387,7 +2387,7 @@ function drop_privileges()
 	{
 		if (EUID === 0)
 		{
-			chroot("/var/iudx-chroot","nobody");
+			chroot("/home/auth/iudx-auth-server","nobody");
 			process.chdir ("/");
 
 			process.setgid("nogroup");
