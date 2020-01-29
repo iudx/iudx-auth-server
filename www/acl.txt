@@ -6,7 +6,7 @@ Endpoint:
 	https://<server>/auth/v1/acl
 
 Methods:
-	GET
+	POST	
 
 Description:
 	This API is used to get previously set access control policies.

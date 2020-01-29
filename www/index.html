@@ -17,7 +17,7 @@
 
 <pre id='vimCodeElement'>
 
-<b>1. Introduction:</b>
+<b>1. Introduction</b>
 
 	Welcome to the <a href="https://www.iudx.org.in">IUDX</a> Authentication, Authentication, and Accounting (AAA) server.
 
@@ -29,13 +29,13 @@
 
 	through <a href="https://auth.iudx.org.in">HTTPS</a> (using a valid client-side X.509 certificate).
 
-<b>2. Setup:</b>
+<b>2. Setup</b>
 <p><img src="setup.svg" alt="[Setup]"></p>
 
-<b>3. Data access flow:</b>
+<b>3. Data access flow</b>
 <p><img src="consumer.svg" alt="[Data access flow]"></p>
 
-<b id=apis>4. List of APIs:</b>
+<b id=apis>4. List of APIs</b>
 
 	 1. Get an access token (to be called by data consumers):
 		<a href="token.txt">/auth/v1/token</a>
@@ -70,9 +70,17 @@
 	11. List current consumers in a group (to be called by a data provider):
 		<a href="group-list.txt">/auth/v1/group/list</a>
 
+	12. Get the user's certificate details (can be called by both data providers and data consumers):
+		<a href="certificate-info.txt">/auth/v1/certificate-info</a>
+
 <b>5. Authentication</b>
 
 	All APIs require a valid client-side certificate (X.509).
+
+	Data providers and data consumers <b>must</b> have a valid <b>emailAddress</b> field in the certificate.
+
+	Where as, the resource server's certificate must have a valid hostname (FQDN) as the <b>Common Name (CN)</b>.
+	Also, for a resource server, the hostname in the certificate <b>must</b> match with the IP from where the API is being called.
 
 	To get a certificate, please visit any of the following certificate authorities (CA):
 
@@ -87,21 +95,25 @@
 
 	If you wish to get a class-3 or above certificate, please use the <a href=https://ca.iudx.org.in>IUDX CA</a> or your organization's IUDX-subCA.
 
-<b>6. Certificate classes:</b>
+<b>6. Certificate classes</b>
 
 	There are 5 classes of certificates:
 
 		class-1: can only be used by resource servers.
-		class-2: can be used by a data consumer to request access to protected data.
+		class-2: can be used by a data consumer to request access to <b>protected</b> data.
 
-		class-3: can be used by a data consumer to request access to protected data. 
+		class-3: can be used by a data consumer to request access to <b>protected</b> data. 
 			 can also be used by a <b>data provider</b> to set access control policies <b>and</b> create/manage catalog entries.
 
-		class-4: can be used by a data consumer to request access to private data.
-		class-5: can be used by a data consumer to request access to confidential data.
+		class-4: can be used by a data consumer to request access to <b>private</b> data.
+		class-5: can be used by a data consumer to request access to <b>confidential</b> data.
 
+<b>7. Source code and SDKs</b>
 
-<b>7. For any queries, please contact us at:</b>
+	The source code of the AAA server is available at		: <a href=https://github.com/iudx/iudx-auth-server>https://github.com/iudx/iudx-auth-server</a>
+	The python SDK (pyIUDX) to call the AAA APIs is available at	: <a href=https://github.com/iudx/pyIUDX>https://github.com/iudx/pyIUDX</a>
+
+<b>8. For any queries, please contact us at</b>
 
 	<a href=https://www.iudx.org.in/#contact-container>https://www.iudx.org.in/#contact-container</a>
 

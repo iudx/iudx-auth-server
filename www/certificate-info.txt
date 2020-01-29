@@ -1,0 +1,42 @@
+
+Get information about the user certificate 
+------------------------------------------
+
+Endpoint:
+	https://<server>/auth/v1/certificate-info
+
+Methods:
+	POST	
+
+Description:
+	This API is used to get the user's certificate details. 
+
+Called by:
+	A data provider or a data consumer with a valid class-2 or above certificate.
+
+HTTP response code:
+
+	200
+		If the request is successful 
+
+	403
+		If access is denied.
+
+CURL example:
+
+	Request:
+
+		curl https://auth.iudx.org.in/auth/v1/certificate-info	\
+
+			--cert certificate.pem --key private-key.pem	\
+
+	Response:
+		
+		200 OK
+		content-type	: "application/json"
+
+		{
+			"id"			: "user@example.com",
+			"certificate-class"	: 2
+		}
+		
