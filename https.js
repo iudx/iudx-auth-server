@@ -306,21 +306,23 @@ function is_secure (req, res, cert, validate_email = true)
 {
 	if (req.headers.origin)
 	{
+		const origin = req.headers.origin.toLowerCase().strip();
+
 		// e.g Origin = https://www.iudx.org.in:8443/
 
-		if (! req.headers.origin.startsWith("https://"))
+		if (! origin.startsWith("https://"))
 			return "Insecure origin field";
 
-		if ((req.headers.origin.match(/\//g) || []).length < 2)
+		if ((origin.match(/\//g) || []).length < 2)
 			return "Invalid 'origin' field";
 
 		const origin_domain = String (
-			req.headers.origin
+			origin
 				.split("/")[2]	// remove protocol
 				.split(":")[0]	// remove port number
 		);
 
-		if (! origin_domain.toLowerCase().endsWith(".iudx.org.in"))
+		if (! origin_domain.endsWith(".iudx.org.in"))
 			return "Invalid 'origin' field in the header";
 
 		res.header("X-XSS-Protection", "1; mode=block");
