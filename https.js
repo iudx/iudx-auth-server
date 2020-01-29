@@ -308,6 +308,9 @@ function is_secure (req, res, cert, validate_email = true)
 	{
 		// e.g Origin = https://www.iudx.org.in:8443/
 
+		if (! req.headers.origin.startsWith("https://"))
+			return "Insecure origin field";
+
 		if ((req.headers.origin.match(/\//g) || []).length < 2)
 			return "Invalid 'origin' field";
 
