@@ -311,7 +311,7 @@ function is_secure (req, res, cert, validate_email = true)
 		// e.g Origin = https://www.iudx.org.in:8443/
 
 		if (! origin.startsWith("https://"))
-			return "Insecure origin field";
+			return "Insecure 'origin' field";
 
 		if ((origin.match(/\//g) || []).length < 2)
 			return "Invalid 'origin' field";
@@ -854,7 +854,7 @@ app.post("/auth/v1/token", function (req, res) {
 	{
 		let resource = row["resource-id"];
 
-		if (! is_string_safe(resource,"* _ ()&")) // allow some chars
+		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
 			return END_ERROR (
 				res, 400,
@@ -2348,7 +2348,7 @@ app.all("/*", function (req, res) {
 	return END_ERROR (
 		res, 405, 
 			"Invalid API or method. Please visit: "	+
-			"http://auth.iudx.org.in for API help."
+			"<http://auth.iudx.org.in> for API help."
 	);
 });
 
