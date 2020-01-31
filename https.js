@@ -122,7 +122,7 @@ pg.connectSync (
 const app = express();
 app.use (
 	cors ({
-		methods		: ["POST","GET"],
+		methods		: ["POST"],
 		credentials	: true,
 		origin		: function (origin, callback)
 				{
@@ -331,7 +331,7 @@ function is_secure (req, res, cert, validate_email = true)
 		res.header("Referrer-Policy","no-referrer-when-downgrade");
 
 		res.header("Access-Control-Allow-Origin", req.headers.origin);
-		res.header("Access-Control-Allow-Methods", "POST,GET");
+		res.header("Access-Control-Allow-Methods", "POST");
 	}
 
 	let cert_err;
@@ -440,7 +440,7 @@ function has_certificate_been_revoked (socket, cert, CRL)
 		else
 		{
 			/*
-				if the issuerCertificate is empty, 
+				if the issuerCertificate is empty,
 				then the session must have been reused
 				by the browser.
 			*/
@@ -484,7 +484,7 @@ function has_certificate_been_revoked (socket, cert, CRL)
 				/*
 					if fingerprint OR serial is undefined,
 					then the session must have been reused
-					by the browser. 
+					by the browser.
 				*/
 
 				if (! socket.isSessionReused())
@@ -576,7 +576,7 @@ function security (req, res, next)
 
 	const api = url.parse(req.url).pathname;
 
-	// Not an API. Or is help 
+	// Not an API. Or is help
 	if ((! api.startsWith("/auth/v")) || (api.endsWith("/help")))
 		return next();
 
@@ -586,7 +586,7 @@ function security (req, res, next)
 	if (! min_class_required)
 	{
 		return END_ERROR (
-			res, 404, 
+			res, 404,
 				"No such API. Please visit: "	+
 				"http://auth.iudx.org.in for API help."
 		);
@@ -612,7 +612,7 @@ function security (req, res, next)
 		{
 			return END_ERROR (
 				res, 403,
-					"A class-" + min_class_required	+ 
+					"A class-" + min_class_required	+
 					" or above certificate "	+
 					"is required to call this API"
 			);
@@ -695,8 +695,8 @@ function security (req, res, next)
 				}
 
 				let error;
-				
-				// certificate may not have a "emailAddress" field 
+
+				// certificate may not have a "emailAddress" field
 				if ((error = is_secure(req,res,cert,false)) !== "OK")
 					return END_ERROR (res,403, error);
 
@@ -824,8 +824,10 @@ app.post("/auth/v1/token", function (req, res) {
 		}
 	};
 
-	let requested_token_time;	 	// as specified by the consumer
+	let requested_token_time;		// as specified by the consumer
 	let token_time = MAX_TOKEN_TIME;	// to be sent along with token
+
+	const payment_info = [];
 
 	if (body["token-time"])
 	{
@@ -1057,12 +1059,16 @@ app.post("/auth/v1/token", function (req, res) {
 					// token expiry time as specified by the provider
 					// in the policy
 
-					const token_time_in_policy = evaluator.evaluate (
+					const result = evaluator.evaluate (
 						policy_in_json,
 						CTX
 					);
 
-					if (! token_time_in_policy)
+					const token_time_in_policy	= result.expiry;
+					const payment_amount		= result.amount;
+					// const payment_currency	= result.currency;
+
+					if ((! token_time_in_policy) || token_time_in_policy < 0 || payment_amount < 0)
 					{
 						return END_ERROR (res, 403,
 							"Unauthorized to access id :'"	+
@@ -1074,6 +1080,11 @@ app.post("/auth/v1/token", function (req, res) {
 							"'"
 						);
 					}
+
+					payment_info.push ({
+						"amount"	: payment_amount,
+						"expiry"	: token_time_in_policy
+					});
 
 					token_time = Math.min (
 						token_time,
@@ -1098,11 +1109,29 @@ app.post("/auth/v1/token", function (req, res) {
 		if (requested_token_time)
 			token_time = Math.min(requested_token_time,token_time);
 
+		let total_payment_amount = 0.0;
+		for (const p of payment_info)
+		{
+			total_payment_amount += p.amount / p.expiry; // amount per second
+		}
+
+		total_payment_amount *= token_time; // multiplied by the final token time
+
+		// if (total_payment_amount > 0) // TODO save provider's payment data
+
 		const response = {
+
 			"resource-id"	: resource,
 			"methods"	: row.methods,
 			"apis"		: row.apis,
 			"body"		: row.body ? row.body : null,
+
+			"payment"	: {
+
+					"amount"	: total_payment_amount,
+					"currency"	: "INR",
+					"url"		: "https://auth.iudx.org.in/payments",
+			}
 		};
 
 		response_array.push (response);
@@ -1395,6 +1424,8 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			);
 		}
 
+// TODO get payment_required, if true : return 402 - payment required
+ 
 		pool.query (
 				"SELECT expiry,request,cert_class,"	+
 				"server_token,providers "		+
@@ -1529,7 +1560,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 						{
 							const keys2 = Object
 								.keys(request_for_resource_server);
-									
+
 							const keys = new Set(keys1.concat(keys2));
 
 							for (const k of keys)
@@ -1556,7 +1587,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			};
 
 			// TODO
-			// introspected should be introspected[resource-server] = bool 
+			// introspected should be introspected[resource-server] = bool
 
 			pool.query (
 				"UPDATE token SET introspected = true "		+
@@ -1743,7 +1774,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 
 	if (! body.serial)
 		return END_ERROR (res, 400, "No 'serial' found in the body");
-	
+
 	if (! body.fingerprint)
 	{
 		return END_ERROR (
@@ -2333,7 +2364,7 @@ app.all("/auth/v1/[^.]*/help", function (req, res) {
 	else
 	{
 		return END_ERROR (
-			res, 404, 
+			res, 404,
 				"No such API. Please visit: "	+
 				"http://auth.iudx.org.in for API help."
 		);
@@ -2346,7 +2377,7 @@ app.all("/*", function (req, res) {
 	console.log("=>>> Invalid API : ",pathname);
 
 	return END_ERROR (
-		res, 405, 
+		res, 405,
 			"Invalid API or method. Please visit: "	+
 			"<http://auth.iudx.org.in> for API help."
 	);
