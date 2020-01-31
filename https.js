@@ -306,7 +306,7 @@ function is_secure (req, res, cert, validate_email = true)
 {
 	if (req.headers.origin)
 	{
-		const origin = req.headers.origin.toLowerCase().strip();
+		const origin = req.headers.origin.toLowerCase();
 
 		// e.g Origin = https://www.iudx.org.in:8443/
 
@@ -331,7 +331,7 @@ function is_secure (req, res, cert, validate_email = true)
 		res.header("Referrer-Policy","no-referrer-when-downgrade");
 
 		res.header("Access-Control-Allow-Origin", req.headers.origin);
-		res.header("Access-Control-Allow-Methods", "POST");
+		res.header("Access-Control-Allow-Methods", "GET,POST");
 	}
 
 	let cert_err;
@@ -1068,6 +1068,7 @@ app.post("/auth/v1/token", function (req, res) {
 					const payment_amount		= result.amount;
 					// const payment_currency	= result.currency;
 
+
 					if ((! token_time_in_policy) || token_time_in_policy < 0 || payment_amount < 0)
 					{
 						return END_ERROR (res, 403,
@@ -1109,29 +1110,11 @@ app.post("/auth/v1/token", function (req, res) {
 		if (requested_token_time)
 			token_time = Math.min(requested_token_time,token_time);
 
-		let total_payment_amount = 0.0;
-		for (const p of payment_info)
-		{
-			total_payment_amount += p.amount / p.expiry; // amount per second
-		}
-
-		total_payment_amount *= token_time; // multiplied by the final token time
-
-		// if (total_payment_amount > 0) // TODO save provider's payment data
-
 		const response = {
-
 			"resource-id"	: resource,
 			"methods"	: row.methods,
 			"apis"		: row.apis,
 			"body"		: row.body ? row.body : null,
-
-			"payment"	: {
-
-					"amount"	: total_payment_amount,
-					"currency"	: "INR",
-					"url"		: "https://auth.iudx.org.in/payments",
-			}
 		};
 
 		response_array.push (response);
@@ -1217,6 +1200,16 @@ app.post("/auth/v1/token", function (req, res) {
 			token = crypto.randomBytes(TOKEN_LENGTH).toString("hex");
 		}
 
+		let total_payment_amount = 0.0;
+		for (const p of payment_info)
+		{
+			total_payment_amount += p.amount / p.expiry; // amount per second
+		}
+
+		total_payment_amount *= token_time; // multiplied by the final token time
+
+		// if (total_payment_amount > 0) // TODO save provider's payment data
+
 		const response = {
 
 			/* Token format: issued-by / issued-to / token */
@@ -1224,6 +1217,13 @@ app.post("/auth/v1/token", function (req, res) {
 			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
 			"token-type"	: "IUDX",
 			"expires-in"	: token_time,
+
+			"payment-info"	: {
+
+					"amount"	: total_payment_amount,
+					"currency"	: "INR",
+					"url"		: "https://auth.iudx.org.in/payments",
+			}
 		};
 
 		const num_resource_servers = Object
