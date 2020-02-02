@@ -850,6 +850,9 @@ app.post("/auth/v1/token", function (req, res) {
 
 	let num_rules_passed		= 0;
 	let total_data_cost_per_second	= 0.0;
+	let pending_payment_amount	= 0.0;
+
+	const payment_info		= {};
 
 	for (const row of request_array)
 	{
@@ -1067,7 +1070,6 @@ app.post("/auth/v1/token", function (req, res) {
 					const payment_amount		= result.amount;
 					// const payment_currency	= result.currency;
 
-
 					if ((! token_time_in_policy) || token_time_in_policy < 0 || payment_amount < 0)
 					{
 						return END_ERROR (res, 403,
@@ -1081,12 +1083,20 @@ app.post("/auth/v1/token", function (req, res) {
 						);
 					}
 
-					total_data_cost_per_second += payment_amount / token_time_in_policy;
+					const cost_per_second		= payment_amount / token_time_in_policy;
+
+					total_data_cost_per_second	+= cost_per_second;
+
+					if (! payment_info[provider_id_in_db])
+						payment_info[provider_id_in_db] = 0.0;
+
+					payment_info[provider_id_in_db]	+= cost_per_second;
 
 					token_time = Math.min (
 						token_time,
 						token_time_in_policy
 					);
+
 				}
 				catch (x)
 				{
@@ -1192,14 +1202,14 @@ app.post("/auth/v1/token", function (req, res) {
 
 			token = random_part_of_token; // given by the user
 
-			// TODO add existing payment required to total_payment_amount;
+			// TODO add existing payment required to pending_payment_amount;
 		}
 		else
 		{
 			token = crypto.randomBytes(TOKEN_LENGTH).toString("hex");
 		}
 
-		const total_payment_amount = total_data_cost_per_second * token_time;
+		const total_payment_amount = pending_payment_amount + total_data_cost_per_second * token_time;
 
 		// if (total_payment_amount > 0) // TODO save provider's payment data
 
@@ -1418,7 +1428,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 		}
 
 // TODO get payment_required, if true : return 402 - payment required
- 
+
 		pool.query (
 				"SELECT expiry,request,cert_class,"	+
 				"server_token,providers "		+
