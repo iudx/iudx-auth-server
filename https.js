@@ -827,8 +827,6 @@ app.post("/auth/v1/token", function (req, res) {
 	let requested_token_time;		// as specified by the consumer
 	let token_time = MAX_TOKEN_TIME;	// to be sent along with token
 
-	const payment_info = [];
-
 	if (body["token-time"])
 	{
 		requested_token_time = parseInt(body["token-time"],10);
@@ -847,10 +845,11 @@ app.post("/auth/v1/token", function (req, res) {
 		}
 	}
 
-	const existing_token	= body["existing-token"];
-	const providers		= {};
+	const existing_token		= body["existing-token"];
+	const providers			= {};
 
-	let num_rules_passed	= 0;
+	let num_rules_passed		= 0;
+	let total_data_cost_per_second	= 0.0;
 
 	for (const row of request_array)
 	{
@@ -1082,10 +1081,7 @@ app.post("/auth/v1/token", function (req, res) {
 						);
 					}
 
-					payment_info.push ({
-						"amount"	: payment_amount,
-						"expiry"	: token_time_in_policy
-					});
+					total_data_cost_per_second += payment_amount / token_time_in_policy;
 
 					token_time = Math.min (
 						token_time,
@@ -1125,6 +1121,7 @@ app.post("/auth/v1/token", function (req, res) {
 	}
 
 	let existing_row;
+
 	if (num_rules_passed > 0 && num_rules_passed === request_array.length)
 	{
 		let token;
@@ -1194,19 +1191,15 @@ app.post("/auth/v1/token", function (req, res) {
 				resource_server_token [key] = true;
 
 			token = random_part_of_token; // given by the user
+
+			// TODO add existing payment required to total_payment_amount;
 		}
 		else
 		{
 			token = crypto.randomBytes(TOKEN_LENGTH).toString("hex");
 		}
 
-		let total_payment_amount = 0.0;
-		for (const p of payment_info)
-		{
-			total_payment_amount += p.amount / p.expiry; // amount per second
-		}
-
-		total_payment_amount *= token_time; // multiplied by the final token time
+		const total_payment_amount = total_data_cost_per_second * token_time;
 
 		// if (total_payment_amount > 0) // TODO save provider's payment data
 
