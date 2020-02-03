@@ -62,12 +62,13 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/token/introspect"	: 1,
 	"/auth/v1/certificate-info"	: 2,
 	"/auth/v1/token"		: 2,
+	"/auth/v1/audit/payments"	: 2,
+	"/auth/v1/audit/tokens"		: 3,
 	"/auth/v1/token/revoke"		: 3,
 	"/auth/v1/token/revoke-all"	: 3,
 	"/auth/v1/acl"			: 3,
 	"/auth/v1/acl/set"		: 3,
 	"/auth/v1/acl/append"		: 3,
-	"/auth/v1/audit/tokens"		: 3,
 	"/auth/v1/group/add"		: 3,
 	"/auth/v1/group/delete"		: 3,
 	"/auth/v1/group/list"		: 3,
@@ -1338,6 +1339,13 @@ app.post("/auth/v1/token", function (req, res) {
 	{
 		return END_ERROR (res, 403, "Unauthorized!");
 	}
+});
+
+app.post("/auth/v1/audit/payments", function (req, res) {
+
+	// if class 2 - only related to this certificate
+	// if class 3 or above - for all ids with this emailAddress 
+
 });
 
 app.post("/auth/v1/token/introspect", function (req, res) {
