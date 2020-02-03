@@ -62,7 +62,6 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/token/introspect"	: 1,
 	"/auth/v1/certificate-info"	: 2,
 	"/auth/v1/token"		: 2,
-	"/auth/v1/payment"		: 2,
 	"/auth/v1/audit/payments"	: 2,
 	"/auth/v1/audit/tokens"		: 3,
 	"/auth/v1/token/revoke"		: 3,
@@ -852,6 +851,7 @@ app.post("/auth/v1/token", function (req, res) {
 
 	let num_rules_passed		= 0;
 	let total_data_cost_per_second	= 0.0;
+	let pending_payment_amount	= 0.0;
 
 	const payment_info		= {};
 
@@ -1203,22 +1203,16 @@ app.post("/auth/v1/token", function (req, res) {
 
 			token = random_part_of_token; // given by the user
 
+			// TODO add existing payment required to pending_payment_amount;
 		}
 		else
 		{
 			token = crypto.randomBytes(TOKEN_LENGTH).toString("hex");
 		}
 
-		const total_payment_amount	= total_data_cost_per_second * token_time;
-		const balance_amount_in_wallet	= 0.0; // TODO get from DB
+		const total_payment_amount = pending_payment_amount + total_data_cost_per_second * token_time;
 
-		if (total_payment_amount > 0)
-		{
-			if (total_payment_amount > balance_amount_in_wallet)
-				return END_ERROR (res, 402, "Payment required for INR : " + total_payment_amount);
-
-			// save payment info
-		}
+		// if (total_payment_amount > 0) // TODO save provider's payment data
 
 		const response = {
 
@@ -1227,6 +1221,13 @@ app.post("/auth/v1/token", function (req, res) {
 			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
 			"token-type"	: "IUDX",
 			"expires-in"	: token_time,
+
+			"payment-info"	: {
+
+					"amount"	: total_payment_amount,
+					"currency"	: "INR",
+					"url"		: "https://auth.iudx.org.in/payments",
+			}
 		};
 
 		const num_resource_servers = Object
@@ -1344,15 +1345,6 @@ app.post("/auth/v1/audit/payments", function (req, res) {
 
 	// if class 2 - only related to this certificate
 	// if class 3 or above - for all ids with this emailAddress 
-
-});
-
-app.post("/auth/v1/payment", function (req, res) {
-
-	// if class 2 - only related to this certificate
-	// if class 3 or above - for all ids with this emailAddress 
-
-	// insert or update amount in wallet table
 
 });
 
