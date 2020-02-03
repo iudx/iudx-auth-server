@@ -60,10 +60,13 @@ const MAX_SAFE_STRING_LENGTH	= 512;
 const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 
 	"/auth/v1/token/introspect"	: 1,
+
 	"/auth/v1/certificate-info"	: 2,
 	"/auth/v1/token"		: 2,
-	"/auth/v1/payment"		: 2,
+	"/auth/v1/wallet"		: 2,
+	"/auth/v1/wallet/topup"		: 2,
 	"/auth/v1/audit/payments"	: 2,
+
 	"/auth/v1/audit/tokens"		: 3,
 	"/auth/v1/token/revoke"		: 3,
 	"/auth/v1/token/revoke-all"	: 3,
@@ -1347,7 +1350,16 @@ app.post("/auth/v1/audit/payments", function (req, res) {
 
 });
 
-app.post("/auth/v1/payment", function (req, res) {
+app.post("/auth/v1/wallet", function (req, res) {
+
+	// if class 2 - only related to this certificate
+	// if class 3 or above - for all ids with this emailAddress 
+
+	// select amount from wallet table
+
+});
+
+app.post("/auth/v1/wallet/topup", function (req, res) {
 
 	// if class 2 - only related to this certificate
 	// if class 3 or above - for all ids with this emailAddress 
