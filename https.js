@@ -1236,7 +1236,7 @@ app.post("/auth/v1/token", function (req, res) {
 			if (total_payment_amount > balance_amount_in_credit)
 				return END_ERROR (res, 402, "Not enough balance in credits for INR : " + total_payment_amount);
 
-			response["payment-info"].amount = total_payment_amount,
+			response["payment-info"].amount = total_payment_amount;
 
 			// save payment info
 		}
