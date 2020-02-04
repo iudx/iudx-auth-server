@@ -64,9 +64,9 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/certificate-info"		: 2,
 	"/auth/v1/token"			: 2,
 	"/auth/v1/token/confirm-payment"	: 2,
-	"/auth/v1/wallet"			: 2,
-	"/auth/v1/wallet/topup"			: 2,
-	"/auth/v1/audit/wallet"			: 2,
+	"/auth/v1/credit"			: 2,
+	"/auth/v1/credit/topup"			: 2,
+	"/auth/v1/audit/credits"		: 2,
 
 	"/auth/v1/audit/tokens"			: 3,
 	"/auth/v1/token/revoke"			: 3,
@@ -1220,21 +1220,23 @@ app.post("/auth/v1/token", function (req, res) {
 			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
 			"token-type"	: "IUDX",
 			"expires-in"	: token_time,
-			"payment-info"	: null,
+
+			"payment-info"	: {
+				"amount"	: 0.0,
+				"currency"	: "INR",
+			},
+
 		};
 
 		const total_payment_amount	= total_data_cost_per_second * token_time;
-		const balance_amount_in_wallet	= 0.0; // TODO get from DB
+		const balance_amount_in_credit	= 0.0; // TODO get from DB
 
 		if (total_payment_amount > 0)
 		{
-			if (total_payment_amount > balance_amount_in_wallet)
-				return END_ERROR (res, 402, "Payment required for INR : " + total_payment_amount);
+			if (total_payment_amount > balance_amount_in_credit)
+				return END_ERROR (res, 402, "Not enough balance in credits for INR : " + total_payment_amount);
 
-			response["payment-info"] = {
-				"amount"	: total_payment_amount,
-				"currency"	: "INR",
-			};
+			response["payment-info"].amount = total_payment_amount,
 
 			// save payment info
 		}
@@ -1354,27 +1356,27 @@ app.post("/auth/v1/token/confirm-payment", function (req, res) {
 	// TODO
 });
 
-app.post("/auth/v1/wallet", function (req, res) {
+app.post("/auth/v1/credit", function (req, res) {
 
 	// TODO
 
 	// if class 2 - only related to this certificate's public key
 	// if class 3 or above - for all ids with this emailAddress 
 
-	// select amount from wallet table
+	// select amount from credits table
 });
 
-app.post("/auth/v1/wallet/topup", function (req, res) {
+app.post("/auth/v1/credit/topup", function (req, res) {
 
 	// TODO
 
 	// if class 2 - only related to this certificate's public key
 	// if class 3 or above - for all ids with this emailAddress 
 
-	// insert or update amount in wallet table
+	// insert or update amount in credit table
 });
 
-app.post("/auth/v1/audit/wallet", function (req, res) {
+app.post("/auth/v1/audit/credits", function (req, res) {
 
 	// TODO
 
