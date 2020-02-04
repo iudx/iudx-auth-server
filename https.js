@@ -59,23 +59,24 @@ const MAX_SAFE_STRING_LENGTH	= 512;
 
 const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 
-	"/auth/v1/token/introspect"	: 1,
+	"/auth/v1/token/introspect"		: 1,
 
-	"/auth/v1/certificate-info"	: 2,
-	"/auth/v1/token"		: 2,
-	"/auth/v1/wallet"		: 2,
-	"/auth/v1/wallet/topup"		: 2,
-	"/auth/v1/audit/payments"	: 2,
+	"/auth/v1/certificate-info"		: 2,
+	"/auth/v1/token"			: 2,
+	"/auth/v1/token/confirm-payment"	: 2,
+	"/auth/v1/wallet"			: 2,
+	"/auth/v1/wallet/topup"			: 2,
+	"/auth/v1/audit/wallet"			: 2,
 
-	"/auth/v1/audit/tokens"		: 3,
-	"/auth/v1/token/revoke"		: 3,
-	"/auth/v1/token/revoke-all"	: 3,
-	"/auth/v1/acl"			: 3,
-	"/auth/v1/acl/set"		: 3,
-	"/auth/v1/acl/append"		: 3,
-	"/auth/v1/group/add"		: 3,
-	"/auth/v1/group/delete"		: 3,
-	"/auth/v1/group/list"		: 3,
+	"/auth/v1/audit/tokens"			: 3,
+	"/auth/v1/token/revoke"			: 3,
+	"/auth/v1/token/revoke-all"		: 3,
+	"/auth/v1/acl"				: 3,
+	"/auth/v1/acl/set"			: 3,
+	"/auth/v1/acl/append"			: 3,
+	"/auth/v1/group/add"			: 3,
+	"/auth/v1/group/delete"			: 3,
+	"/auth/v1/group/list"			: 3,
 });
 
 /* dns */
@@ -1212,6 +1213,16 @@ app.post("/auth/v1/token", function (req, res) {
 			token = crypto.randomBytes(TOKEN_LENGTH).toString("hex");
 		}
 
+		const response = {
+
+			/* Token format: issued-by / issued-to / token */
+
+			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
+			"token-type"	: "IUDX",
+			"expires-in"	: token_time,
+			"payment-info"	: null,
+		};
+
 		const total_payment_amount	= total_data_cost_per_second * token_time;
 		const balance_amount_in_wallet	= 0.0; // TODO get from DB
 
@@ -1220,17 +1231,13 @@ app.post("/auth/v1/token", function (req, res) {
 			if (total_payment_amount > balance_amount_in_wallet)
 				return END_ERROR (res, 402, "Payment required for INR : " + total_payment_amount);
 
+			response["payment-info"] = {
+				"amount"	: total_payment_amount,
+				"currency"	: "INR",
+			};
+
 			// save payment info
 		}
-
-		const response = {
-
-			/* Token format: issued-by / issued-to / token */
-
-			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
-			"token-type"	: "IUDX",
-			"expires-in"	: token_time,
-		};
 
 		const num_resource_servers = Object
 						.keys(resource_server_token)
@@ -1343,29 +1350,36 @@ app.post("/auth/v1/token", function (req, res) {
 	}
 });
 
-app.post("/auth/v1/audit/payments", function (req, res) {
-
-	// if class 2 - only related to this certificate
-	// if class 3 or above - for all ids with this emailAddress 
-
+app.post("/auth/v1/token/confirm-payment", function (req, res) {
+	// TODO
 });
 
 app.post("/auth/v1/wallet", function (req, res) {
 
-	// if class 2 - only related to this certificate
+	// TODO
+
+	// if class 2 - only related to this certificate's public key
 	// if class 3 or above - for all ids with this emailAddress 
 
 	// select amount from wallet table
-
 });
 
 app.post("/auth/v1/wallet/topup", function (req, res) {
 
-	// if class 2 - only related to this certificate
+	// TODO
+
+	// if class 2 - only related to this certificate's public key
 	// if class 3 or above - for all ids with this emailAddress 
 
 	// insert or update amount in wallet table
+});
 
+app.post("/auth/v1/audit/wallet", function (req, res) {
+
+	// TODO
+
+	// if class 2 - only related to this certificate's public key
+	// if class 3 or above - for all ids with this emailAddress 
 });
 
 app.post("/auth/v1/token/introspect", function (req, res) {
@@ -1455,7 +1469,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			);
 		}
 
-// TODO get payment_required, if true : return 402 - payment required
+		// TODO select payment_required from token table
 
 		pool.query (
 				"SELECT expiry,request,cert_class,"	+
@@ -1617,9 +1631,6 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 				"consumer-certificate-class"	: results.rows[0].cert_class,
 			};
 
-			// TODO
-			// introspected should be introspected[resource-server] = bool
-
 			pool.query (
 				"UPDATE token SET introspected = true "		+
 				"WHERE token = $1::text "			+
@@ -1753,7 +1764,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 		for (const token_hash of token_hashes)
 		{
-			// TODO set revoked = true if all providers keys are false
+			// TODO set revoked = true if all providers keys are false ?
 
 			if ((! is_string_safe(token_hash)) || (token_hash.length > MAX_TOKEN_HASH_LENGTH))
 			{
@@ -1851,9 +1862,6 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 });
 
 app.post("/auth/v1/acl/set", function (req, res) {
-
-	// TODO: add 3 more boolean columns in DB,
-	// rule_has_body, rule_has_group, rule_has_tokens_per_second
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
