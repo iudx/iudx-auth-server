@@ -22,13 +22,13 @@ HTTP response code:
 	403
 		If access is denied.
 
-Using pyIUDX SDK:                                                               
+Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth                                            
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
 
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem")              
-
- 	iudx_auth.get_certificate_info()  
+	iudx_auth.get_certificate_info()
 
 CURL example:
 

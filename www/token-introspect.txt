@@ -30,6 +30,21 @@ Body:
 	token		: <token presented by the consumer>
 	server-token	: <server token presented by the consumer> // optional
 
+Checks before making the API call:
+
+	A valid IUDX token consist of 3 fields (delimited by '/'):
+
+		1. Who has issued the token (The Auth server)
+		2. To whom the token has been issued (The consumer)
+		3. Random string 
+
+	For example:
+		auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee 
+
+	[NOTE] : It is important for a resource-server to check if the token was
+	issued by a trusted Auth server before making the introspect call.
+
+
 HTTP response code:
 
 	200

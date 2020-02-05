@@ -9,7 +9,7 @@ Methods:
 	POST
 
 Description:
-	This API is used to request an access token from the auth server.
+	This API is used to request an access token from the Auth server.
 	This token can be used to get data from a resource server.
 
 Called by:
@@ -141,6 +141,15 @@ CURL examples:
 		1. token
 			Is the access token required to access data from a resource server
 			(resource-server.com in this case), and is in the format: 'auth-server/consumer/random-bytes'
+
+			A valid IUDX token consist of 3 fields (delimited by '/'):
+
+				1. Who has issued the token (The Auth server)
+				2. To whom the token has been issued (The consumer)
+				3. Random string 
+
+			In the example above:
+				"auth.iudx.org.in/user@domain.com/2204adcbc990ffff234689aaabcdef90"
 
 		2. expires-in
 			Indicates how long the token is valid in seconds.
