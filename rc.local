@@ -1,5 +1,5 @@
 /sbin/pfctl -t bruteforce -T expire 86400                                       
-dir="/home/auth/iudx-auth-server"                                               
+dir="/home/iudx-auth-server"                                               
 $dir/run.tmux                                                                   
 $dir/run.crl.tmux                                                               
 

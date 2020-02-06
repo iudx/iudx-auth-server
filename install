@@ -10,9 +10,10 @@ then
 fi
 
 pkg_add git
-mkdir /home/auth
-cd /home/auth
-git clone https://github.com/iudx-auth-server
-cd iudx-auth-server
 
+mkdir /home
+cd /home
+git clone --depth=1 https://github.com/iudx-auth-server
+
+cd iudx-auth-server
 ./setup
