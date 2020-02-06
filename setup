@@ -51,7 +51,7 @@ su _postgresql -c /var/postgresql/setup.postgresql.openbsd
 
 until su _postgresql -c pg_isready
 do
-	sleep 0.1
+	sleep 1
 done
 
 rm -rf /var/postgresql/setup.postgresql.openbsd
@@ -61,7 +61,7 @@ cp pf.conf /etc/
 
 openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyout key.pem -out server.pem
 
-git clone https://github.com/rbccps-iisc/node-aperture
+git clone --depth=1 https://github.com/rbccps-iisc/node-aperture
 cd node-aperture
 npm install
 npm audit fix --force

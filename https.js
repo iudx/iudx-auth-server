@@ -337,7 +337,7 @@ function is_secure (req, res, cert, validate_email = true)
 		res.header("Referrer-Policy","no-referrer-when-downgrade");
 
 		res.header("Access-Control-Allow-Origin", req.headers.origin);
-		res.header("Access-Control-Allow-Methods", "GET,POST");
+		res.header("Access-Control-Allow-Methods", "POST");
 	}
 
 	let cert_err;
