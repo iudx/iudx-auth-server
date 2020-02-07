@@ -1778,9 +1778,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			}
 
 			const select_rows = pg.querySync (
-				"SELECT 1 from token "					+
-				"WHERE token = $1::text "				+
-				"AND providers->'" + provider_id_in_db + "' = 'true' "	+
+				"SELECT 1 from token "			+
+				"WHERE token = $1::text "		+
+				"AND providers->'" + provider_id_in_db	+
+				"' = 'true' "				+
 				"AND expiry > NOW()",
 					[token_hash]
 			);
@@ -1789,8 +1790,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			{
 				return END_ERROR (
 					res, 400,
-					"Invalid token-hash: " + token_hash + ". " +
-					String(num_tokens_revoked) + " tokens revoked"
+					"Invalid token-hash: "		+
+						token_hash + ". "	+
+					String(num_tokens_revoked)	+
+					" tokens revoked"
 				);
 			}
 
@@ -1849,7 +1852,11 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 		(error,results) =>
 		{
 			if (error)
-				return END_ERROR (res, 500, "Internal error!", error);
+			{
+				return END_ERROR (
+					res, 500, "Internal error!", error
+				);
+			}
 			else
 			{
 				const response = {
@@ -1857,7 +1864,10 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 					"num-tokens-revoked"	: results.rowCount
 				};
 
-				return END_SUCCESS (res,200,JSON.stringify(response));
+				return END_SUCCESS (
+					res, 200,
+						JSON.stringify(response)
+				);
 			}
 		}
 	);
@@ -1934,7 +1944,11 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		pool.query (query, parameters, (error_1, results_1) =>
 		{
 			if (error_1 || results_1.rowCount === 0)
-				return END_ERROR (res, 500, "Internal error!", error_1);
+			{
+				return END_ERROR (
+					res, 500, "Internal error!", error_1
+				);
+			}
 			else
 				return END_SUCCESS (res, 200, SUCCESS);
 		});
@@ -2040,7 +2054,11 @@ app.post("/auth/v1/acl/append", function (req, res) {
 		pool.query (query, parameters, (error_1, results_1) =>
 		{
 			if (error_1 || results_1.rowCount === 0)
-				return END_ERROR (res, 500, "Internal error!", error_1);
+			{
+				return END_ERROR (
+					res, 500, "Internal error!", error_1
+				);
+			}
 			else
 				return END_SUCCESS (res, 200, SUCCESS);
 		});
@@ -2111,8 +2129,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		{
 			as_consumer.push ({
 				"token-issued-at"		: row.issued_at,
-				"introspected"			: row.introspected	=== "t",
-				"revoked"			: row.revoked		=== "t",
+				"introspected"			: row.introspected === "t",
+				"revoked"			: row.revoked      === "t",
 				"expiry"			: row.expiry,
 				"certificate-serial-number"	: row.cert_serial,
 				"certificate-fingerprint"	: row.cert_fingerprint,
@@ -2128,13 +2146,15 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 		pool.query (
-
-		"SELECT id,token,issued_at,expiry,request,cert_serial,"			+
-		"cert_fingerprint,revoked,introspected,"				+
-		"providers->'" + provider_id_in_db + "' AS has_provider_revoked "	+
-		"FROM token "								+
-		"WHERE providers->'" + provider_id_in_db + "' IS NOT NULL "		+
-		"AND issued_at >= (NOW() + '-" + hours + " hours')",
+			"SELECT id,token,issued_at,expiry,request,"	+
+			"cert_serial,cert_fingerprint,"			+
+			"revoked,introspected,"				+
+			"providers->'" + provider_id_in_db		+
+			"' AS has_provider_revoked "			+
+			"FROM token "					+
+			"WHERE providers->'" + provider_id_in_db 	+ 
+			"' IS NOT NULL "				+
+			"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
 		[], (error, results) =>
 		{
