@@ -2434,8 +2434,8 @@ app.all("/auth/v1/[^.]*/help", function (req, res) {
 
 	if (api)
 	{
-		const link = "http://auth.iudx.org.in/"
-					+ api.replace(/\//g,"-")) + ".txt";
+		const link = "http://auth.iudx.org.in/" +
+				api.replace(/\//g,'-') + ".txt";
 
 		res.redirect(link);
 	}
