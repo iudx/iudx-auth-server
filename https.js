@@ -578,8 +578,8 @@ function security (req, res, next)
 {
 	if (! has_started_serving_apis)
 	{
-		if (is_openbsd) // drop some more worker privileges
-			pledge.init ("stdio prot_exec inet dns recvfd");
+		if (is_openbsd) // drop "rpath"
+			pledge.init ("stdio tty prot_exec inet dns recvfd");
 
 		has_started_serving_apis = true;
 	}
