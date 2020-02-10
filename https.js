@@ -79,6 +79,8 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/list"			: 3,
 });
 
+let has_started_serving_apis = false;
+
 /* dns */
 
 dns.setServers ([
@@ -578,6 +580,14 @@ function body_to_json (body)
 
 function security (req, res, next)
 {
+	if (! has_started_serving_apis)
+	{
+		if (is_openbsd) // drop some more worker privileges
+			pledge.init ("stdio prot_exec inet dns");
+
+		has_started_serving_apis = true;
+	}
+
 	req.setTimeout(5000);
 
 	const api = url.parse(req.url).pathname;
@@ -2424,8 +2434,10 @@ app.all("/auth/v1/[^.]*/help", function (req, res) {
 
 	if (api)
 	{
-		res.setHeader("content-type", "text/plain");
-		res.sendFile(__dirname + "/public/help/" + api + ".txt");
+		const link = "http://auth.iudx.org.in/"
+					+ api.replace(/\//g,"-")) + ".txt";
+
+		res.redirect(link);
 	}
 	else
 	{
@@ -2475,7 +2487,7 @@ if (! is_openbsd)
 	// ======================== END preload code for chroot   =============
 }
 
-function drop_privileges()
+function drop_worker_privileges()
 {
 	const do_drop_privileges = true; // change this for testing !
 
@@ -2548,7 +2560,7 @@ else
 {
 	https.createServer (https_options,app).listen(443,"0.0.0.0");
 
-	drop_privileges();
+	drop_worker_privileges();
 
 	log("green",`Worker ${process.pid} started`);
 }
