@@ -1734,8 +1734,11 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			{
 				return END_ERROR (
 					res, 400,
-					"Invalid token: " + token + ". " +
-					String(num_tokens_revoked) + " tokens revoked"
+					"Invalid token: "			+
+						token				+
+					". "					+
+						String(num_tokens_revoked)	+
+					" tokens revoked"
 				);
 			}
 
@@ -1772,8 +1775,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			{
 				return END_ERROR (
 					res, 400,
-					"Invalid token-hash: " + token_hash + ". " +
-					String(num_tokens_revoked) + " tokens revoked."
+					"Invalid token-hash: "			+
+						token_hash + ". "		+
+						String(num_tokens_revoked)	+
+					" tokens revoked."
 				);
 			}
 
@@ -2169,8 +2174,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			for (const row of results.rows)
 			{
 				const revoked = (
-					row.revoked			=== "t" ||
-					row.has_provider_revoked	=== "t"
+					row.revoked		 === "t" ||
+					row.has_provider_revoked === "t"
 				);
 
 				const introspected = (row.introspected === "t");
