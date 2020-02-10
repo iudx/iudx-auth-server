@@ -145,10 +145,6 @@ app.use(security);
 
 app.disable("x-powered-by");
 
-app.all("/", function (req, res) {
-	res.redirect('http://auth.iudx.org.in');
-});
-
 /* aperture */
 
 const apertureOpts = {
@@ -592,8 +588,8 @@ function security (req, res, next)
 
 	const api = url.parse(req.url).pathname;
 
-	// Not an API. Or is help
-	if ((! api.startsWith("/auth/v")) || (api.endsWith("/help")))
+	// Not an API !
+	if ((! api.startsWith("/auth/v")))
 		return next();
 
 	const cert		 = req.socket.getPeerCertificate(true);
@@ -604,7 +600,7 @@ function security (req, res, next)
 		return END_ERROR (
 			res, 404,
 				"No such API. Please visit: "	+
-				"http://auth.iudx.org.in for API help."
+				"<http://auth.iudx.org.in> for API documentation."
 		);
 	}
 
@@ -1371,7 +1367,7 @@ app.post("/auth/v1/credit", function (req, res) {
 	// TODO
 
 	// if class 2 - only related to this certificate's public key
-	// if class 3 or above - for all ids with this emailAddress 
+	// if class 3 or above - for all ids with this emailAddress
 
 	// select amount from credits table
 });
@@ -1381,7 +1377,7 @@ app.post("/auth/v1/credit/topup", function (req, res) {
 	// TODO
 
 	// if class 2 - only related to this certificate's public key
-	// if class 3 or above - for all ids with this emailAddress 
+	// if class 3 or above - for all ids with this emailAddress
 
 	// insert or update amount in credit table
 });
@@ -1391,7 +1387,7 @@ app.post("/auth/v1/audit/credits", function (req, res) {
 	// TODO
 
 	// if class 2 - only related to this certificate's public key
-	// if class 3 or above - for all ids with this emailAddress 
+	// if class 3 or above - for all ids with this emailAddress
 });
 
 app.post("/auth/v1/token/introspect", function (req, res) {
@@ -2167,7 +2163,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"providers->'" + provider_id_in_db		+
 			"' AS has_provider_revoked "			+
 			"FROM token "					+
-			"WHERE providers->'" + provider_id_in_db 	+ 
+			"WHERE providers->'" + provider_id_in_db 	+
 			"' IS NOT NULL "				+
 			"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
@@ -2427,38 +2423,28 @@ app.post("/auth/v1/certificate-info", function (req, res) {
 	);
 });
 
-app.all("/auth/v1/[^.]*/help", function (req, res) {
+app.all("/*", function (req, res) {
 
-	const pathname	= url.parse(req.url).pathname;
-	const api	= pathname.split("/auth/v1/")[1].split("/help")[0];
+	const pathname = url.parse(req.url).pathname;
 
-	if (api)
+	if (req.method === "POST")
 	{
-		const link = "http://auth.iudx.org.in/" +
-				api.replace(/\//g,'-') + ".txt";
+		console.log("=>>> Invalid API : ",pathname);
 
-		res.redirect(link);
+		return END_ERROR (
+			res, 404,
+				"No such API. Please visit: "	+
+				"<http://auth.iudx.org.in> for API documentation."
+		);
 	}
 	else
 	{
 		return END_ERROR (
-			res, 404,
-				"No such API. Please visit: "	+
-				"http://auth.iudx.org.in for API help."
+			res, 405,
+				"Only POST method is supported. Please visit: "	+
+				"<http://auth.iudx.org.in> for API documentation."
 		);
 	}
-});
-
-app.all("/*", function (req, res) {
-
-	const pathname = url.parse(req.url).pathname;
-	console.log("=>>> Invalid API : ",pathname);
-
-	return END_ERROR (
-		res, 405,
-			"Invalid API or method. Please visit: "	+
-			"<http://auth.iudx.org.in> for API help."
-	);
 });
 
 app.on("error", function(e) {
