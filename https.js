@@ -1749,8 +1749,9 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			}
 
 			pg.querySync (
-				"UPDATE token SET revoked = true WHERE id = $1::text " 	+
-				"AND token = $2::text "					+
+				"UPDATE token SET revoked = true "	+
+				"WHERE id = $1::text "			+
+				"AND token = $2::text "			+
 				"AND expiry > NOW()",
 					[id, sha256_of_token]
 			);
@@ -1830,6 +1831,14 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	const body		= res.locals.body;
 	const id		= res.locals.email;
 
+	const sha1_id 		= crypto.createHash("sha1")
+					.update(id)
+					.digest("hex");
+
+	const email_domain	= id.split("@")[1];
+
+	const provider_id_in_db	= sha1_id + "@" + email_domain;
+
 	if (! body.serial)
 		return END_ERROR (res, 400, "No 'serial' found in the body");
 
@@ -1858,7 +1867,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 		"AND expiry > NOW() "			+
 		"AND revoked = false",
 
-		[id, fingerprint, serial],
+		[id, serial, fingerprint],
 
 		(error,results) =>
 		{
@@ -1875,6 +1884,38 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 					"num-tokens-revoked"	: results.rowCount
 				};
 
+				pool.query (
+					"UPDATE token "				+
+					"SET providers = "			+
+					"providers || '{\""			+
+						provider_id_in_db + "\":false}'"+
+					"WHERE cert_serial = $1::text "		+
+					"AND cert_fingerprint = $2::text "	+
+					"AND expiry > NOW() "			+
+					"AND providers->'"			+
+						provider_id_in_db + "' = 'true' ",
+
+					[serial, fingerprint],
+
+					(error_1, results_1) =>
+					{
+						if (error_1)
+						{
+							return END_ERROR (
+								res, 500,
+								"Internal error!", error_1
+							);
+						}
+						
+						response["num-tokens-revoked"] += results_1.rowCount;
+						return END_SUCCESS (
+							res, 200,
+								JSON.stringify(response)
+						);
+					}
+				);
+				
+				
 				return END_SUCCESS (
 					res, 200,
 						JSON.stringify(response)
