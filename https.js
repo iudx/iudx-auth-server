@@ -81,7 +81,7 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 
 let has_started_serving_apis = false;
 
-/* dns */
+/* --- dns --- */
 
 dns.setServers ([
 	"1.1.1.1",
@@ -91,7 +91,7 @@ dns.setServers ([
 	"[2001:4860:4860::8844]",
 ]);
 
-/* telegram */
+/* --- telegram --- */
 
 const telegram_apikey	= fs.readFileSync ("telegram.apikey","ascii").trim();
 const telegram_chat_id	= fs.readFileSync ("telegram.chatid","ascii").trim();
@@ -100,9 +100,9 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 				"/sendMessage?chat_id="	+ telegram_chat_id +
 				"&text=";
 
-/* postgres */
+/* --- postgres --- */
 
-const db_password	= fs.readFileSync ("auth.db.password","ascii").trim();
+let db_password	= fs.readFileSync ("auth.db.password","ascii").trim();
 
 // async postgres connection
 const pool = new Pool ({
@@ -125,7 +125,7 @@ pg.connectSync (
 		}
 );
 
-/* express */
+/* --- express --- */
 
 const app = express();
 app.use (
@@ -145,7 +145,7 @@ app.use(security);
 
 app.disable("x-powered-by");
 
-/* aperture */
+/* --- aperture --- */
 
 const apertureOpts = {
 
@@ -191,7 +191,7 @@ const apertureOpts = {
 const parser	= aperture.createParser		(apertureOpts);
 const evaluator	= aperture.createEvaluator	(apertureOpts);
 
-/* https */
+/* --- https --- */
 
 const trusted_CAs = [
 	fs.readFileSync("ca.iudx.org.in.crt"),
@@ -207,6 +207,8 @@ const https_options = {
 	requestCert		: true,
 	rejectUnauthorized	: true,
 };
+
+/* --- functions --- */
 
 function log(color, msg)
 {
@@ -478,7 +480,7 @@ function has_certificate_been_revoked (socket, cert, CRL)
 									.replace(/:/g,"")
 									.toLowerCase();
 
-						if (crl_serial === issuer_serial && crl_fingerprint == issuer_fingerprint)
+						if (crl_serial === issuer_serial && crl_fingerprint === issuer_fingerprint)
 							return true;
 					}
 				}
@@ -747,6 +749,8 @@ function security (req, res, next)
 		);
 	}
 }
+
+/* --- APIs --- */
 
 app.post("/auth/v1/token", function (req, res) {
 
@@ -2487,7 +2491,7 @@ app.on("error", function(e) {
 	console.error(e);
 });
 
-//////////////////////// RUN /////////////////////////////////
+/* --- run --- */
 
 if (! is_openbsd)
 {
@@ -2587,4 +2591,6 @@ else
 	log("green",`Worker ${process.pid} started`);
 }
 
-//////////////////////////////////////////////////////////////
+db_password = "forget";
+
+// EOF
