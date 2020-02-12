@@ -557,7 +557,9 @@ function body_to_json (body)
 
 	try
 	{
-		string_body = Buffer.from(body,"utf-8").toString("ascii");
+		string_body = Buffer
+				.from(body,"utf-8")
+				.toString("ascii");
 	}
 	catch (x)
 	{
@@ -605,7 +607,7 @@ function security (req, res, next)
 		return END_ERROR (
 			res, 404,
 				"No such API. Please visit: "	+
-				"<http://auth.iudx.org.in> for API documentation."
+				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
 
@@ -2480,15 +2482,15 @@ app.all("/*", function (req, res) {
 		return END_ERROR (
 			res, 404,
 				"No such API. Please visit: "	+
-				"<http://auth.iudx.org.in> for API documentation."
+				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
 	else
 	{
 		return END_ERROR (
 			res, 405,
-				"Only POST method is supported. Please visit: "	+
-				"<http://auth.iudx.org.in> for API documentation."
+				"Method must be POST. Please visit: "	+
+				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
 });

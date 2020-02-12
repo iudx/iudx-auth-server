@@ -12,7 +12,7 @@ fi
 pkg_add git
 
 cd /home
-git clone --depth=1 https://github.com/iudx-auth-server
+git clone --depth=1 https://github.com/iudx/iudx-auth-server
 
 cd iudx-auth-server
 ./setup
