@@ -44,6 +44,8 @@ Checks before making the API call:
 	[NOTE] : It is important for a resource-server to check if the token was
 	issued by a trusted Auth server before making the introspect call.
 
+	That is - Do NOT create the Auth server URL based on the token provided by
+	the consumer.
 
 HTTP response code:
 
@@ -63,11 +65,40 @@ HTTP response code:
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth
+	Example 1:
 
-	iudx_auth = auth.Auth("resource-server-certificate.pem","private-key.pem")
+		# simple example 
 
-	iudx_auth.introspect_token("auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90")
+		from pyIUDX.auth import auth
+
+		iudx_auth = auth.Auth("resource-server-certificate.pem","private-key.pem")
+
+		iudx_auth.introspect_token("auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90")
+
+	Example 2:
+
+		# dealing with untrusted auth servers
+
+		from pyIUDX.auth import auth
+
+		cert = "resource-server-certificate.pem"
+		key  = "private-key.pem"
+
+		my_trusted_auth_servers = {
+			"auth.iudx.org.in"	: auth.Auth(cert,key,"auth.iudx.org.in"),
+			"my.auth.server.com"	: auth.Auth(cert,key,"my.auth.server.com"),
+			"third.party.auth.com"	: auth.Auth(cert,key,"third.party.auth.com"),
+		}
+
+		# received token from consumer
+		token = "auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90"
+
+		try:
+			token_auth_server = token.split("/")[0]
+			auth_server = my_trusted_auth_servers [token_auth_server]
+			print(valid_auth_server.introspect_token(token))
+		except:
+			print("Invalid token")
 
 CURL example:
 

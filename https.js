@@ -381,7 +381,7 @@ function is_certificate_ok (req, cert, validate_email)
 					"Invalid certificate: issuer = "+
 						issuer_domain		+
 					" and issued to = "		+
-						issued_to_domain
+						cert.subject.emailAddress
 				);
 
 				return "Invalid certificate issuer";
@@ -537,7 +537,10 @@ function is_iudx_certificate(cert)
 	if (! cert.issuer.emailAddress)
 		return false;
 
-	const issuer_email = cert.issuer.emailAddress.toLowerCase();
+	const issuer_email = cert
+				.issuer
+				.emailAddress
+				.toLowerCase();
 
 	return (
 		(issuer_email === "ca@iudx.org.in") ||
@@ -1203,7 +1206,7 @@ app.post("/auth/v1/token", function (req, res) {
 			if (existing_row.length === 0)
 			{
 				return END_ERROR (res, 403,
-					"Invalid existing-token"
+					"Invalid 'existing-token' field"
 				);
 			}
 

@@ -1,6 +1,6 @@
 
-Revoke all valid tokens
------------------------
+Revoke all valid tokens for a given certificate
+-----------------------------------------------
 
 Endpoint:
 
@@ -12,12 +12,12 @@ Methods:
 
 Description:
 
-	This API is used by a consumer to revoke all valid access tokens issued
-	to the consumer for a given certificate.
+	This API is used by a data consumer or a data provider to revoke all
+	valid access tokens issued to the consumer for a given certificate.
 
 Called by:
 
-	A consumer with a valid class-3 or above certificate.
+	A user with a valid class-3 or above certificate.
 
 Body in JSON format:
 
