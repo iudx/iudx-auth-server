@@ -12,8 +12,8 @@ Methods:
 
 Description:
 
-	This API is used by a data consumer or a data provider to revoke all
-	valid access tokens issued to the consumer for a given certificate.
+	This API can be used by a user to revoke all valid access tokens issued
+	to the consumer for a given certificate.
 
 Called by:
 

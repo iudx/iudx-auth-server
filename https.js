@@ -609,6 +609,9 @@ function security (req, res, next)
 		);
 	}
 
+	cert.serial		= cert.serial.toUpperCase();
+	cert.fingerprint	= cert.fingerprint.toUpperCase();
+
 	if (is_iudx_certificate(cert))
 	{
 		const cert_class = cert.subject["id-qt-unotice"];
