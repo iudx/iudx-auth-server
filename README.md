@@ -77,7 +77,7 @@ to get telegram notifications.
 |   |-- run			// runs the test
 |   |-- test-groups.py		// test cases for group based access control
 |   `-- test-tokens.py		// general test cases
-|-- www				// website of auth.iudx.org.in
+|-- auth.iudx.org.in		// website of auth.iudx.org.in
 |   |-- acl-append.txt
 |   |-- acl-set.txt
 |   |-- acl.txt
