@@ -609,8 +609,8 @@ function security (req, res, next)
 		);
 	}
 
-	cert.serial		= cert.serial.toUpperCase();
-	cert.fingerprint	= cert.fingerprint.toUpperCase();
+	cert.serial		= cert.serial.toLowerCase();
+	cert.fingerprint	= cert.fingerprint.toLowerCase();
 
 	if (is_iudx_certificate(cert))
 	{
@@ -1844,6 +1844,9 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	if (! body.serial)
 		return END_ERROR (res, 400, "No 'serial' found in the body");
 
+	if (! is_string_safe(body.serial))
+		return END_ERROR (res, 400, "invalid 'serial' field");
+
 	if (! body.fingerprint)
 	{
 		return END_ERROR (
@@ -1852,14 +1855,11 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 		);
 	}
 
-	const serial 		= body.serial;
-	const fingerprint	= body.fingerprint;
-
-	if (! is_string_safe(serial))
-		return END_ERROR (res, 400, "invalid 'serial' field");
-
-	if (! is_string_safe(fingerprint,":")) // fingerprint contain ':' char
+	if (! is_string_safe(body.fingerprint,":")) // fingerprint contain ':' char
 		return END_ERROR (res, 400, "invalid 'fingerprint' field");
+
+	const serial 		= body.serial.toLowerCase();
+	const fingerprint	= body.fingerprint.toLowerCase();
 
 	const sha1_id 		= crypto.createHash("sha1")
 					.update(id)
