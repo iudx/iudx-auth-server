@@ -5,11 +5,12 @@ IUDX AAA is the Auth server for accessing [IUDX](https://www.iudx.org.in) servic
 ## 1. Read the API documentation
 Please visit [IUDX AAA server](http://auth.iudx.org.in) for APIs and flows.
 
-## 2. Install OpenBSD
+## 2. Installation
+### 2.1 Install OpenBSD
 Please see [OpenBSD FAQ - Installation Guide](https://www.openbsd.org/faq/faq4.html). e.g. [INSTALLATION NOTES for OpenBSD/amd64 6.6
 ](https://ftp.openbsd.org/pub/OpenBSD/6.6/amd64/INSTALL.amd64)
 
-## 3. Installation (as root) 
+### 2.2 Installation of AAA server (as root) 
 ```
 ftp -o - https://iudx.org.in/install/auth | sh
 ```
@@ -20,7 +21,7 @@ ready at https://localhost.
 
 Please read the API documentation at http://auth.iudx.org.in
 
-## 4. Setup telegram (as root) 
+### 2.3 Setup telegram (as root) 
 You may edit the files:
 
 `/home/iudx-auth-server/telegram.apikey`
