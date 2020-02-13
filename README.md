@@ -1,6 +1,14 @@
-# IUDX Authentication, Authorization, and Accounting (AAA) Server 
+# India Urban Data eXchange (IUDX) Authentication, Authorization, and Accounting (AAA) Server
 
-## Installation on OpenBSD (as root) 
+IUDX AAA is the Auth server for accessing [IUDX](https://www.iudx.org.in) services.
+
+## 1. Read the API documentation
+Please visit [IUDX AAA server](http://auth.iudx.org.in)
+
+## 2. Install OpenBSD
+Please see [OpenBSD FAQ - Installation Guide](https://www.openbsd.org/faq/faq4.html)
+
+## 3. Installation (as root) 
 ```
 ftp -o - https://iudx.org.in/install/auth | sh
 ```
@@ -11,7 +19,7 @@ ready at https://localhost.
 
 Please read the API documentation at http://auth.iudx.org.in
 
-## Telegram setup (as root) 
+## 4. Setup telegram (as root) 
 You may edit the files:
 
 `/home/iudx-auth-server/telegram.apikey`
@@ -20,7 +28,7 @@ You may edit the files:
 
 to get telegram notifications.
 
-## Project organization 
+# Project organization 
 ```
 .
 |-- CCAIndia2014.cer		// CCA's 2014 certificate
