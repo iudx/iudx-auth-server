@@ -2531,7 +2531,7 @@ function drop_worker_privileges()
 	if (! do_drop_privileges)
 		return;
 
-	for (const k of password)
+	for (const k in password)
 		delete password[k];	// forget all passwords
 
 	if (is_openbsd)
