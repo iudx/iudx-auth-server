@@ -102,7 +102,9 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 
 /* --- postgres --- */
 
-let db_password	= fs.readFileSync ("auth.db.password","ascii").trim();
+const password = {
+	"DB"	: fs.readFileSync ("auth.db.password","ascii").trim(),
+}
 
 // async postgres connection
 const pool = new Pool ({
@@ -110,13 +112,13 @@ const pool = new Pool ({
 	port		: 5432,
 	user		: "auth",
 	database	: "postgres",
-	password	: db_password,
+	password	: password["DB"],
 });
 pool.connect();
 
 // sync postgres connection
 pg.connectSync (
-	"postgresql://auth:"+ db_password+ "@127.0.0.1:5432/postgres",
+	"postgresql://auth:"+ password["DB"] + "@127.0.0.1:5432/postgres",
 		function(err)
 		{
 			if(err) {
@@ -1905,6 +1907,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 					"WHERE cert_serial = $1::text "		+
 					"AND cert_fingerprint = $2::text "	+
 					"AND expiry > NOW() "			+
+					"AND revoked = false "			+
 					"AND providers->'"			+
 						provider_id_in_db + "' = 'true' ",
 
@@ -2528,6 +2531,9 @@ function drop_worker_privileges()
 	if (! do_drop_privileges)
 		return;
 
+	for (const k of password)
+		delete password[k];	// forget all passwords
+
 	if (is_openbsd)
 	{
 		if (EUID === 0)
@@ -2598,7 +2604,5 @@ else
 
 	log("green",`Worker ${process.pid} started`);
 }
-
-db_password = "forget";
 
 // EOF
