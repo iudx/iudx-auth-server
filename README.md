@@ -3,20 +3,24 @@
 IUDX AAA is the Auth server for accessing [IUDX](https://www.iudx.org.in) services.
 
 ## 1. Read the API documentation
-Please visit [IUDX AAA server](http://auth.iudx.org.in) for APIs and flows.
+Please visit [IUDX Auth server](http://auth.iudx.org.in) for APIs and flows.
 
 ## 2. Installation
-### 2.1 Install OpenBSD
+### 2.1 Install OpenBSD (prerequisite)
 Please see [OpenBSD FAQ - Installation Guide](https://www.openbsd.org/faq/faq4.html). e.g. [INSTALLATION NOTES for OpenBSD/amd64 6.6
 ](https://ftp.openbsd.org/pub/OpenBSD/6.6/amd64/INSTALL.amd64)
 
-### 2.2 Installation of AAA server (as root) 
+### 2.2 Installation of IUDX Auth server (as root) 
+
+After installing OpenBSD, please run the command as root:
+
 ```
 ftp -o - https://iudx.org.in/install/auth | sh
 ```
-This will install the AAA server at `/home/iudx-auth-server/`.
 
-The system will reboot after the setup. After which, the AAA server should be
+This will install the Auth server at `/home/iudx-auth-server/`.
+
+The system will reboot after the setup; after which, the Auth server should be
 ready at https://localhost.
 
 Please read the API documentation at http://auth.iudx.org.in
@@ -30,7 +34,7 @@ You may edit the files:
 
 to get telegram notifications.
 
-# Project organization 
+## 3. Project organization 
 ```
 .
 |-- CCAIndia2014.cer		// CCA's 2014 certificate
@@ -41,13 +45,13 @@ to get telegram notifications.
 |-- check.sh			// JavaScript linter
 |-- crl.js			// stores the certificate revocation list in DB
 |-- db-cleanup.sql		// cleans non-introspected tokens
-|-- formal-proof		// WIP formal proof of AAA server code
+|-- formal-proof		// WIP formal proof of Auth server code
 |   |-- header
 |   |-- input
 |   |-- run.sh
 |   `-- to-prove
-|-- https.js			// the main AAA server code
-|-- install			// the install script for the AAA server	
+|-- https.js			// the main Auth server code
+|-- install			// the install script for the Auth server	
 |-- pf.conf			// the firewall rules
 |-- postgresql.sql		// the database schema
 |-- public			// the documentation for each API
@@ -74,7 +78,7 @@ to get telegram notifications.
 |-- run.crl			// the nodejs crl.js shell script 
 |-- run.crl.tmux		// run the 'run.crl' file in tmux
 |-- run.tmux			// run the 'run' file in tmux
-|-- setup			// sets up the AAA server
+|-- setup			// sets up the Auth server
 |-- setup.postgresql.openbsd	// sets up the postgresql server
 |-- test			// test cases
 |   |-- auth.py			// SDK file from pyIUDX
