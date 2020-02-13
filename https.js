@@ -613,7 +613,7 @@ function security (req, res, next)
 		);
 	}
 
-	cert.serial		= cert.serial.toLowerCase();
+	cert.serialNumber	= cert.serialNumber.toLowerCase();
 	cert.fingerprint	= cert.fingerprint.toLowerCase();
 
 	if (is_iudx_certificate(cert))
