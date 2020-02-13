@@ -3,10 +3,11 @@
 IUDX AAA is the Auth server for accessing [IUDX](https://www.iudx.org.in) services.
 
 ## 1. Read the API documentation
-Please visit [IUDX AAA server](http://auth.iudx.org.in)
+Please visit [IUDX AAA server](http://auth.iudx.org.in) for APIs and flows.
 
 ## 2. Install OpenBSD
-Please see [OpenBSD FAQ - Installation Guide](https://www.openbsd.org/faq/faq4.html)
+Please see [OpenBSD FAQ - Installation Guide](https://www.openbsd.org/faq/faq4.html). e.g. [INSTALLATION NOTES for OpenBSD/amd64 6.6
+](https://ftp.openbsd.org/pub/OpenBSD/6.6/amd64/INSTALL.amd64)
 
 ## 3. Installation (as root) 
 ```
@@ -85,6 +86,7 @@ to get telegram notifications.
 |   |-- run			// runs the test
 |   |-- test-groups.py		// test cases for group based access control
 |   `-- test-tokens.py		// general test cases
+|-- download-website.sh		// clones the auth.iudx.org.in website
 |-- auth.iudx.org.in		// website of auth.iudx.org.in
 |   |-- acl-append.txt
 |   |-- acl-set.txt
