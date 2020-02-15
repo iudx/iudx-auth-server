@@ -104,7 +104,7 @@ GRANT UPDATE ON TABLE public.crl TO crl;
 -- Name: TABLE groups; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT,INSERT,DELETE ON TABLE public.groups TO auth;
+GRANT SELECT,INSERT,UPDATE ON TABLE public.groups TO auth;
 
 
 --

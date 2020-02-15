@@ -2430,9 +2430,10 @@ app.post("/auth/v1/group/delete", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	let query = 	"DELETE FROM groups "		+
-			"WHERE id = $1::text "		+
-			"AND group_name = $2::text "	+
+	let query = 	"UPDATE groups "					+
+			"SET valid_till = (NOW() - interval '1 seconds') "	+
+			"WHERE id = $1::text "					+
+			"AND group_name = $2::text "				+
 			"AND valid_till > NOW()";
 
 	const parameters = [provider_id_in_db, group_name];
