@@ -1157,221 +1157,215 @@ app.post("/auth/v1/token", function (req, res) {
 		++num_rules_passed;
 	}
 
+	if ((num_rules_passed < 1) || (num_rules_passed < request_array.length))
+		return END_ERROR (res, 403, "Unauthorized!");
+
+	let token;
 	let existing_row;
 
-	if (num_rules_passed > 0 && num_rules_passed === request_array.length)
+	if (existing_token)
 	{
-		let token;
-
-		if (existing_token)
+		if (
+			(! is_string_safe(existing_token))	||
+			(! existing_token.startsWith(SERVER_NAME + "/"))
+		)
 		{
-			if (
-				(! is_string_safe(existing_token))	||
-				(! existing_token.startsWith(SERVER_NAME + "/"))
-			)
-			{
-				return END_ERROR (
-					res, 400, "Invalid 'existing-token' field"
-				);
-			}
-
-			if ((existing_token.match(/\//g) || []).length !== 2)
-			{
-				return END_ERROR (
-					res, 400, "Invalid 'existing-token' field"
-				);
-			}
-
-			const issued_by			= existing_token.split("/")[0];
-			const issued_to			= existing_token.split("/")[1];
-			const random_part_of_token	= existing_token.split("/")[2];
-
-			if (
-				(issued_by 			!== SERVER_NAME)	||
-				(issued_to			!== consumer_id)	||
-				(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
-			) {
-				return END_ERROR (res, 403, "Invalid existing-token");
-			}
-
-			const sha256_of_existing_token	= crypto.createHash("sha256")
-								.update(random_part_of_token)
-								.digest("hex");
-
-			existing_row = pg.querySync (
-				"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "		+
-				"AS token_time,request,resource_ids,server_token "	+
-					"FROM token WHERE "				+
-					"id = $1::text AND "				+
-					"token = $2::text AND "				+
-					"revoked = false AND "				+
-					"expiry > NOW()",
-				[
-					consumer_id,
-					sha256_of_existing_token,
-				]
+			return END_ERROR (
+				res, 400, "Invalid 'existing-token' field"
 			);
+		}
 
-			if (existing_row.length === 0)
-			{
-				return END_ERROR (res, 403,
-					"Invalid 'existing-token' field"
-				);
-			}
-
-			token_time = Math.min (
-				token_time,
-				(parseInt(existing_row[0].token_time, 10) || 0)
+		if ((existing_token.match(/\//g) || []).length !== 2)
+		{
+			return END_ERROR (
+				res, 400, "Invalid 'existing-token' field"
 			);
-
-			for (const key in existing_row[0].server_token)
-				resource_server_token [key] = true;
-
-			token = random_part_of_token; // given by the user
-
-		}
-		else
-		{
-			token = crypto.randomBytes(TOKEN_LENGTH).toString("hex");
 		}
 
-		const response = {
+		const issued_by			= existing_token.split("/")[0];
+		const issued_to			= existing_token.split("/")[1];
+		const random_part_of_token	= existing_token.split("/")[2];
 
-			/* Token format: issued-by / issued-to / token */
-
-			"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
-			"token-type"	: "IUDX",
-			"expires-in"	: token_time,
-
-			"payment-info"	: {
-				"amount"	: 0.0,
-				"currency"	: "INR",
-			},
-
-		};
-
-		const total_payment_amount	= total_data_cost_per_second * token_time;
-		const balance_amount_in_credit	= 0.0; // TODO get from DB
-
-		if (total_payment_amount > 0)
-		{
-			if (total_payment_amount > balance_amount_in_credit)
-				return END_ERROR (res, 402, "Not enough balance in credits for INR : " + total_payment_amount);
-
-			response["payment-info"].amount = total_payment_amount;
-
-			// save payment info
+		if (
+			(issued_by 			!== SERVER_NAME)	||
+			(issued_to			!== consumer_id)	||
+			(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
+		) {
+			return END_ERROR (res, 403, "Invalid existing-token");
 		}
 
-		const num_resource_servers = Object
-						.keys(resource_server_token)
-						.length;
+		const sha256_of_existing_token	= crypto.createHash("sha256")
+							.update(random_part_of_token)
+							.digest("hex");
 
-		if (num_resource_servers > 1)
+		existing_row = pg.querySync (
+			"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "		+
+			"AS token_time,request,resource_ids,server_token "	+
+				"FROM token WHERE "				+
+				"id = $1::text AND "				+
+				"token = $2::text AND "				+
+				"revoked = false AND "				+
+				"expiry > NOW()",
+			[
+				consumer_id,
+				sha256_of_existing_token,
+			]
+		);
+
+		if (existing_row.length === 0)
 		{
-			for (const key in resource_server_token)
-			{
-				resource_server_token[key] = crypto
-								.randomBytes(TOKEN_LENGTH)
-								.toString("hex");
-
-				sha256_of_resource_server_token[key] = crypto
-									.createHash("sha256")
-									.update(resource_server_token[key])
-									.digest("hex");
-			}
-		}
-
-		response["server-token"] = resource_server_token;
-
-		const sha256_of_token	= crypto.createHash("sha256")
-						.update(token)
-						.digest("hex");
-
-		let query;
-		let parameters;
-
-		if (existing_token)
-		{
-			// merge both existing values
-
-			const old_request 	= existing_row[0].request;
-			const new_request	= old_request.concat(request_array);
-
-			const new_resource_ids_dict = Object.assign(
-				{}, existing_row[0].resource_ids, resource_id_dict
+			return END_ERROR (res, 403,
+				"Invalid 'existing-token' field"
 			);
-
-			query = "UPDATE token SET " 							+
-					"request = $1,"							+
-					"resource_ids = $2,"						+
-					"server_token = $3,"						+
-					"expiry = NOW() + interval '" + token_time + " seconds' "	+
-					"WHERE "							+
-					"id = $4::text AND "						+
-					"token = $5::text AND "						+
-					"expiry > NOW()";
-
-			parameters = [
-					JSON.stringify(new_request),
-					JSON.stringify(new_resource_ids_dict),
-					JSON.stringify(sha256_of_resource_server_token),
-
-					consumer_id,
-					sha256_of_token,
-			];
-		}
-		else
-		{
-			const request = response_array;
-
-			query = "INSERT INTO token VALUES(" 					+
-					"$1::text,"						+
-					"$2::text,"						+
-					"NOW() + interval '" + token_time + " seconds',"	+
-					"$3,"							+
-					"$4::text,"						+
-					"$5::text,"						+
-					"NOW(),"						+
-					"$6,"							+
-					"$7,"							+
-					"$8,"							+
-					"$9,"							+
-					"$10,"							+
-					"$11"							+
-				")";
-
-			parameters = [
-					consumer_id,
-					sha256_of_token,
-					JSON.stringify(request),
-					cert.serialNumber,
-					cert.fingerprint,
-					JSON.stringify(resource_id_dict),
-					"false",	// not yet introspected
-					"false",	// not yet revoked
-					cert_class,
-					JSON.stringify(sha256_of_resource_server_token),
-					JSON.stringify(providers)
-			];
 		}
 
-		pool.query (query, parameters, (error,results) =>
-		{
-			if (error || results.rowCount === 0)
-				return END_ERROR (res, 500, "Internal error!", error);
-			else
-			{
-				return END_SUCCESS (
-					res, 200, JSON.stringify(response)
-				);
-			}
-		});
+		token_time = Math.min (
+			token_time,
+			(parseInt(existing_row[0].token_time, 10) || 0)
+		);
+
+		for (const key in existing_row[0].server_token)
+			resource_server_token [key] = true;
+
+		token = random_part_of_token; // given by the user
 	}
 	else
 	{
-		return END_ERROR (res, 403, "Unauthorized!");
+		token = crypto.randomBytes(TOKEN_LENGTH).toString("hex");
 	}
+
+	const response = {
+
+		/* Token format: issued-by / issued-to / token */
+
+		"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
+		"token-type"	: "IUDX",
+		"expires-in"	: token_time,
+
+		"payment-info"	: {
+			"amount"	: 0.0,
+			"currency"	: "INR",
+		},
+
+	};
+
+	const total_payment_amount	= total_data_cost_per_second * token_time;
+	const balance_amount_in_credit	= 0.0; // TODO get from DB
+
+	if (total_payment_amount > 0)
+	{
+		if (total_payment_amount > balance_amount_in_credit)
+			return END_ERROR (res, 402, "Not enough balance in credits for INR : " + total_payment_amount);
+
+		response["payment-info"].amount = total_payment_amount;
+
+		// TODO save payment info
+	}
+
+	const num_resource_servers = Object
+					.keys(resource_server_token)
+					.length;
+
+	if (num_resource_servers > 1)
+	{
+		for (const key in resource_server_token)
+		{
+			resource_server_token[key] = crypto
+							.randomBytes(TOKEN_LENGTH)
+							.toString("hex");
+
+			sha256_of_resource_server_token[key] = crypto
+								.createHash("sha256")
+								.update(resource_server_token[key])
+								.digest("hex");
+		}
+	}
+
+	response["server-token"] = resource_server_token;
+
+	const sha256_of_token	= crypto.createHash("sha256")
+					.update(token)
+					.digest("hex");
+
+	let query;
+	let parameters;
+
+	if (existing_token)
+	{
+		// merge both existing values
+
+		const old_request 	= existing_row[0].request;
+		const new_request	= old_request.concat(request_array);
+
+		const new_resource_ids_dict = Object.assign(
+			{}, existing_row[0].resource_ids, resource_id_dict
+		);
+
+		query = "UPDATE token SET " 							+
+				"request = $1,"							+
+				"resource_ids = $2,"						+
+				"server_token = $3,"						+
+				"expiry = NOW() + interval '" + token_time + " seconds' "	+
+				"WHERE "							+
+				"id = $4::text AND "						+
+				"token = $5::text AND "						+
+				"expiry > NOW()";
+
+		parameters = [
+				JSON.stringify(new_request),
+				JSON.stringify(new_resource_ids_dict),
+				JSON.stringify(sha256_of_resource_server_token),
+
+				consumer_id,
+				sha256_of_token,
+		];
+	}
+	else
+	{
+		const request = response_array;
+
+		query = "INSERT INTO token VALUES(" 					+
+				"$1::text,"						+
+				"$2::text,"						+
+				"NOW() + interval '" + token_time + " seconds',"	+
+				"$3,"							+
+				"$4::text,"						+
+				"$5::text,"						+
+				"NOW(),"						+
+				"$6,"							+
+				"$7,"							+
+				"$8,"							+
+				"$9,"							+
+				"$10,"							+
+				"$11"							+
+			")";
+
+		parameters = [
+				consumer_id,
+				sha256_of_token,
+				JSON.stringify(request),
+				cert.serialNumber,
+				cert.fingerprint,
+				JSON.stringify(resource_id_dict),
+				"false",	// not yet introspected
+				"false",	// not yet revoked
+				cert_class,
+				JSON.stringify(sha256_of_resource_server_token),
+				JSON.stringify(providers)
+		];
+	}
+
+	pool.query (query, parameters, (error,results) =>
+	{
+		if (error || results.rowCount === 0)
+			return END_ERROR (res, 500, "Internal error!", error);
+		else
+		{
+			return END_SUCCESS (
+				res, 200, JSON.stringify(response)
+			);
+		}
+	});
 });
 
 app.post("/auth/v1/token/confirm-payment", function (req, res) {
