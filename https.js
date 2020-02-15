@@ -760,6 +760,18 @@ function security (req, res, next)
 	}
 }
 
+function object_to_array (o)
+{
+	if (o instanceof Object)
+		o = [o];
+
+	if (o instanceof Array)
+		return o;
+	else
+		return null;
+}
+
+
 /* --- APIs --- */
 
 app.post("/auth/v1/token", function (req, res) {
@@ -774,20 +786,10 @@ app.post("/auth/v1/token", function (req, res) {
 	const resource_server_token 		= {};
 	const sha256_of_resource_server_token	= {};
 
-	let request_array;
+	const request_array			= object_to_array(body.request);
 
-	if (body.request instanceof Array)
-	{
-		request_array = body.request;
-	}
-	else if (body.request instanceof Object)
-	{
-		request_array = [body.request];
-	}
-	else
-	{
+	if (! request_array)
 		return END_ERROR(res,400,"'request' field is not a valid JSON");
-	}
 
 	const token_rows = pg.querySync (
 		"SELECT COUNT(*)/60.0 "					+
