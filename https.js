@@ -2539,8 +2539,8 @@ function drop_worker_privileges()
 	{
 		if (EUID === 0)
 		{
-			process.setgid("nogroup");
-			process.setuid("nobody");
+			process.setgid("aaa");
+			process.setuid("aaa");
 		}
 
 		unveil("/usr/lib",			"r" );
@@ -2555,11 +2555,10 @@ function drop_worker_privileges()
 	{
 		if (EUID === 0)
 		{
-			chroot("/home/iudx-auth-server","nobody");
+			chroot("/home/iudx-auth-server","aaa");
 			process.chdir ("/");
 
-			process.setgid("nogroup");
-			process.setuid("nobody");
+			process.setgid("aaa");
 		}
 	}
 

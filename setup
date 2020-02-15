@@ -11,6 +11,8 @@ fi
 
 syspatch
 
+useradd -s /sbin/nologin -d /nonexistent aaa
+
 pkg_add curl postgresql-server postgresql-client node
 rcctl enable postgresql
 
