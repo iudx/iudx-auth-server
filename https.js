@@ -2595,6 +2595,14 @@ if (cluster.isMaster)
 
 		cluster.fork();
 	});
+
+	if (is_openbsd) // drop "rpath"
+	{
+		pledge.init (
+			"stdio tty prot_exec inet dns recvfd " +
+			"sendfd exec proc"
+		);
+	}
 }
 else
 {
