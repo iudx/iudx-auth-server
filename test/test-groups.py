@@ -50,7 +50,7 @@ assert 0		== len(r["response"])
 provider.set_policy('all can access iisc.iudx.org.in/resource-xyz* if consumer-in-group(xyz,confidential)')
 
 body = {
-	"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/iisc.iudx.org.in/resource-xyz _yzz",
+	"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/iisc.iudx.org.in/resource-xyz-yzz",
 }
 
 provider.add_consumer_to_group("barun@iisc.ac.in","confidential",100)

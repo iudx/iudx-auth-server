@@ -5,6 +5,5 @@ doc/all.apib
 doc/result
 doc/result_
 doc/traces/
-server.pem
 *.password
 *.pem

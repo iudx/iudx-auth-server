@@ -79,8 +79,6 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/list"			: 3,
 });
 
-let has_started_serving_apis = false;
-
 /* --- dns --- */
 
 dns.setServers ([
@@ -581,14 +579,6 @@ function body_to_json (body)
 
 function security (req, res, next)
 {
-	if (! has_started_serving_apis)
-	{
-		if (is_openbsd) // drop "rpath"
-			pledge.init ("stdio tty prot_exec inet dns recvfd");
-
-		has_started_serving_apis = true;
-	}
-
 	req.setTimeout(5000);
 
 	const api = url.parse(req.url).pathname;

@@ -24,13 +24,13 @@ num_tokens_before = len(as_provider)
 
 body = [
 	{
-		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/iisc.iudx.org.in/resource-xyz _yzz",
+		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/iisc.iudx.org.in/resource-xyz-yzz",
 		"api"		: "/latest",
 		"methods"	: ["GET"],
 		"body"		: {"key":"some-key"}
 	},
 	{
-		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/abc.com/abc_ xyz"
+		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/abc.com/abc-xyz"
 	}
 ]
 
