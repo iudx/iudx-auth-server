@@ -881,8 +881,6 @@ app.post("/auth/v1/token", function (req, res) {
 	{
 		let resource = row["resource-id"];
 
-console.log("Got",resource);
-
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
 			return END_ERROR (
