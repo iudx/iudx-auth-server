@@ -758,14 +758,15 @@ function security (req, res, next)
 function object_to_array (o)
 {
 	if (o instanceof Object)
-		o = [o];
+	{
+		if (o instanceof Array)
+			return o;
+		else
+			return [o];
+	}
 
-	if (o instanceof Array)
-		return o;
-	else
-		return null;
+	return null;
 }
-
 
 /* --- APIs --- */
 
@@ -880,12 +881,14 @@ app.post("/auth/v1/token", function (req, res) {
 	{
 		let resource = row["resource-id"];
 
+console.log("Got",resource);
+
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
 			return END_ERROR (
 				res, 400,
 				"Invalid 'resource-id "		+
-				"(contains unsafe chars)' :"	+ resource
+				"(contains unsafe chars)' : "	+ resource
 			);
 		}
 
