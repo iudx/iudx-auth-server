@@ -360,39 +360,35 @@ function is_certificate_ok (req, cert, validate_email)
 			return "Invalid emailAddress field in the certificate";
 	}
 
-	if (cert.issuer && cert.issuer.emailAddress)
-	{
-		const issuer_email = cert.issuer.emailAddress.toLowerCase();
-
-		if (! is_valid_email(issuer_email))
-			return "Certificate issuer's emailAddress is invalid";
-
-		if (issuer_email.startsWith("iudx.sub.ca@"))
-		{
-			const issued_to_domain	= cert.subject.emailAddress
-							.toLowerCase()
-							.split("@")[1];
-
-			const issuer_domain	= issuer_email
-							.toLowerCase()
-							.split("@")[1];
-
-			if (issuer_domain !== issued_to_domain)
-			{
-				log ("red",
-					"Invalid certificate: issuer = "+
-						issuer_domain		+
-					" and issued to = "		+
-						cert.subject.emailAddress
-				);
-
-				return "Invalid certificate issuer";
-			}
-		}
-	}
-	else
-	{
+	if ((! cert.issuer) || (! cert.issuer.emailAddress))
 		return "Certificate issuer has no emailAddress field";
+
+	const issuer_email = cert.issuer.emailAddress.toLowerCase();
+
+	if (! is_valid_email(issuer_email))
+		return "Certificate issuer's emailAddress is invalid";
+
+	if (issuer_email.startsWith("iudx.sub.ca@"))
+	{
+		const issued_to_domain	= cert.subject.emailAddress
+						.toLowerCase()
+						.split("@")[1];
+
+		const issuer_domain	= issuer_email
+						.toLowerCase()
+						.split("@")[1];
+
+		if (issuer_domain !== issued_to_domain)
+		{
+			log ("red",
+				"Invalid certificate: issuer = "+
+					issuer_domain		+
+				" and issued to = "		+
+					cert.subject.emailAddress
+			);
+
+			return "Invalid certificate issuer";
+		}
 	}
 
 	return "OK";
@@ -748,7 +744,8 @@ function security (req, res, next)
 				if (! (res.locals.body = body_to_json(req.body)))
 				{
 					return END_ERROR (
-						res,400, "Body is not a valid JSON"
+						res, 400,
+						"Body is not a valid JSON"
 					);
 				}
 
@@ -1359,12 +1356,10 @@ app.post("/auth/v1/token", function (req, res) {
 	{
 		if (error || results.rowCount === 0)
 			return END_ERROR (res, 500, "Internal error!", error);
-		else
-		{
-			return END_SUCCESS (
-				res, 200, JSON.stringify(response)
-			);
-		}
+
+		return END_SUCCESS (
+			res, 200, JSON.stringify(response)
+		);
 	});
 });
 
@@ -1422,10 +1417,12 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 	{
 		server_token = true;
 	}
-	else
+	else if (
+		(! is_string_safe(server_token))	||
+		(server_token.length !== TOKEN_LENGTH_HEX)
+	)
 	{
-		if ((! is_string_safe(server_token)) || (server_token.length !== TOKEN_LENGTH_HEX))
-			return END_ERROR (res, 400, "Invalid 'server-token' field");
+		return END_ERROR (res, 400, "Invalid 'server-token' field");
 	}
 
 	const consumer_request = body.request;
@@ -1664,12 +1661,11 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 							"Internal error!", error_1
 						);
 					}
-					else
-					{
-						return END_SUCCESS (
-							res, 200, JSON.stringify(response)
-						);
-					}
+
+					return END_SUCCESS (
+						res, 200,
+							JSON.stringify(response)
+					);
 				}
 			);
 		});
@@ -1887,46 +1883,44 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 					res, 500, "Internal error!", error
 				);
 			}
-			else
-			{
-				const response = {
-					success			: true,
-					"num-tokens-revoked"	: results.rowCount
-				};
 
-				pool.query (
+			const response = {
+				success			: true,
+				"num-tokens-revoked"	: results.rowCount
+			};
 
-					"UPDATE token "				+
-					"SET providers = "			+
-					"providers || '{\""			+
-						provider_id_in_db + "\":false}'"+
-					"WHERE cert_serial = $1::text "		+
-					"AND cert_fingerprint = $2::text "	+
-					"AND expiry > NOW() "			+
-					"AND revoked = false "			+
-					"AND providers->'"			+
-						provider_id_in_db + "' = 'true' ",
+			pool.query (
 
-					[serial, fingerprint],
+				"UPDATE token "				+
+				"SET providers = "			+
+				"providers || '{\""			+
+					provider_id_in_db + "\":false}'"+
+				"WHERE cert_serial = $1::text "		+
+				"AND cert_fingerprint = $2::text "	+
+				"AND expiry > NOW() "			+
+				"AND revoked = false "			+
+				"AND providers->'"			+
+					provider_id_in_db + "' = 'true' ",
 
-					(error_1, results_1) =>
+				[serial, fingerprint],
+
+				(error_1, results_1) =>
+				{
+					if (error_1)
 					{
-						if (error_1)
-						{
-							return END_ERROR (
-								res, 500,
-								"Internal error!", error_1
-							);
-						}
-
-						response["num-tokens-revoked"] += results_1.rowCount;
-						return END_SUCCESS (
-							res, 200,
-								JSON.stringify(response)
+						return END_ERROR (
+							res, 500,
+							"Internal error!", error_1
 						);
 					}
-				);
-			}
+
+					response["num-tokens-revoked"] += results_1.rowCount;
+					return END_SUCCESS (
+						res, 200,
+							JSON.stringify(response)
+					);
+				}
+			);
 		}
 	);
 });
@@ -2007,8 +2001,8 @@ app.post("/auth/v1/acl/set", function (req, res) {
 					res, 500, "Internal error!", error_1
 				);
 			}
-			else
-				return END_SUCCESS (res, 200, SUCCESS);
+
+			return END_SUCCESS (res, 200, SUCCESS);
 		});
 	});
 });
@@ -2117,8 +2111,8 @@ app.post("/auth/v1/acl/append", function (req, res) {
 					res, 500, "Internal error!", error_1
 				);
 			}
-			else
-				return END_SUCCESS (res, 200, SUCCESS);
+
+			return END_SUCCESS (res, 200, SUCCESS);
 		});
 	});
 });
@@ -2306,8 +2300,8 @@ app.post("/auth/v1/group/add", function (req, res) {
 	{
 		if (error || results.rowCount === 0)
 			return END_ERROR (res, 500, "Internal error!", error);
-		else
-			return END_SUCCESS (res, 200, SUCCESS);
+
+		return END_SUCCESS (res, 200, SUCCESS);
 	});
 });
 
@@ -2426,10 +2420,10 @@ app.post("/auth/v1/group/delete", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	let query = 	"UPDATE groups "					+
-			"SET valid_till = (NOW() - interval '1 seconds') "	+
-			"WHERE id = $1::text "					+
-			"AND group_name = $2::text "				+
+	let query = 	"UPDATE groups SET "				+
+			"valid_till = (NOW() - interval '1 seconds') "	+
+			"WHERE id = $1::text "				+
+			"AND group_name = $2::text "			+
 			"AND valid_till > NOW()";
 
 	const parameters = [provider_id_in_db, group_name];
@@ -2447,15 +2441,13 @@ app.post("/auth/v1/group/delete", function (req, res) {
 
 		if (consumer_id !== "*" && results.rowCount === 0)
 			return END_ERROR (res,400,"Consumer not in the group");
-		else
-		{
-			const response = {
-				success			: true,
-				"num-consumers-deleted"	: results.rowCount
-			};
 
-			return END_SUCCESS (res, 200, JSON.stringify(response));
-		}
+		const response = {
+			success			: true,
+			"num-consumers-deleted"	: results.rowCount
+		};
+
+		return END_SUCCESS (res, 200, JSON.stringify(response));
 	});
 });
 
@@ -2551,10 +2543,9 @@ function drop_worker_privileges()
 	{
 		if (EUID === 0)
 		{
+			process.setgid("aaa");
 			chroot("/home/iudx-auth-server","aaa");
 			process.chdir ("/");
-
-			process.setgid("aaa");
 		}
 	}
 
@@ -2602,7 +2593,7 @@ if (cluster.isMaster)
 }
 else
 {
-	https.createServer (https_options,app).listen(443,"0.0.0.0");
+	https.createServer(https_options,app).listen(443,"0.0.0.0");
 
 	drop_worker_privileges();
 
