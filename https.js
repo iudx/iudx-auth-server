@@ -36,7 +36,6 @@ const aperture			= require("./node-aperture");
 const immutable			= require("immutable");
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
-const compression		= require("compression");
 const http_request		= require("request");
 const pgNativeClient 		= require("pg-native");
 const pg			= new pgNativeClient();
@@ -78,6 +77,8 @@ const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/delete"			: 3,
 	"/auth/v1/group/list"			: 3,
 });
+
+let has_started_serving_apis = false;
 
 /* --- dns --- */
 
@@ -140,7 +141,6 @@ app.use (
 );
 
 app.use(bodyParser.raw({type:"*/*"}));
-app.use(compression());
 app.use(security);
 
 app.disable("x-powered-by");
@@ -579,6 +579,14 @@ function body_to_json (body)
 
 function security (req, res, next)
 {
+	if (! has_started_serving_apis)
+	{
+		if (is_openbsd) // drop "rpath"
+			pledge.init("error stdio prot_exec inet dns recvfd");
+
+		has_started_serving_apis = true;
+	}
+
 	req.setTimeout(5000);
 
 	const api = url.parse(req.url).pathname;
@@ -2525,7 +2533,6 @@ function drop_worker_privileges()
 		unveil("/usr/libexec/ld.so",		"r" );
 		unveil(__dirname + "/node_modules",	"r" );
 		unveil(__dirname + "/node-aperture",	"r" );
-		unveil(__dirname + "/public",		"r" );
 
 		unveil();
 	}
@@ -2540,7 +2547,7 @@ function drop_worker_privileges()
 	}
 
 	if (is_openbsd)
-		pledge.init ("stdio tty prot_exec inet rpath dns recvfd");
+		pledge.init ("error stdio prot_exec inet rpath dns recvfd");
 }
 
 if (cluster.isMaster)
@@ -2554,7 +2561,7 @@ if (cluster.isMaster)
 		unveil();
 
 		pledge.init (
-			"stdio tty prot_exec inet rpath dns recvfd " +
+			"error stdio prot_exec inet rpath dns recvfd " +
 			"sendfd exec proc"
 		);
 	}
@@ -2573,10 +2580,10 @@ if (cluster.isMaster)
 		cluster.fork();
 	});
 
-	if (is_openbsd) // drop "rpath"
+	if (is_openbsd) // drop "rpath" and "dns"
 	{
 		pledge.init (
-			"stdio tty prot_exec inet dns recvfd " +
+			"error stdio prot_exec inet recvfd " +
 			"sendfd exec proc"
 		);
 	}

@@ -6,7 +6,6 @@
   "dependencies": {
     "assert-plus": "^1.0.0",
     "chroot": "^1.0.10",
-    "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "geoip-lite": "^1.4.0",
