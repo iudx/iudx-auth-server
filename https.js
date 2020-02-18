@@ -38,7 +38,6 @@ const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
 const http_request		= require("request");
 const pgNativeClient 		= require("pg-native");
-const pg			= new pgNativeClient();
 
 const TOKEN_LENGTH		= 16;
 const TOKEN_LENGTH_HEX		= 2 * TOKEN_LENGTH;
@@ -101,30 +100,58 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 
 /* --- postgres --- */
 
-const password = {
-	"DB"	: fs.readFileSync ("auth.db.password","ascii").trim(),
+const USERS = [
+	"select_crl",
+
+	"select_token",
+	"insert_token",
+	"update_token",
+
+	"select_policy",
+	"insert_policy",
+	"update_policy",
+
+	"select_groups",
+	"insert_groups",
+	"update_groups",
+];
+
+const postgres	= {
+	"async"	: {},
+	"sync"	: {}
 };
 
-// async postgres connection
-const pool = new Pool ({
-	host		: "127.0.0.1",
-	port		: 5432,
-	user		: "auth",
-	database	: "postgres",
-	password	: password.DB,
-});
-pool.connect();
+const password	= {};
 
-// sync postgres connection
-pg.connectSync (
-	"postgresql://auth:"+ password.DB + "@127.0.0.1:5432/postgres",
+for (const u of USERS)
+{
+	password[u] = fs.readFileSync ("passwords/"+ u +".db.password","ascii")
+			.trim();
+
+	postgres.async [u] = new Pool ({
+		host		: "127.0.0.1",
+		port		: 5432,
+		user		: u,
+		database	: "postgres",
+		password	: password[u],
+	});
+
+	postgres.async[u].connect();
+
+	postgres.sync[u] = new pgNativeClient();
+
+	postgres.sync[u].connectSync (
+		"postgresql://auth:"+ password[u] + "@127.0.0.1:5432/postgres",
 		function(err)
 		{
 			if(err) {
 				throw err;
 			}
 		}
-);
+	);
+
+	delete password[u]; // forget the password
+}
 
 /* --- express --- */
 
@@ -649,8 +676,11 @@ function security (req, res, next)
 		if ((error = is_secure(req,res,cert)) !== "OK")
 			return END_ERROR (res,403, error);
 
-		pool.query("SELECT crl from crl LIMIT 1",
-			[], (error,results) =>
+		postgres
+			.async
+			.select_crl
+			.query("SELECT crl from crl LIMIT 1",
+				[], (error,results) =>
 			{
 				if (error || results.rows.length === 0)
 				{
@@ -787,13 +817,17 @@ app.post("/auth/v1/token", function (req, res) {
 	if (! request_array)
 		return END_ERROR(res,400,"'request' field is not a valid JSON");
 
-	const token_rows = pg.querySync (
-		"SELECT COUNT(*)/60.0 "					+
-		"AS rate "						+
-		"FROM token "						+
-		"WHERE id=$1::text "					+
-		"AND issued_at >= (NOW() - interval '60 seconds')",
-			[consumer_id],
+	const token_rows = 
+		postgres
+		.sync
+		.select_token
+		.querySync (
+			"SELECT COUNT(*)/60.0 "		+
+			"AS rate "			+
+			"FROM token "			+
+			"WHERE id=$1::text "		+
+			"AND issued_at >= (NOW() - interval '60 seconds')",
+				[consumer_id],
 	);
 
 	// in last 1 minute
@@ -981,10 +1015,15 @@ app.post("/auth/v1/token", function (req, res) {
 		// to be generated later
 		sha256_of_resource_server_token	[resource_server]	= true;
 
-		const policy_rows = pg.querySync (
-			"SELECT policy,policy_in_json FROM policy " +
-			"WHERE id = $1::text",
-				[provider_id_in_db]
+		const policy_rows =
+			postgres
+			.sync
+			.select_policy
+			.querySync (
+				"SELECT policy,policy_in_json "	+
+				"FROM policy "			+
+				"WHERE id = $1::text",
+					[provider_id_in_db]
 		);
 
 		if (policy_rows.length === 0)
@@ -1009,16 +1048,20 @@ app.post("/auth/v1/token", function (req, res) {
 		context.conditions.groups = "";
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
-			const group_rows = pg.querySync (
-				"SELECT DISTINCT group_name "	+
-				"FROM groups "			+
-				"WHERE id = $1::text "		+
-				"AND consumer = $2::text "	+
-				"AND valid_till > NOW()",
-				[
-					provider_id_in_db,
-					consumer_id
-				]
+			const group_rows =
+				postgres
+				.sync
+				.select_groups
+				.querySync (
+					"SELECT DISTINCT group_name "	+
+					"FROM groups "			+
+					"WHERE id = $1::text "		+
+					"AND consumer = $2::text "	+
+					"AND valid_till > NOW()",
+					[
+						provider_id_in_db,
+						consumer_id
+					]
 			);
 
 			const group_array = [];
@@ -1031,15 +1074,20 @@ app.post("/auth/v1/token", function (req, res) {
 		context.conditions.tokens_per_day = 0;
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
-			const tokens_per_day_rows = pg.querySync (
-				"SELECT COUNT(*) FROM token "		+
-				"WHERE id=$1::text "			+
-				"AND resource_ids @> $2 "		+
-				"AND issued_at >= DATE_TRUNC('day',NOW())",
-				[
-					consumer_id,
-					'{"' + resource + '":true}'
-				],
+			const tokens_per_day_rows =
+				postgres
+				.sync
+				.select_token
+				.querySync (
+					"SELECT COUNT(*) "		+
+					"FROM token "			+
+					"WHERE id=$1::text "		+
+					"AND resource_ids @> $2 "	+
+					"AND issued_at >= DATE_TRUNC('day',NOW())",
+					[
+						consumer_id,
+						'{"' + resource + '":true}'
+					],
 			);
 
 			context.conditions.tokens_per_day = parseInt (
@@ -1194,13 +1242,17 @@ app.post("/auth/v1/token", function (req, res) {
 							.update(random_part_of_token)
 							.digest("hex");
 
-		existing_row = pg.querySync (
-			"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "		+
-			"AS token_time,request,resource_ids,server_token "	+
-				"FROM token WHERE "				+
-				"id = $1::text AND "				+
-				"token = $2::text AND "				+
-				"revoked = false AND "				+
+		existing_row = 
+			postgres
+			.sync
+			.select_token
+			.querySync (
+				"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "		+
+				"AS token_time,request,resource_ids,server_token "	+
+				"FROM token WHERE "					+
+				"id = $1::text AND "					+
+				"token = $2::text AND "					+
+				"revoked = false AND "					+
 				"expiry > NOW()",
 			[
 				consumer_id,
@@ -1315,6 +1367,19 @@ app.post("/auth/v1/token", function (req, res) {
 				consumer_id,
 				sha256_of_token,
 		];
+
+		postgres
+			.async
+			.update_token
+			.query (query, parameters, (error,results) =>
+		{
+			if (error || results.rowCount === 0)
+				return END_ERROR (res, 500, "Internal error!", error);
+
+			return END_SUCCESS (
+				res, 200, JSON.stringify(response)
+			);
+		});
 	}
 	else
 	{
@@ -1349,17 +1414,21 @@ app.post("/auth/v1/token", function (req, res) {
 				JSON.stringify(sha256_of_resource_server_token),
 				JSON.stringify(providers)
 		];
+
+		postgres
+			.async
+			.insert_token
+			.query (query, parameters, (error,results) =>
+		{
+			if (error || results.rowCount === 0)
+				return END_ERROR (res, 500, "Internal error!", error);
+
+			return END_SUCCESS (
+				res, 200, JSON.stringify(response)
+			);
+		});
 	}
 
-	pool.query (query, parameters, (error,results) =>
-	{
-		if (error || results.rowCount === 0)
-			return END_ERROR (res, 500, "Internal error!", error);
-
-		return END_SUCCESS (
-			res, 200, JSON.stringify(response)
-		);
-	});
 });
 
 app.post("/auth/v1/token/confirm-payment", function (req, res) {
@@ -1485,7 +1554,9 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 		// TODO select payment_required from token table
 
-		pool.query (
+		postgres.async
+			.select_token
+			.query (
 				"SELECT expiry,request,cert_class,"	+
 				"server_token,providers "		+
 					"FROM token "			+
@@ -1645,12 +1716,15 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 				"consumer-certificate-class"	: results.rows[0].cert_class,
 			};
 
-			pool.query (
-				"UPDATE token SET introspected = true "		+
-				"WHERE token = $1::text "			+
-				"AND revoked = false "				+
-				"AND expiry > NOW()",
+			postgres.async
+				.update_token
+				.query (
+					"UPDATE token SET introspected = true "	+
+					"WHERE token = $1::text "		+
+					"AND revoked = false "			+
+					"AND expiry > NOW()",
 					[sha256_of_token],
+
 				(error_1, results_1) =>
 				{
 					if (error_1 || results_1.rowCount === 0)
@@ -1733,12 +1807,16 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 						.update(random_part_of_token)
 						.digest("hex");
 
-			const select_rows = pg.querySync (
-				"SELECT 1 from token "	+
-				"WHERE id = $1::text " 	+
-				"AND token = $2::text "	+
-				"AND expiry > NOW()",
-					[id, sha256_of_token]
+			const select_rows =
+				postgres
+				.sync
+				.select_token
+				.querySync (
+					"SELECT 1 from token "	+
+					"WHERE id = $1::text " 	+
+					"AND token = $2::text "	+
+					"AND expiry > NOW()",
+						[id, sha256_of_token]
 			);
 
 			if (select_rows.length === 0)
@@ -1753,7 +1831,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			pg.querySync (
+			postgres
+			.sync
+			.update_token
+			.querySync (
 				"UPDATE token SET revoked = true "	+
 				"WHERE id = $1::text "			+
 				"AND token = $2::text "			+
@@ -1794,13 +1875,17 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			const select_rows = pg.querySync (
-				"SELECT 1 from token "			+
-				"WHERE token = $1::text "		+
-				"AND providers->'" + provider_id_in_db	+
-				"' = 'true' "				+
-				"AND expiry > NOW()",
-					[token_hash]
+			const select_rows =
+				postgres
+				.sync
+				.select_token
+				.querySync (
+					"SELECT 1 from token "			+
+					"WHERE token = $1::text "		+
+					"AND providers->'" + provider_id_in_db	+
+					"' = 'true' "				+
+					"AND expiry > NOW()",
+						[token_hash]
 			);
 
 			if (select_rows.length === 0)
@@ -1814,7 +1899,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			pg.querySync (
+			postgres
+			.sync
+			.update_token
+			.querySync (
 				"UPDATE token "						+
 				"SET providers = "					+
 				"providers || '{\"" + provider_id_in_db + "\":false}'"	+
@@ -1864,14 +1952,15 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	pool.query (
-		"UPDATE token SET revoked = true "	+
-		"WHERE id = $1::text "			+
-		"AND cert_serial = $2::text "		+
-		"AND cert_fingerprint = $3::text "	+
-		"AND expiry > NOW() "			+
-		"AND revoked = false",
-
+	postgres.async
+		.update_token
+		.query (
+			"UPDATE token SET revoked = true "	+
+			"WHERE id = $1::text "			+
+			"AND cert_serial = $2::text "		+
+			"AND cert_fingerprint = $3::text "	+
+			"AND expiry > NOW() "			+
+			"AND revoked = false",
 		[id, serial, fingerprint],
 
 		(error,results) =>
@@ -1888,18 +1977,20 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 				"num-tokens-revoked"	: results.rowCount
 			};
 
-			pool.query (
-
-				"UPDATE token "				+
-				"SET providers = "			+
-				"providers || '{\""			+
-					provider_id_in_db + "\":false}'"+
-				"WHERE cert_serial = $1::text "		+
-				"AND cert_fingerprint = $2::text "	+
-				"AND expiry > NOW() "			+
-				"AND revoked = false "			+
-				"AND providers->'"			+
-					provider_id_in_db + "' = 'true' ",
+			postgres
+				.async
+				.update_token
+				.query (
+					"UPDATE token "				+
+					"SET providers = "			+
+					"providers || '{\""			+
+						provider_id_in_db + "\":false}'"+
+					"WHERE cert_serial = $1::text "		+
+					"AND cert_fingerprint = $2::text "	+
+					"AND expiry > NOW() "			+
+					"AND revoked = false "			+
+					"AND providers->'"			+
+						provider_id_in_db + "' = 'true' ",
 
 				[serial, fingerprint],
 
@@ -1960,8 +2051,11 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
 
-	pool.query("SELECT 1 FROM policy WHERE id = $1::text",
-		[provider_id_in_db], (error, results) =>
+	postgres
+		.async
+		.select_policy
+		.query("SELECT 1 FROM policy WHERE id = $1::text",
+			[provider_id_in_db], (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Internal error!", error);
@@ -1979,6 +2073,21 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				JSON.stringify(policy_in_json),
 				provider_id_in_db
 			];
+
+			postgres
+				.async
+				.update_policy
+				.query (query, parameters, (error_1, results_1) =>
+			{
+				if (error_1 || results_1.rowCount === 0)
+				{
+					return END_ERROR (
+						res, 500, "Internal error!", error_1
+					);
+				}
+
+				return END_SUCCESS (res, 200, SUCCESS);
+			});
 		}
 		else
 		{
@@ -1990,19 +2099,23 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				base64policy,
 				JSON.stringify(policy_in_json)
 			];
+
+			postgres
+				.async
+				.insert_policy
+				.query (query, parameters, (error_1, results_1) =>
+			{
+				if (error_1 || results_1.rowCount === 0)
+				{
+					return END_ERROR (
+						res, 500, "Internal error!", error_1
+					);
+				}
+
+				return END_SUCCESS (res, 200, SUCCESS);
+			});
 		}
 
-		pool.query (query, parameters, (error_1, results_1) =>
-		{
-			if (error_1 || results_1.rowCount === 0)
-			{
-				return END_ERROR (
-					res, 500, "Internal error!", error_1
-				);
-			}
-
-			return END_SUCCESS (res, 200, SUCCESS);
-		});
 	});
 });
 
@@ -2040,8 +2153,11 @@ app.post("/auth/v1/acl/append", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
 
-	pool.query("SELECT policy FROM policy WHERE id = $1::text",
-		[provider_id_in_db], (error, results) =>
+	postgres
+		.async
+		.select_policy
+		.query("SELECT policy FROM policy WHERE id = $1::text",
+			[provider_id_in_db], (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res,500,"Internal error!",error);
@@ -2086,6 +2202,21 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				JSON.stringify(policy_in_json),
 				provider_id_in_db
 			];
+
+			postgres
+				.async.
+				update_policy
+				.query (query, parameters, (error_1, results_1) =>
+			{
+				if (error_1 || results_1.rowCount === 0)
+				{
+					return END_ERROR (
+						res, 500, "Internal error!", error_1
+					);
+				}
+
+				return END_SUCCESS (res, 200, SUCCESS);
+			});
 		}
 		else
 		{
@@ -2100,19 +2231,22 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				base64policy,
 				JSON.stringify(policy_in_json)
 			];
-		}
 
-		pool.query (query, parameters, (error_1, results_1) =>
-		{
-			if (error_1 || results_1.rowCount === 0)
+			postgres
+				.async
+				.insert_policy
+				.query (query, parameters, (error_1, results_1) =>
 			{
-				return END_ERROR (
-					res, 500, "Internal error!", error_1
-				);
-			}
+				if (error_1 || results_1.rowCount === 0)
+				{
+					return END_ERROR (
+						res, 500, "Internal error!", error_1
+					);
+				}
 
-			return END_SUCCESS (res, 200, SUCCESS);
-		});
+				return END_SUCCESS (res, 200, SUCCESS);
+			});
+		}
 	});
 });
 
@@ -2128,7 +2262,10 @@ app.post("/auth/v1/acl", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	pool.query("SELECT policy FROM policy WHERE id = $1::text",
+	postgres
+		.async
+		.select_policy
+		.query("SELECT policy FROM policy WHERE id = $1::text",
 			[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -2164,12 +2301,15 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 	const as_consumer = [];
 	const as_provider = [];
 
-	pool.query (
-		"SELECT issued_at,expiry,request,cert_serial,"		+
-		"cert_fingerprint,introspected,revoked "		+
-		"FROM token "						+
-		"WHERE id = $1::text "					+
-		"AND issued_at >= (NOW() + '-" + hours + " hours')",
+	postgres
+		.async
+		.select_token
+		.query (
+			"SELECT issued_at,expiry,request,cert_serial,"		+
+			"cert_fingerprint,introspected,revoked "		+
+			"FROM token "						+
+			"WHERE id = $1::text "					+
+			"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
 			[id], (error, results) =>
 	{
@@ -2196,16 +2336,19 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		const email_domain	= id.split("@")[1];
 		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-		pool.query (
-			"SELECT id,token,issued_at,expiry,request,"	+
-			"cert_serial,cert_fingerprint,"			+
-			"revoked,introspected,"				+
-			"providers->'" + provider_id_in_db		+
-			"' AS has_provider_revoked "			+
-			"FROM token "					+
-			"WHERE providers->'" + provider_id_in_db 	+
-			"' IS NOT NULL "				+
-			"AND issued_at >= (NOW() + '-" + hours + " hours')",
+		postgres
+			.async
+			.select_token
+			.query (
+				"SELECT id,token,issued_at,expiry,request,"	+
+				"cert_serial,cert_fingerprint,"			+
+				"revoked,introspected,"				+
+				"providers->'" + provider_id_in_db		+
+				"' AS has_provider_revoked "			+
+				"FROM token "					+
+				"WHERE providers->'" + provider_id_in_db 	+
+				"' IS NOT NULL "				+
+				"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
 		[], (error, results) =>
 		{
@@ -2290,8 +2433,11 @@ app.post("/auth/v1/group/add", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	pool.query (
-		"INSERT INTO groups "				+
+	postgres
+		.async
+		.insert_groups
+		.query (
+			"INSERT INTO groups "			+
 			"VALUES ($1::text, $2::text, $3::text,"	+
 			"NOW() + '" + valid_till + " hours')",
 				[provider_id_in_db, consumer_id, group_name],
@@ -2330,11 +2476,15 @@ app.post("/auth/v1/group/list", function (req, res) {
 
 	if (group_name)
 	{
-		pool.query (
-			"SELECT consumer, valid_till FROM groups "	+
-			"WHERE id = $1::text "				+
-			"AND group_name = $2::text "			+
-			"AND valid_till > NOW()",
+		postgres
+			.async
+			.select_groups
+			.query (
+				"SELECT consumer, valid_till "	+
+				"FROM groups "			+
+				"WHERE id = $1::text "		+
+				"AND group_name = $2::text "	+
+				"AND valid_till > NOW()",
 				[provider_id_in_db, group_name],
 		(error, results) =>
 		{
@@ -2358,11 +2508,14 @@ app.post("/auth/v1/group/list", function (req, res) {
 	}
 	else
 	{
-		pool.query (
-			"SELECT consumer,group_name,valid_till "	+
-			"FROM groups "					+
-			"WHERE id = $1::text "				+
-			"AND valid_till > NOW()",
+		postgres
+			.async
+			.select_groups
+			.query (
+				"SELECT consumer,group_name,valid_till "+
+				"FROM groups "				+
+				"WHERE id = $1::text "			+
+				"AND valid_till > NOW()",
 				[provider_id_in_db],
 		(error, results) =>
 		{
@@ -2433,7 +2586,10 @@ app.post("/auth/v1/group/delete", function (req, res) {
 		parameters.push(consumer_id);
 	}
 
-	pool.query (query, parameters, (error, results) =>
+	postgres
+		.async
+		.update_groups
+		.query (query, parameters, (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Internal error!", error);
@@ -2518,9 +2674,6 @@ function drop_worker_privileges()
 
 	if (! do_drop_privileges)
 		return;
-
-	for (const k in password)
-		delete password[k];	// forget all passwords
 
 	if (is_openbsd)
 	{

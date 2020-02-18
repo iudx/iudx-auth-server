@@ -16,15 +16,39 @@ useradd -s /sbin/nologin -d /nonexistent aaa
 pkg_add curl postgresql-server postgresql-client node
 rcctl enable postgresql
 
-touch crl.db.password
-touch auth.db.password
-touch postgresql.db.password
+rm -rf passwords
+mkdir passwords
 
-chmod 400 *.password
+touch passwords/admin.db.password
 
-head /dev/urandom | sha256 > crl.db.password
-head /dev/urandom | sha256 > auth.db.password
-head /dev/urandom | sha256 > postgresql.db.password
+#------- WIP Passwords for APIs -----------
+
+touch passwords/select_crl.db.password
+
+touch passwords/select_token.db.password
+touch passwords/insert_token.db.password
+touch passwords/update_token.db.password
+
+touch passwords/select_policy.db.password
+touch passwords/insert_policy.db.password
+touch passwords/update_policy.db.password
+
+touch passwords/select_groups.db.password
+touch passwords/insert_groups.db.password
+touch passwords/update_groups.db.password
+
+#------------------------------------------
+
+chmod 400 passwords/*
+
+for f in `ls passwords`
+do
+	head /dev/urandom | sha256 > $f 
+
+	password=`cat $f`
+	label=`echo $f | cut -f1 -d'.'`
+	sed -i "s/XXX$label/$password/" schema.sql 
+done
 
 echo your-telegram-api-key > telegram.apikey
 echo your-telegram-chat-id > telegram.chatid
@@ -32,18 +56,18 @@ echo your-telegram-chat-id > telegram.chatid
 chmod 400 telegram.*
 chmod 400 *.sql
 
-crl_password=`cat crl.db.password`
-sed -i "s/XXXcrlXXX/$crl_password/" postgresql.sql 
+crl_password=`cat passwords/select_crl.db.password`
+sed -i "s/XXXcrl/$crl_password/" schema.sql 
 
-auth_password=`cat auth.db.password`
-sed -i "s/XXXauthXXX/$auth_password/" postgresql.sql 
+auth_password=`cat passwords/auth.db.password`
+sed -i "s/XXXauth/$auth_password/" schema.sql 
 
 # setup postgresql
-mv postgresql.db.password /var/postgresql/
-chown _postgresql:_postgresql /var/postgresql/postgresql.db.password
+mv passwords/admin.db.password /var/postgresql/
+chown _postgresql:_postgresql /var/postgresql/admin.db.password
 
-mv postgresql.sql /var/postgresql/
-chown _postgresql:_postgresql /var/postgresql/postgresql.sql
+mv schema.sql /var/postgresql/
+chown _postgresql:_postgresql /var/postgresql/schema.sql
 
 cp setup.postgresql.openbsd /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/setup.postgresql.openbsd
