@@ -985,7 +985,7 @@ app.post("/auth/v1/token", function (req, res) {
 
 		const policy_rows = pg.querySync (
 			"SELECT policy,policy_in_json FROM policy " +
-			"WHERE id = $1::text",
+			"WHERE id = $1::text LIMIT 1",
 				[provider_id_in_db]
 		);
 
@@ -1207,7 +1207,7 @@ app.post("/auth/v1/token", function (req, res) {
 			"id = $1::text AND "				+
 			"token = $2::text AND "				+
 			"revoked = false AND "				+
-			"expiry > NOW()",
+			"expiry > NOW() LIMIT 1",
 			[
 				consumer_id,
 				sha256_of_existing_token,
@@ -1497,7 +1497,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			"FROM token "				+
 			"WHERE token = $1::text "		+
 			"AND revoked = false "			+
-			"AND expiry > NOW()",
+			"AND expiry > NOW() LIMIT 1",
 				[sha256_of_token],
 		(error, results) =>
 		{
@@ -1744,7 +1744,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"SELECT 1 from token "	+
 				"WHERE id = $1::text " 	+
 				"AND token = $2::text "	+
-				"AND expiry > NOW()",
+				"AND expiry > NOW() LIMIT 1",
 					[id, sha256_of_token]
 			);
 
@@ -1808,7 +1808,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"WHERE token = $1::text "		+
 				"AND providers->'" + provider_id_in_db	+
 				"' = 'true' "				+
-				"AND expiry > NOW()",
+				"AND expiry > NOW() LIMIT 1",
 					[token_hash]
 			);
 
@@ -1971,7 +1971,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
 
-	pool.query("SELECT 1 FROM policy WHERE id = $1::text",
+	pool.query("SELECT 1 FROM policy WHERE id = $1::text LIMIT 1",
 		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -2051,7 +2051,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
 
-	pool.query("SELECT policy FROM policy WHERE id = $1::text",
+	pool.query("SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
 		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -2060,7 +2060,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 		let query;
 		let parameters;
 
-		if (results.rows.length > 0)
+		if (results.rows.length === 1)
 		{
 			const old_policy	= Buffer.from (
 							results.rows[0].policy,
@@ -2140,7 +2140,7 @@ app.post("/auth/v1/acl", function (req, res) {
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	pool.query (
-		"SELECT policy FROM policy WHERE id = $1::text",
+		"SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
 			[provider_id_in_db], (error, results) =>
 	{
 		if (error)
