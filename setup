@@ -39,13 +39,13 @@ auth_password=`cat auth.db.password`
 sed -i "s/XXXauthXXX/$auth_password/" postgresql.sql 
 
 # setup postgresql
-cp postgresql.db.password /var/postgresql
+mv passwords/postgresql.db.password /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/postgresql.db.password
 
-cp postgresql.sql /var/postgresql
+mv postgresql.sql /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/postgresql.sql
 
-cp setup.postgresql.openbsd /var/postgresql
+cp setup.postgresql.openbsd /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/setup.postgresql.openbsd
 
 chmod u+x /var/postgresql/setup.postgresql.openbsd

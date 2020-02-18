@@ -9,5 +9,4 @@ export PGPASSWORD=`cat postgresql.db.password`
 
 psql -U postgres < postgresql.sql >/dev/null
 
-rm -rf postgresql.db.password
 rm -rf postgresql.sql
