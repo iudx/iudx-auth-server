@@ -113,6 +113,7 @@ const pool = new Pool ({
 	database	: "postgres",
 	password	: password.DB,
 });
+
 pool.connect();
 
 // sync postgres connection
@@ -224,7 +225,7 @@ function log(color, msg)
 function send_telegram (message)
 {
 	http_request ( telegram_url + "[ AUTH ] : " + message,
-		function (error,response,body)
+		function (error, response, body)
 		{
 			if (error)
 			{
@@ -788,10 +789,11 @@ app.post("/auth/v1/token", function (req, res) {
 		return END_ERROR(res,400,"'request' field is not a valid JSON");
 
 	const token_rows = pg.querySync (
-		"SELECT COUNT(*)/60.0 "					+
-		"AS rate "						+
-		"FROM token "						+
-		"WHERE id=$1::text "					+
+
+		"SELECT COUNT(*)/60.0 "	+
+		"AS rate "		+
+		"FROM token "		+
+		"WHERE id=$1::text "	+
 		"AND issued_at >= (NOW() - interval '60 seconds')",
 			[consumer_id],
 	);
@@ -1010,6 +1012,7 @@ app.post("/auth/v1/token", function (req, res) {
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
 			const group_rows = pg.querySync (
+
 				"SELECT DISTINCT group_name "	+
 				"FROM groups "			+
 				"WHERE id = $1::text "		+
@@ -1032,6 +1035,7 @@ app.post("/auth/v1/token", function (req, res) {
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
 			const tokens_per_day_rows = pg.querySync (
+
 				"SELECT COUNT(*) FROM token "		+
 				"WHERE id=$1::text "			+
 				"AND resource_ids @> $2 "		+
@@ -1195,13 +1199,15 @@ app.post("/auth/v1/token", function (req, res) {
 							.digest("hex");
 
 		existing_row = pg.querySync (
-			"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "		+
-			"AS token_time,request,resource_ids,server_token "	+
-				"FROM token WHERE "				+
-				"id = $1::text AND "				+
-				"token = $2::text AND "				+
-				"revoked = false AND "				+
-				"expiry > NOW()",
+
+			"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "	+
+			"AS token_time,request,resource_ids,"		+
+			"server_token "					+
+			"FROM token WHERE "				+
+			"id = $1::text AND "				+
+			"token = $2::text AND "				+
+			"revoked = false AND "				+
+			"expiry > NOW()",
 			[
 				consumer_id,
 				sha256_of_existing_token,
@@ -1486,13 +1492,13 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 		// TODO select payment_required from token table
 
 		pool.query (
-				"SELECT expiry,request,cert_class,"	+
-				"server_token,providers "		+
-					"FROM token "			+
-					"WHERE token = $1::text "	+
-					"AND revoked = false "		+
-					"AND expiry > NOW()",
-						[sha256_of_token],
+			"SELECT expiry,request,cert_class,"	+
+			"server_token,providers "		+
+			"FROM token "				+
+			"WHERE token = $1::text "		+
+			"AND revoked = false "			+
+			"AND expiry > NOW()",
+				[sha256_of_token],
 		(error, results) =>
 		{
 			if (error)
@@ -1734,6 +1740,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 						.digest("hex");
 
 			const select_rows = pg.querySync (
+
 				"SELECT 1 from token "	+
 				"WHERE id = $1::text " 	+
 				"AND token = $2::text "	+
@@ -1754,6 +1761,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			}
 
 			pg.querySync (
+
 				"UPDATE token SET revoked = true "	+
 				"WHERE id = $1::text "			+
 				"AND token = $2::text "			+
@@ -1795,6 +1803,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			}
 
 			const select_rows = pg.querySync (
+
 				"SELECT 1 from token "			+
 				"WHERE token = $1::text "		+
 				"AND providers->'" + provider_id_in_db	+
@@ -1815,6 +1824,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			}
 
 			pg.querySync (
+
 				"UPDATE token "						+
 				"SET providers = "					+
 				"providers || '{\"" + provider_id_in_db + "\":false}'"	+
@@ -1865,6 +1875,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	pool.query (
+
 		"UPDATE token SET revoked = true "	+
 		"WHERE id = $1::text "			+
 		"AND cert_serial = $2::text "		+
@@ -2128,7 +2139,8 @@ app.post("/auth/v1/acl", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	pool.query("SELECT policy FROM policy WHERE id = $1::text",
+	pool.query (
+		"SELECT policy FROM policy WHERE id = $1::text",
 			[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -2165,13 +2177,16 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 	const as_provider = [];
 
 	pool.query (
+
 		"SELECT issued_at,expiry,request,cert_serial,"		+
 		"cert_fingerprint,introspected,revoked "		+
 		"FROM token "						+
 		"WHERE id = $1::text "					+
 		"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
-			[id], (error, results) =>
+		[id],
+
+	(error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Internal error!", error);
@@ -2197,6 +2212,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 		pool.query (
+
 			"SELECT id,token,issued_at,expiry,request,"	+
 			"cert_serial,cert_fingerprint,"			+
 			"revoked,introspected,"				+
@@ -2207,7 +2223,9 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"' IS NOT NULL "				+
 			"AND issued_at >= (NOW() + '-" + hours + " hours')",
 
-		[], (error, results) =>
+			[],
+
+		(error, results) =>
 		{
 
 			if (error)
@@ -2291,10 +2309,13 @@ app.post("/auth/v1/group/add", function (req, res) {
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	pool.query (
+
 		"INSERT INTO groups "				+
 			"VALUES ($1::text, $2::text, $3::text,"	+
 			"NOW() + '" + valid_till + " hours')",
-				[provider_id_in_db, consumer_id, group_name],
+
+		[provider_id_in_db, consumer_id, group_name],
+
 	(error, results) =>
 	{
 		if (error || results.rowCount === 0)
@@ -2331,11 +2352,14 @@ app.post("/auth/v1/group/list", function (req, res) {
 	if (group_name)
 	{
 		pool.query (
+
 			"SELECT consumer, valid_till FROM groups "	+
 			"WHERE id = $1::text "				+
 			"AND group_name = $2::text "			+
 			"AND valid_till > NOW()",
-				[provider_id_in_db, group_name],
+
+			[provider_id_in_db, group_name],
+
 		(error, results) =>
 		{
 			if (error)
@@ -2359,11 +2383,13 @@ app.post("/auth/v1/group/list", function (req, res) {
 	else
 	{
 		pool.query (
+
 			"SELECT consumer,group_name,valid_till "	+
 			"FROM groups "					+
 			"WHERE id = $1::text "				+
 			"AND valid_till > NOW()",
-				[provider_id_in_db],
+
+			[provider_id_in_db],
 		(error, results) =>
 		{
 			if (error)
