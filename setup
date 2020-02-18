@@ -39,7 +39,7 @@ auth_password=`cat auth.db.password`
 sed -i "s/XXXauthXXX/$auth_password/" postgresql.sql 
 
 # setup postgresql
-mv passwords/postgresql.db.password /var/postgresql/
+mv postgresql.db.password /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/postgresql.db.password
 
 mv postgresql.sql /var/postgresql/
