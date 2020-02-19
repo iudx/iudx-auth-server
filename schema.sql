@@ -42,6 +42,7 @@ CREATE TABLE public.groups (
     valid_till timestamp without time zone NOT NULL
 );
 
+CREATE INDEX idx_groups_id on public.groups(id,group_name);
 
 ALTER TABLE public.groups OWNER TO postgres;
 
@@ -50,11 +51,12 @@ ALTER TABLE public.groups OWNER TO postgres;
 --
 
 CREATE TABLE public.policy (
-    id character varying NOT NULL,
+    id character varying PRIMARY KEY,
     policy character varying(3145728),
     policy_in_json json NOT NULL
 );
 
+CREATE UNIQUE INDEX idx_policy_id on public.policy(id);
 
 ALTER TABLE public.policy OWNER TO postgres;
 
@@ -75,18 +77,13 @@ CREATE TABLE public.token (
     revoked boolean NOT NULL,
     cert_class integer NOT NULL,
     server_token jsonb NOT NULL,
-    providers jsonb NOT NULL
+    providers jsonb NOT NULL,
+    PRIMARY KEY(id, token)
 );
 
+CREATE UNIQUE INDEX idx_token_id on public.token(id,token);
 
 ALTER TABLE public.token OWNER TO postgres;
-
---
--- Name: policy policy_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.policy
-    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
 
 
 --
@@ -119,6 +116,7 @@ GRANT SELECT,INSERT,UPDATE ON TABLE public.policy TO auth;
 --
 
 GRANT SELECT,INSERT,UPDATE ON TABLE public.token TO auth;
+
 
 
 --
