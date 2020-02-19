@@ -9,7 +9,10 @@ const request		= require("sync-request");
 const pgNativeClient 	= require("pg-native");
 const pg		= new pgNativeClient();
 
-const db_password	= fs.readFileSync ("crl.db.password","ascii").trim();
+const db_password	= fs.readFileSync (
+				"passwords/crl.db.password",
+				"ascii"
+			).trim();
 
 const is_openbsd	= os.type() === "OpenBSD";
 const EUID		= process.geteuid();
