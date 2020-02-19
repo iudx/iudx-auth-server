@@ -1034,6 +1034,9 @@ app.post("/auth/v1/token", function (req, res) {
 		context.conditions.tokens_per_day = 0;
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
+			const resource_true = {};
+				resource[resource] = true;
+
 			const tokens_per_day_rows = pg.querySync (
 
 				"SELECT COUNT(*) FROM token "		+
@@ -1042,7 +1045,7 @@ app.post("/auth/v1/token", function (req, res) {
 				"AND issued_at >= DATE_TRUNC('day',NOW())",
 				[
 					consumer_id,
-					'{"' + resource + '":true}'
+					JSON.stringify(resource_true),
 				],
 			);
 
@@ -1303,57 +1306,56 @@ app.post("/auth/v1/token", function (req, res) {
 			{}, existing_row[0].resource_ids, resource_id_dict
 		);
 
-		query = "UPDATE token SET " 							+
-				"request = $1,"							+
-				"resource_ids = $2,"						+
-				"server_token = $3,"						+
-				"expiry = NOW() + interval '" + token_time + " seconds' "	+
-				"WHERE "							+
-				"id = $4::text AND "						+
-				"token = $5::text AND "						+
+		query = "UPDATE token SET " 				+
+				"request = $1,"				+
+				"resource_ids = $2,"			+
+				"server_token = $3,"			+
+				"expiry = NOW() + interval '"		+
+					token_time + " seconds' "	+
+				"WHERE "				+
+				"id = $4::text AND "			+
+				"token = $5::text AND "			+
 				"expiry > NOW()";
 
 		parameters = [
-				JSON.stringify(new_request),
-				JSON.stringify(new_resource_ids_dict),
-				JSON.stringify(sha256_of_resource_server_token),
-
-				consumer_id,
-				sha256_of_token,
+			JSON.stringify(new_request),			// 1
+			JSON.stringify(new_resource_ids_dict),		// 2
+			JSON.stringify(sha256_of_resource_server_token),// 3
+			consumer_id,					// 4
+			sha256_of_token,				// 5
 		];
 	}
 	else
 	{
 		const request = response_array;
 
-		query = "INSERT INTO token VALUES(" 					+
-				"$1::text,"						+
-				"$2::text,"						+
-				"NOW() + interval '" + token_time + " seconds',"	+
-				"$3,"							+
-				"$4::text,"						+
-				"$5::text,"						+
-				"NOW(),"						+
-				"$6,"							+
-				"$7,"							+
-				"$8,"							+
-				"$9,"							+
-				"$10,"							+
-				"$11"							+
+		query = "INSERT INTO token VALUES(" 			+
+				"$1::text,"				+
+				"$2::text,"				+
+				"NOW() + interval '"			+
+					token_time + " seconds',"	+
+				"$3,"					+
+				"$4::text,"				+
+				"$5::text,"				+
+				"NOW(),"				+
+				"$6,"					+
+				"false,"				+
+				"false,"				+
+				"$7::int,"				+
+				"$8,"					+
+				"$9"					+
 			")";
 
 		parameters = [
-				consumer_id,
-				sha256_of_token,
-				JSON.stringify(request),
-				cert.serialNumber,
-				cert.fingerprint,
-				JSON.stringify(resource_id_dict),
-				"false",	// not yet introspected
-				"false",	// not yet revoked
-				cert_class,
-				JSON.stringify(sha256_of_resource_server_token),
-				JSON.stringify(providers)
+			consumer_id,					// 1
+			sha256_of_token,				// 2
+			JSON.stringify(request),			// 3
+			cert.serialNumber,				// 4
+			cert.fingerprint,				// 5
+			JSON.stringify(resource_id_dict),		// 6
+			cert_class,					// 7
+			JSON.stringify(sha256_of_resource_server_token),// 8
+			JSON.stringify(providers)			// 9
 		];
 	}
 
@@ -1994,7 +1996,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		else
 		{
 			query = "INSERT INTO "	+
-				"policy VALUES($1::text,$2::text,$3)";
+				"policy VALUES ($1::text, $2::text, $3)";
 
 			parameters = [
 				provider_id_in_db,
@@ -2104,7 +2106,8 @@ app.post("/auth/v1/acl/append", function (req, res) {
 						.from(policy)
 						.toString("base64");
 
-			query = "INSERT INTO policy VALUES($1::text,$2::text,$3)";
+			query = "INSERT INTO policy "	+
+				"VALUES ($1::text, $2::text, $3)";
 
 			parameters = [
 				provider_id_in_db,

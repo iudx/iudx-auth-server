@@ -18,13 +18,13 @@ rcctl enable postgresql
 
 touch crl.db.password
 touch auth.db.password
-touch postgresql.db.password
+touch admin.db.password
 
 chmod 400 *.password
 
 head /dev/urandom | sha256 > crl.db.password
 head /dev/urandom | sha256 > auth.db.password
-head /dev/urandom | sha256 > postgresql.db.password
+head /dev/urandom | sha256 > admin.db.password
 
 echo your-telegram-api-key > telegram.apikey
 echo your-telegram-chat-id > telegram.chatid
@@ -33,17 +33,17 @@ chmod 400 telegram.*
 chmod 400 *.sql
 
 crl_password=`cat crl.db.password`
-sed -i "s/XXXcrlXXX/$crl_password/" postgresql.sql 
+sed -i "s/XXXcrlXXX/$crl_password/" schema.sql 
 
 auth_password=`cat auth.db.password`
-sed -i "s/XXXauthXXX/$auth_password/" postgresql.sql 
+sed -i "s/XXXauthXXX/$auth_password/" schema.sql 
 
 # setup postgresql
-mv postgresql.db.password /var/postgresql/
-chown _postgresql:_postgresql /var/postgresql/postgresql.db.password
+mv admin.db.password /var/postgresql/
+chown _postgresql:_postgresql /var/postgresql/admin.db.password
 
-mv postgresql.sql /var/postgresql/
-chown _postgresql:_postgresql /var/postgresql/postgresql.sql
+mv schema.sql /var/postgresql/
+chown _postgresql:_postgresql /var/postgresql/schema.sql
 
 cp setup.postgresql.openbsd /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/setup.postgresql.openbsd

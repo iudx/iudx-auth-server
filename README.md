@@ -53,7 +53,7 @@ to get telegram notifications.
 |-- https.js			// the main Auth server code
 |-- install			// the install script for the Auth server	
 |-- pf.conf			// the firewall rules
-|-- postgresql.sql		// the database schema
+|-- schema.sql			// the database schema
 |-- public			// the documentation for each API
 |   `-- help
 |       |-- acl
