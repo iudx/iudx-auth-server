@@ -648,7 +648,7 @@ function security (req, res, next)
 
 		let error;
 		if ((error = is_secure(req,res,cert)) !== "OK")
-			return END_ERROR (res,403, error);
+			return END_ERROR (res, 403, error);
 
 		pool.query("SELECT crl from crl LIMIT 1",
 			[], (error,results) =>
@@ -717,7 +717,7 @@ function security (req, res, next)
 
 				// certificate may not have a "emailAddress" field
 				if ((error = is_secure(req,res,cert,false)) !== "OK")
-					return END_ERROR (res,403, error);
+					return END_ERROR (res, 403, error);
 
 				res.locals.cert_class	= 1;
 				res.locals.email	= "";
@@ -786,7 +786,7 @@ app.post("/auth/v1/token", function (req, res) {
 	const request_array			= object_to_array(body.request);
 
 	if (! request_array)
-		return END_ERROR(res,400,"'request' field is not a valid JSON");
+		return END_ERROR(res, 400, "'request' field is not a valid JSON");
 
 	const token_rows = pg.querySync (
 
@@ -984,6 +984,7 @@ app.post("/auth/v1/token", function (req, res) {
 		sha256_of_resource_server_token	[resource_server]	= true;
 
 		const policy_rows = pg.querySync (
+
 			"SELECT policy,policy_in_json FROM policy " +
 			"WHERE id = $1::text LIMIT 1",
 				[provider_id_in_db]
@@ -1441,15 +1442,17 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 	}
 
 	const issued_by			= token.split("/")[0];
-	const email_id_in_token		= token.split("/")[1];
+	const issued_to			= token.split("/")[1];
 	const random_part_of_token	= token.split("/")[2];
 
 	if (
 		(issued_by 			!== SERVER_NAME)	||
-		(random_part_of_token.length	!== TOKEN_LENGTH_HEX)
+		(random_part_of_token.length	!== TOKEN_LENGTH_HEX)	||
+		(! is_valid_email(issued_to))
 	) {
 		return END_ERROR (res, 400, "Invalid token");
 	}
+
 
 	const sha256_of_token	= crypto.createHash("sha256")
 					.update(random_part_of_token)
@@ -1497,10 +1500,11 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			"SELECT expiry,request,cert_class,"	+
 			"server_token,providers "		+
 			"FROM token "				+
-			"WHERE token = $1::text "		+
+			"WHERE id = $1::text "			+
+			"AND token = $2::text "			+
 			"AND revoked = false "			+
 			"AND expiry > NOW() LIMIT 1",
-				[sha256_of_token],
+				[issued_to, sha256_of_token],
 		(error, results) =>
 		{
 			if (error)
@@ -1647,7 +1651,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			}
 
 			const response = {
-				"consumer"			: email_id_in_token,
+				"consumer"			: issued_to,
 				"expiry"			: results.rows[0].expiry,
 				"request"			: request_for_resource_server,
 				"consumer-certificate-class"	: results.rows[0].cert_class,
@@ -2294,7 +2298,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 		return END_ERROR (res, 400, "Invalid 'group' field");
 
 	if (! body["valid-till"])
-		return END_ERROR (res,400,"No 'valid-till' found in the body");
+		return END_ERROR (res, 400, "No 'valid-till' found in the body");
 
 	const valid_till = parseInt(body["valid-till"],10);
 
@@ -2468,7 +2472,7 @@ app.post("/auth/v1/group/delete", function (req, res) {
 			return END_ERROR (res, 500, "Internal error!", error);
 
 		if (consumer_id !== "*" && results.rowCount === 0)
-			return END_ERROR (res,400,"Consumer not in the group");
+			return END_ERROR (res, 400, "Consumer not in the group");
 
 		const response = {
 			success			: true,

@@ -42,7 +42,7 @@ CREATE TABLE public.groups (
     valid_till timestamp without time zone NOT NULL
 );
 
-CREATE INDEX idx_groups_id on public.groups(id,group_name);
+CREATE INDEX idx_groups_id ON public.groups(id,group_name);
 
 ALTER TABLE public.groups OWNER TO postgres;
 
@@ -56,7 +56,7 @@ CREATE TABLE public.policy (
     policy_in_json json NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_policy_id on public.policy(id);
+CREATE UNIQUE INDEX idx_policy_id ON public.policy(id);
 
 ALTER TABLE public.policy OWNER TO postgres;
 
@@ -81,7 +81,7 @@ CREATE TABLE public.token (
     PRIMARY KEY(id, token)
 );
 
-CREATE UNIQUE INDEX idx_token_id on public.token(id,token);
+CREATE UNIQUE INDEX idx_token_id ON public.token(id,token);
 
 ALTER TABLE public.token OWNER TO postgres;
 
