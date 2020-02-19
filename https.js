@@ -1453,7 +1453,6 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 		return END_ERROR (res, 400, "Invalid token");
 	}
 
-
 	const sha256_of_token	= crypto.createHash("sha256")
 					.update(random_part_of_token)
 					.digest("hex");
