@@ -34,7 +34,18 @@ You may edit the files:
 
 to get telegram notifications.
 
-## 3. Project organization 
+## 3. After install (as root) 
+You may run the command
+
+```
+tmux ls
+```
+
+to find the tmux sessions to manage. 
+
+Also, change the `server.pem` and `key.pem` with real certificate and key.
+
+## 4. Project organization 
 ```
 .
 |-- CCAIndia2014.cer		// CCA's 2014 certificate

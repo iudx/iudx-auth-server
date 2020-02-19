@@ -16,15 +16,18 @@ useradd -s /sbin/nologin -d /nonexistent aaa
 pkg_add curl postgresql-server postgresql-client node
 rcctl enable postgresql
 
-touch crl.db.password
-touch auth.db.password
-touch admin.db.password
+rm -rf passwords
+mkdir passwords
 
-chmod 400 *.password
+touch passwords/crl.db.password
+touch passwords/auth.db.password
+touch passwords/admin.db.password
 
-head /dev/urandom | sha256 > crl.db.password
-head /dev/urandom | sha256 > auth.db.password
-head /dev/urandom | sha256 > admin.db.password
+chmod 400 passwords/*
+
+head /dev/urandom | sha256 > passwords/crl.db.password
+head /dev/urandom | sha256 > passwords/auth.db.password
+head /dev/urandom | sha256 > passwords/admin.db.password
 
 echo your-telegram-api-key > telegram.apikey
 echo your-telegram-chat-id > telegram.chatid
@@ -32,14 +35,14 @@ echo your-telegram-chat-id > telegram.chatid
 chmod 400 telegram.*
 chmod 400 *.sql
 
-crl_password=`cat crl.db.password`
+crl_password=`cat passwords/crl.db.password`
 sed -i "s/XXXcrlXXX/$crl_password/" schema.sql 
 
-auth_password=`cat auth.db.password`
+auth_password=`cat passwords/auth.db.password`
 sed -i "s/XXXauthXXX/$auth_password/" schema.sql 
 
 # setup postgresql
-mv admin.db.password /var/postgresql/
+mv passwords/admin.db.password /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/admin.db.password
 
 mv schema.sql /var/postgresql/

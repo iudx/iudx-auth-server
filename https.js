@@ -102,7 +102,7 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 /* --- postgres --- */
 
 const password = {
-	"DB"	: fs.readFileSync ("auth.db.password","ascii").trim(),
+	"DB"	: fs.readFileSync ("passwords/auth.db.password","ascii").trim(),
 };
 
 // async postgres connection
@@ -583,7 +583,7 @@ function security (req, res, next)
 	if (! has_started_serving_apis)
 	{
 		if (is_openbsd) // drop "rpath"
-			pledge.init("error stdio prot_exec inet dns recvfd");
+			pledge.init("error stdio tty prot_exec inet dns recvfd");
 
 		has_started_serving_apis = true;
 	}
@@ -793,7 +793,7 @@ app.post("/auth/v1/token", function (req, res) {
 		"SELECT COUNT(*)/60.0 "	+
 		"AS rate "		+
 		"FROM token "		+
-		"WHERE id=$1::text "	+
+		"WHERE id = $1::text "	+
 		"AND issued_at >= (NOW() - interval '60 seconds')",
 			[consumer_id],
 	);
@@ -1040,8 +1040,8 @@ app.post("/auth/v1/token", function (req, res) {
 			const tokens_per_day_rows = pg.querySync (
 
 				"SELECT COUNT(*) FROM token "		+
-				"WHERE id=$1::text "			+
-				"AND resource_ids @> $2 "		+
+				"WHERE id = $1::text "			+
+				"AND resource_ids @> $2::jsonb "	+
 				"AND issued_at >= DATE_TRUNC('day',NOW())",
 				[
 					consumer_id,
@@ -1307,9 +1307,9 @@ app.post("/auth/v1/token", function (req, res) {
 		);
 
 		query = "UPDATE token SET " 				+
-				"request = $1,"				+
-				"resource_ids = $2,"			+
-				"server_token = $3,"			+
+				"request = $1::jsonb,"			+
+				"resource_ids = $2::jsonb,"		+
+				"server_token = $3::jsonb,"		+
 				"expiry = NOW() + interval '"		+
 					token_time + " seconds' "	+
 				"WHERE "				+
@@ -1334,16 +1334,16 @@ app.post("/auth/v1/token", function (req, res) {
 				"$2::text,"				+
 				"NOW() + interval '"			+
 					token_time + " seconds',"	+
-				"$3,"					+
+				"$3::jsonb,"				+
 				"$4::text,"				+
 				"$5::text,"				+
 				"NOW(),"				+
-				"$6,"					+
+				"$6::jsonb,"				+
 				"false,"				+
 				"false,"				+
 				"$7::int,"				+
-				"$8,"					+
-				"$9"					+
+				"$8::jsonb,"				+
+				"$9::jsonb"				+
 			")";
 
 		parameters = [
@@ -1985,7 +1985,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		if (results.rows.length > 0)
 		{
 			query = "UPDATE policy SET policy = $1::text," +
-				"policy_in_json = $2 WHERE id = $3::text";
+				"policy_in_json = $2::jsonb WHERE id = $3::text";
 
 			parameters = [
 				base64policy,
@@ -1996,7 +1996,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		else
 		{
 			query = "INSERT INTO "	+
-				"policy VALUES ($1::text, $2::text, $3)";
+				"policy VALUES ($1::text, $2::text, $3::jsonb)";
 
 			parameters = [
 				provider_id_in_db,
@@ -2092,7 +2092,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 			}
 
 			query = "UPDATE policy SET policy = $1::text," +
-				"policy_in_json = $2 WHERE id = $3::text";
+				"policy_in_json = $2::jsonb WHERE id = $3::text";
 
 			parameters = [
 				base64policy,
@@ -2107,7 +2107,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 						.toString("base64");
 
 			query = "INSERT INTO policy "	+
-				"VALUES ($1::text, $2::text, $3)";
+				"VALUES ($1::text, $2::text, $3::jsonb)";
 
 			parameters = [
 				provider_id_in_db,
@@ -2577,7 +2577,7 @@ function drop_worker_privileges()
 	}
 
 	if (is_openbsd)
-		pledge.init ("error stdio prot_exec inet rpath dns recvfd");
+		pledge.init ("error stdio tty prot_exec inet rpath dns recvfd");
 }
 
 if (cluster.isMaster)
@@ -2591,7 +2591,7 @@ if (cluster.isMaster)
 		unveil();
 
 		pledge.init (
-			"error stdio prot_exec inet rpath dns recvfd " +
+			"error stdio tty prot_exec inet rpath dns recvfd " +
 			"sendfd exec proc"
 		);
 	}
@@ -2613,7 +2613,7 @@ if (cluster.isMaster)
 	if (is_openbsd) // drop "rpath" and "dns"
 	{
 		pledge.init (
-			"error stdio prot_exec inet recvfd " +
+			"error stdio tty prot_exec inet recvfd " +
 			"sendfd exec proc"
 		);
 	}
