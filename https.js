@@ -341,8 +341,9 @@ function is_secure (req, res, cert, validate_email = true)
 		res.header("Access-Control-Allow-Methods", "POST");
 	}
 
-	let cert_err;
-	if ((cert_err = is_certificate_ok (req,cert,validate_email)) !== "OK")
+	const cert_err = is_certificate_ok (req,cert,validate_email);
+
+	if (cert_err !== "OK")
 		return "Invalid certificate. " + cert_err;
 
 	return "OK";
@@ -534,23 +535,22 @@ function is_iudx_certificate(cert)
 	if (! cert.issuer.emailAddress)
 		return false;
 
-	const issuer_email = cert
-				.issuer
-				.emailAddress
-				.toLowerCase();
+	const issuer = cert
+			.issuer
+			.emailAddress
+			.toLowerCase();
 
 	return (
-		(issuer_email === "ca@iudx.org.in") ||
-		issuer_email.startsWith("iudx.sub.ca@")
+		(issuer === "ca@iudx.org.in") || issuer.startsWith("iudx.sub.ca@")
 	);
 }
 
 function body_to_json (body)
 {
-	let string_body;
-
 	if (! body)
 		return {};
+
+	let string_body;
 
 	try
 	{
@@ -613,9 +613,8 @@ function security (req, res, next)
 
 	if (is_iudx_certificate(cert))
 	{
-		const cert_class = cert.subject["id-qt-unotice"];
-
-		let integer_cert_class = 0;
+		let	integer_cert_class	= 0;
+		const	cert_class		= cert.subject["id-qt-unotice"];
 
 		if (cert_class)
 		{
@@ -646,8 +645,9 @@ function security (req, res, next)
 			);
 		}
 
-		let error;
-		if ((error = is_secure(req,res,cert)) !== "OK")
+		const error = is_secure(req,res,cert);
+
+		if (error !== "OK")
 			return END_ERROR (res, 403, error);
 
 		pool.query("SELECT crl from crl LIMIT 1",
@@ -713,10 +713,11 @@ function security (req, res, next)
 					);
 				}
 
-				let error;
-
 				// certificate may not have a "emailAddress" field
-				if ((error = is_secure(req,res,cert,false)) !== "OK")
+
+				const error = is_secure(req,res,cert,false);
+
+				if (error !== "OK")
 					return END_ERROR (res, 403, error);
 
 				res.locals.cert_class	= 1;
@@ -773,10 +774,10 @@ function object_to_array (o)
 
 app.post("/auth/v1/token", function (req, res) {
 
-	const cert			= res.locals.cert;
-	const cert_class		= res.locals.cert_class;
-	const body			= res.locals.body;
-	const consumer_id		= res.locals.email;
+	const cert				= res.locals.cert;
+	const cert_class			= res.locals.cert_class;
+	const body				= res.locals.body;
+	const consumer_id			= res.locals.email;
 
 	const response_array 			= [];
 	const resource_id_dict			= {};
@@ -1010,6 +1011,7 @@ app.post("/auth/v1/token", function (req, res) {
 		context.resource = resource_server + "/" + resource_name;
 
 		context.conditions.groups = "";
+
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
 			const group_rows = pg.querySync (
@@ -1033,6 +1035,7 @@ app.post("/auth/v1/token", function (req, res) {
 		}
 
 		context.conditions.tokens_per_day = 0;
+
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
 			const resource_true = {};
@@ -1056,6 +1059,7 @@ app.post("/auth/v1/token", function (req, res) {
 		}
 
 		let CTX = context;
+
 		if (row.body && policy_in_text.search(" body.") > 0)
 		{
 			// deep copy
@@ -1292,7 +1296,6 @@ app.post("/auth/v1/token", function (req, res) {
 	const sha256_of_token	= crypto.createHash("sha256")
 					.update(token)
 					.digest("hex");
-
 	let query;
 	let parameters;
 
@@ -1457,8 +1460,8 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 					.update(random_part_of_token)
 					.digest("hex");
 
-	const ip 		= req.connection.remoteAddress;
-	let ip_matched		= false;
+	const	ip 		= req.connection.remoteAddress;
+	let	ip_matched	= false;
 
 	if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
 		return END_ERROR (res, 400, "Invalid CN in the certificate");
@@ -2042,8 +2045,8 @@ app.post("/auth/v1/acl/append", function (req, res) {
 					.digest("hex");
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
+	const rules		= policy.split(";");
 
-	const rules = policy.split(";");
 	let policy_in_json;
 
 	try {
@@ -2337,6 +2340,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 	const provider_id	= res.locals.email;
 
 	let group_name = body.group;
+
 	if (group_name)
 	{
 		group_name = group_name.toLowerCase();
