@@ -556,7 +556,11 @@ function body_to_json (body)
 	{
 		string_body = Buffer
 				.from(body,"utf-8")
-				.toString("ascii");
+				.toString("ascii")
+				.trim();
+
+		if (string_body.length === 0)
+			return {};
 	}
 	catch (x)
 	{
