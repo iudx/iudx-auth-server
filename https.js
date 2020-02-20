@@ -309,46 +309,6 @@ function is_valid_email (email)
 	return true;
 }
 
-function is_secure (req, res, cert, validate_email = true)
-{
-	if (req.headers.origin)
-	{
-		const origin = req.headers.origin.toLowerCase();
-
-		// e.g Origin = https://www.iudx.org.in:8443/
-
-		if (! origin.startsWith("https://"))
-			return "Insecure 'origin' field";
-
-		if ((origin.match(/\//g) || []).length < 2)
-			return "Invalid 'origin' field";
-
-		const origin_domain = String (
-			origin
-				.split("/")[2]	// remove protocol
-				.split(":")[0]	// remove port number
-		);
-
-		if (! origin_domain.endsWith(".iudx.org.in"))
-			return "Invalid 'origin' field in the header";
-
-		res.header("X-XSS-Protection", "1; mode=block");
-		res.header("X-Frame-Options", "deny");
-		res.header("X-Content-Type-Options","nosniff");
-		res.header("Referrer-Policy","no-referrer-when-downgrade");
-
-		res.header("Access-Control-Allow-Origin", req.headers.origin);
-		res.header("Access-Control-Allow-Methods", "POST");
-	}
-
-	const error = is_certificate_ok (req,cert,validate_email);
-
-	if (error !== "OK")
-		return "Invalid certificate. " + error;
-
-	return "OK";
-}
-
 function is_certificate_ok (req, cert, validate_email)
 {
 	if ((! cert) || (! cert.subject))
@@ -390,6 +350,46 @@ function is_certificate_ok (req, cert, validate_email)
 			return "Invalid certificate issuer";
 		}
 	}
+
+	return "OK";
+}
+
+function is_secure (req, res, cert, validate_email = true)
+{
+	if (req.headers.origin)
+	{
+		const origin = req.headers.origin.toLowerCase();
+
+		// e.g Origin = https://www.iudx.org.in:8443/
+
+		if (! origin.startsWith("https://"))
+			return "Insecure 'origin' field";
+
+		if ((origin.match(/\//g) || []).length < 2)
+			return "Invalid 'origin' field";
+
+		const origin_domain = String (
+			origin
+				.split("/")[2]	// remove protocol
+				.split(":")[0]	// remove port number
+		);
+
+		if (! origin_domain.endsWith(".iudx.org.in"))
+			return "Invalid 'origin' field in the header";
+
+		res.header("X-XSS-Protection", "1; mode=block");
+		res.header("X-Frame-Options", "deny");
+		res.header("X-Content-Type-Options","nosniff");
+		res.header("Referrer-Policy","no-referrer-when-downgrade");
+
+		res.header("Access-Control-Allow-Origin", req.headers.origin);
+		res.header("Access-Control-Allow-Methods", "POST");
+	}
+
+	const error = is_certificate_ok (req,cert,validate_email);
+
+	if (error !== "OK")
+		return "Invalid certificate. " + error;
 
 	return "OK";
 }

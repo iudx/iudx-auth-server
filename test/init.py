@@ -1,6 +1,9 @@
+import os
 from auth import *
 
-consumer		= Auth("consumer.pem","private-key.pem")
-provider		= Auth("provider.pem","private-key.pem")
-resource_server		= Auth("r-server.pem","private-key.pem")
-fake_resource_server	= Auth("f-server.pem","private-key.pem")
+private_key = os.path.expanduser("~") + "/private-key.pem"
+
+consumer		= Auth("consumer.pem",private_key)
+provider		= Auth("provider.pem",private_key)
+resource_server		= Auth("r-server.pem",private_key)
+fake_resource_server	= Auth("f-server.pem",private_key)
