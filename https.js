@@ -202,8 +202,8 @@ const trusted_CAs = [
 ];
 
 const https_options = {
-	key			: fs.readFileSync("key.pem"),
-	cert			: fs.readFileSync("server.pem"),
+	key			: fs.readFileSync("https-key.pem"),
+	cert			: fs.readFileSync("https-certificate.pem"),
 	ca			: trusted_CAs,
 	requestCert		: true,
 	rejectUnauthorized	: true,

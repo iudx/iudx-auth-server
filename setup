@@ -64,7 +64,7 @@ rm -rf /var/postgresql/setup.postgresql.openbsd
 cp rc.local /etc/
 cp pf.conf /etc/
 
-openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyout key.pem -out server.pem
+openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyout https-key.pem -out https-certificate.pem
 
 git clone --depth=1 https://github.com/rbccps-iisc/node-aperture
 cd node-aperture

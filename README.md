@@ -43,7 +43,7 @@ tmux ls
 
 to find the tmux sessions to manage. 
 
-Also, change the `server.pem` and `key.pem` with real certificate and key.
+Also, change the `/home/iudx-auth-server/https-certificate.pem` and `/home/iudx-auth-server/https-key.pem` with real TLS certificate and key.
 
 ## 4. Project organization 
 ```
