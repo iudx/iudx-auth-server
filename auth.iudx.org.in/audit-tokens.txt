@@ -9,7 +9,7 @@ Methods:
 	POST
 
 Description:
-	This API allows a consumer or resource-owner to audit their tokens.
+	This API allows a "data consumer" or a "data provider" to audit their tokens.
 
 Called by:
 	A user with a valid class-3 or above certificate.
@@ -74,7 +74,7 @@ CURL example:
 	...
 	 ],
 
-	"as-resource-owner": [
+	"as-provider": [
 	{
 	    "consumer"			: "user@domain.com",
 	    "token-hash"		: "a415ab5cc17c8c093c015ccdb7e552aee7911aa4",

@@ -2271,8 +2271,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			}
 
 			const response = {
-				"as-consumer"		: as_consumer,
-				"as-resource-owner"	: as_provider,
+				"as-consumer"	: as_consumer,
+				"as-provider"	: as_provider,
 			};
 
 			return END_SUCCESS (
