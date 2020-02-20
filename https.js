@@ -654,7 +654,7 @@ function security (req, res, next)
 		if (error !== "OK")
 			return END_ERROR (res, 403, error);
 
-		pool.query("SELECT crl from crl LIMIT 1",
+		pool.query("SELECT crl FROM crl LIMIT 1",
 			[], (error,results) =>
 			{
 				if (error || results.rows.length === 0)
@@ -1753,7 +1753,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 			const select_rows = pg.querySync (
 
-				"SELECT 1 from token "	+
+				"SELECT 1 FROM token "	+
 				"WHERE id = $1::text " 	+
 				"AND token = $2::text "	+
 				"AND expiry > NOW() LIMIT 1",
@@ -1816,7 +1816,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 			const select_rows = pg.querySync (
 
-				"SELECT 1 from token "			+
+				"SELECT 1 FROM token "			+
 				"WHERE token = $1::text "		+
 				"AND providers->'" + provider_id_in_db	+
 				"' = 'true' "				+

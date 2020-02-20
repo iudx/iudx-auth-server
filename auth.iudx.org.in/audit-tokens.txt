@@ -56,8 +56,8 @@ CURL example:
 	    "introspected"		: true,
 	    "revoked"			: false,
 	    "expiry"			: "2019-08-08T04:29:50.779Z",
-	    "certificate-serial-number"	: "5BADD8F2B7D2C8CB0413883C7D023624543E6802",
-	    "certificate-fingerprint"	: "8B:DD:A4:AB:24:88:21:6A:51:2F:13:49:00:26:1F:CB:DC:86:DF:70",
+	    "certificate-serial-number"	: "5badd8f2b7d2c8cb0413883c7d023624543e6802",
+	    "certificate-fingerprint"	: "8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70",
 	    "request": [
 	     {
         	"resource-id": "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/resource-1",
@@ -82,8 +82,8 @@ CURL example:
 	    "introspected"		: true,
 	    "revoked"			: false,
 	    "expiry"			: "2019-08-08T04:29:50.779Z",
-	    "certificate-serial-number"	: "5BADD8F2B7D2C8CB0413883C7D023624543E6802",
-	    "certificate-fingerprint"	: "8B:DD:A4:AB:24:88:21:6A:51:2F:13:49:00:26:1F:CB:DC:86:DF:70",
+	    "certificate-serial-number"	: "5badd8f2b7d2c8cb0413883c7d023624543e6802",
+	    "certificate-fingerprint"	: "8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70",
 	    "request": [
 	     {
         	"resource-id": "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/resource-1",

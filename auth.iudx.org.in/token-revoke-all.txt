@@ -41,7 +41,7 @@ Using pyIUDX SDK:
 	iudx_auth = auth.Auth("consumer-certificate.pem","private-key.pem") 
 
 	# serial and fingerprint
-	iudx_auth.revoke_all ("5BADD8F2B7D2C8CB0413883C7D023624543E6802","8B:DD:A4:AB:24:88:21:6A:51:2F:13:49:00:26:1F:CB:DC:86:DF:70")
+	iudx_auth.revoke_all ("5badd8f2b7d2c8cb0413883c7d023624543e6802","8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70")
 
 CURL example:
 
@@ -51,7 +51,7 @@ CURL example:
 
 		--cert consumer-certificate.pem --key private-key.pem	\
 
-		-d '{"serial":"5BADD8F2B7D2C8CB0413883C7D023624543E6802", "fingerprint":"8B:DD:A4:AB:24:88:21:6A:51:2F:13:49:00:26:1F:CB:DC:86:DF:70"}'
+		-d '{"serial":"5badd8f2b7d2c8cb0413883c7d023624543e6802", "fingerprint":"8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70"}'
 
 
 	Response:

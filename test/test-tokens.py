@@ -10,7 +10,7 @@ TUPLE = type(("x",))
 policy = "x can access *" # dummy policy
 provider.set_policy(policy)
 
-policy = 'all can access * for 2 hours if country = "IN"'
+policy = 'all can access * for 2 hours if tokens_per_day < 100'
 provider.set_policy(policy)
 
 assert policy == provider.get_policy()['response']['policy']
