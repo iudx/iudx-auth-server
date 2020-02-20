@@ -341,10 +341,10 @@ function is_secure (req, res, cert, validate_email = true)
 		res.header("Access-Control-Allow-Methods", "POST");
 	}
 
-	const cert_err = is_certificate_ok (req,cert,validate_email);
+	const error = is_certificate_ok (req,cert,validate_email);
 
-	if (cert_err !== "OK")
-		return "Invalid certificate. " + cert_err;
+	if (error !== "OK")
+		return "Invalid certificate. " + error;
 
 	return "OK";
 }
