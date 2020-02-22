@@ -597,7 +597,7 @@ function security (req, res, next)
 	const api = url.parse(req.url).pathname;
 
 	// Not an API !
-	if ((! api.startsWith("/auth/v")))
+	if ((! api.startsWith("/auth/v1/")))
 		return next();
 
 	const cert		 = req.socket.getPeerCertificate(true);
@@ -2607,16 +2607,15 @@ if (cluster.isMaster)
 		);
 	}
 
-	log("yellow",`Master ${process.pid} started`);
+	log("yellow","Master started with pid : " + process.pid);
 
 	for (let i = 0; i < NUM_CPUS; i++) {
 		cluster.fork();
 	}
 
-	cluster.on("exit", (worker, code, signal) => {
+	cluster.on("exit", (worker, unused_var_code, unused_var_signal) => {
 
-		log("red",`Worker ${worker.process.pid} died. Restarting it.`);
-		log("yellow",`code = ${code}; signal = ${signal}.`);
+		log("red","Worker " + worker.process.pid + " died.");
 
 		cluster.fork();
 	});
@@ -2635,7 +2634,7 @@ else
 
 	drop_worker_privileges();
 
-	log("green",`Worker ${process.pid} started`);
+	log("green","Worker started with pid " + process.pid);
 }
 
 // EOF
