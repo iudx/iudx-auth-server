@@ -1045,7 +1045,7 @@ app.post("/auth/v1/token", function (req, res) {
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
 			const resource_true = {};
-				resource[resource] = true;
+				resource_true [resource] = true;
 
 			const tokens_per_day_rows = pg.querySync (
 
