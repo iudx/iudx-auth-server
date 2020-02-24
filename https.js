@@ -101,13 +101,15 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 
 /* --- postgres --- */
 
-const password = {
+const DB_SERVER	= "127.0.0.1";
+
+const password	= {
 	"DB"	: fs.readFileSync ("passwords/auth.db.password","ascii").trim(),
 };
 
 // async postgres connection
 const pool = new Pool ({
-	host		: "127.0.0.1",
+	host		: DB_SERVER,
 	port		: 5432,
 	user		: "auth",
 	database	: "postgres",
@@ -118,7 +120,7 @@ pool.connect();
 
 // sync postgres connection
 pg.connectSync (
-	"postgresql://auth:"+ password.DB + "@127.0.0.1:5432/postgres",
+	"postgresql://auth:"+ password.DB + "@" + DB_SERVER + ":5432/postgres",
 		function(err)
 		{
 			if(err) {
