@@ -1,5 +1,6 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
+import os
 import sys
 import json
 import requests
@@ -8,6 +9,11 @@ class Auth():
 #{
 	def __init__(self, certificate, key, auth_server="auth.iudx.org.in", version=1):
 	#
+                self.ssl_verify = True
+ 
+                if auth_server == "localhost":
+                    self.ssl_verify = False
+
 		self.url		= "https://" + auth_server + "/auth/v" + str(version)
 	        self.credentials	= (certificate, key)
 	#
@@ -20,7 +26,7 @@ class Auth():
 
 		response = requests.post (
 			url	= self.url + "/" + api,
-			verify	= True,
+			verify	= self.ssl_verify,
 			cert	= self.credentials,
 			data	= body,
 			headers	= {"content-type":"application/json"}
