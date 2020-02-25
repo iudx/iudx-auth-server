@@ -93,6 +93,6 @@ then
     rcctl start postgresql
     ./run.tmux
     ./run.crl.tmux
+else
+    reboot
 fi
-
-reboot
