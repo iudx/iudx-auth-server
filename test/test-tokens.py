@@ -69,7 +69,6 @@ r = provider.audit_tokens(5)
 assert r["success"] == True
 audit_report = r['response']
 as_provider = audit_report["as-provider"]
-
 num_tokens_after = len(as_provider)
 
 # number of tokens before and after request by consumer
@@ -85,3 +84,29 @@ for a in as_provider:
 
 assert token_hash_found	== True
 assert True == provider.revoke_token_hashes(token_hash)['success']
+
+r = provider.get_token(body)
+provider_token = r['response']
+
+assert r['success']     == True
+assert None             != provider_token
+assert 7200             == provider_token['expires-in']
+
+token = provider_token['token'],
+
+if type(token) == TUPLE:
+	token = token[0]
+
+s = token.split("/")
+
+assert len(s)	== 3
+assert s[0]	== 'auth.iudx.org.in'
+
+r = provider.audit_tokens(5)
+assert r["success"] == True
+audit_report = r['response']
+as_provider = audit_report["as-provider"]
+
+cert_fingerprint = as_provider[0]['certificate-fingerprint']
+cert_serial = as_provider[0]['certificate-serial-number']
+assert True == provider.revoke_all(cert_fingerprint, cert_serial)['success']
