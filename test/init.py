@@ -5,7 +5,7 @@ from auth import *
 
 auth_server = "auth.iudx.org.in"
 
-if os.environ["AUTH_SERVER"] == "localhost":
+if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 #
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
