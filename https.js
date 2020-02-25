@@ -1820,10 +1820,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 				"SELECT 1 FROM token "			+
 				"WHERE token = $1::text "		+
-				"AND providers->'" + provider_id_in_db	+
-				"' = 'true' "				+
+				"AND providers-> $2::text "		+	
+				"= 'true' "				+
 				"AND expiry > NOW() LIMIT 1",
-					[token_hash]
+					[token_hash, provider_id_in_db]
 			);
 
 			if (select_rows.length === 0)
@@ -1841,11 +1841,11 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 				"UPDATE token "						+
 				"SET providers = "					+
-				"providers || '{\" $1::text \":false}'"	+
+				"providers || $1::jsonb "				+
 				"WHERE token = $2::text "				+
-				"AND providers->' $3::text ' = 'true' "	+
+				"AND providers-> $3::text = 'true' "	+
 				"AND expiry > NOW()",
-					[provider_id_in_db,
+					[JSON.stringify({provider_id_in_db:false}),
 					token_hash,
 					provider_id_in_db]
 			);
@@ -1919,16 +1919,16 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 
 				"UPDATE token "				+
 				"SET providers = "			+
-				"providers || '{\" $1::text \":false}'"	+
+				"providers || $1::jsonb "		+
 				"WHERE cert_serial = $2::text "		+
 				"AND cert_fingerprint = $3::text "	+
 				"AND expiry > NOW() "			+
 				"AND revoked = false "			+
-				"AND providers->' $4:text ' = 'true' ",
+				"AND providers-> $4::text = 'true' ",
 
-				[provider_id_in_db,
+				[JSON.stringify({provider_id_in_db:false}),
 				serial,
-				fingerprint
+				fingerprint,
 				provider_id_in_db],
 
 				(error_1, results_1) =>
@@ -2234,12 +2234,12 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"SELECT id,token,issued_at,expiry,request,"	+
 			"cert_serial,cert_fingerprint,"			+
 			"revoked,introspected,"				+
-			"providers->' $1::text ' "			+
+			"providers-> $1::text  "			+
 			"AS has_provider_revoked "			+
 			"FROM token "					+
-			"WHERE providers->' $2::text ' "		+
+			"WHERE providers-> $2::text  "			+
 			"IS NOT NULL "					+
-			"AND issued_at >= (NOW() + $3::interval)",
+			"AND issued_at >= (NOW() - $3::interval)",
 
 			[provider_id_in_db,
 			 provider_id_in_db,
@@ -2334,7 +2334,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 			"VALUES ($1::text, $2::text, $3::text,"	+
 			"NOW() + $4::interval)",
 
-		[provider_id_in_db, consumer_id, group_name, hours + " hours"],
+		[provider_id_in_db, consumer_id, group_name, valid_till + " hours"],
 
 	(error, results) =>
 	{
