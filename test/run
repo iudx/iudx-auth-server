@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ "$1" = "localhost" ]
+then
+	AUTH_SERVER="localhost"
+	export AUTH_SERVER
+fi
 echo "============ Tests started ===========\n" | tee report
 
 for f in `ls test*.py`

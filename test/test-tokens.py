@@ -5,6 +5,11 @@ from init import *
 
 import hashlib
 
+r_server = 'iisc.iudx.org.in'
+
+if auth_server == 'localhost':
+        r_server = 'localhost'
+
 TUPLE = type(("x",))
 
 policy = "x can access *" # dummy policy
@@ -24,7 +29,7 @@ num_tokens_before = len(as_provider)
 
 body = [
 	{
-		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/iisc.iudx.org.in/resource-xyz-yzz",
+		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/" + r_server + "/resource-xyz-yzz",
 		"api"		: "/latest",
 		"methods"	: ["GET"],
 		"body"		: {"key":"some-key"}
@@ -51,14 +56,18 @@ s = token.split("/")
 assert len(s)	== 3
 assert s[0]	== 'auth.iudx.org.in'
 
-
-server_token = access_token['server-token']['iisc.iudx.org.in']
+server_token = access_token['server-token'][r_server]
 if type(server_token) == TUPLE:
 	server_token = server_token[0]
 
-assert True  == resource_server.introspect_token (token,server_token)['success']
-assert False == resource_server.introspect_token (token,'invalid-token-012345678901234567')['success']
-assert False == resource_server.introspect_token (token)['success']
+if auth_server == 'localhost':
+        assert True  == localhost.introspect_token (token,server_token)['success']
+        assert False == localhost.introspect_token (token,'invalid-token-012345678901234567')['success']
+        assert False == localhost.introspect_token (token)['success']
+else:
+        assert True  == resource_server.introspect_token (token,server_token)['success']
+        assert False == resource_server.introspect_token (token,'invalid-token-012345678901234567')['success']
+        assert False == resource_server.introspect_token (token)['success']
 
 r = provider.audit_tokens(5)
 assert r["success"] == True
