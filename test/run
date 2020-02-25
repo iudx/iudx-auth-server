@@ -7,7 +7,7 @@ do
 	echo "-----> $f" | tee -a report
 	output=`python2 $f`
 
-	if [ "$?" == "0" ]
+	if [ $? = 0 ]
 	then
 		echo | tee -a report
 		echo Test [$f] passed | tee -a report	

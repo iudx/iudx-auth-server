@@ -16,8 +16,8 @@ const db_password	= fs.readFileSync (
 
 const is_openbsd	= os.type() === "OpenBSD";
 const EUID		= process.geteuid();
-const pledge 		= is_openbsd ? require("node-pledge")		: null;
-const unveil		= is_openbsd ? require("openbsd-unveil")	: null;
+const pledge 		= is_openbsd ? require("node-pledge")	: null;
+const unveil		= is_openbsd ? require("openbsd-unveil"): null;
 
 pg.connectSync (
 	"postgresql://crl:"+ db_password+ "@127.0.0.1:5432/postgres",
@@ -47,7 +47,7 @@ function update_crl (body)
 	catch (x)
 	{
 		const err = String(x).replace(/\n/g," ");
-		log("red","CA did not return a valid JSON : " + err);
+		log("red","IUDX CA did not return a valid JSON : " + err);
 		return;
 	}
 

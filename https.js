@@ -101,13 +101,15 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 
 /* --- postgres --- */
 
-const password = {
+const DB_SERVER	= "127.0.0.1";
+
+const password	= {
 	"DB"	: fs.readFileSync ("passwords/auth.db.password","ascii").trim(),
 };
 
 // async postgres connection
 const pool = new Pool ({
-	host		: "127.0.0.1",
+	host		: DB_SERVER,
 	port		: 5432,
 	user		: "auth",
 	database	: "postgres",
@@ -118,7 +120,7 @@ pool.connect();
 
 // sync postgres connection
 pg.connectSync (
-	"postgresql://auth:"+ password.DB + "@127.0.0.1:5432/postgres",
+	"postgresql://auth:"+ password.DB + "@" + DB_SERVER + ":5432/postgres",
 		function(err)
 		{
 			if(err) {
@@ -556,7 +558,11 @@ function body_to_json (body)
 	{
 		string_body = Buffer
 				.from(body,"utf-8")
-				.toString("ascii");
+				.toString("ascii")
+				.trim();
+
+		if (string_body.length === 0)
+			return {};
 	}
 	catch (x)
 	{
@@ -593,7 +599,7 @@ function security (req, res, next)
 	const api = url.parse(req.url).pathname;
 
 	// Not an API !
-	if ((! api.startsWith("/auth/v")))
+	if ((! api.startsWith("/auth/v1/")))
 		return next();
 
 	const cert		 = req.socket.getPeerCertificate(true);
@@ -650,7 +656,7 @@ function security (req, res, next)
 		if (error !== "OK")
 			return END_ERROR (res, 403, error);
 
-		pool.query("SELECT crl from crl LIMIT 1",
+		pool.query("SELECT crl FROM crl LIMIT 1",
 			[], (error,results) =>
 			{
 				if (error || results.rows.length === 0)
@@ -1039,7 +1045,7 @@ app.post("/auth/v1/token", function (req, res) {
 		if (policy_in_text.search(" tokens_per_day ") > 0)
 		{
 			const resource_true = {};
-				resource[resource] = true;
+				resource_true [resource] = true;
 
 			const tokens_per_day_rows = pg.querySync (
 
@@ -1749,7 +1755,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 			const select_rows = pg.querySync (
 
-				"SELECT 1 from token "	+
+				"SELECT 1 FROM token "	+
 				"WHERE id = $1::text " 	+
 				"AND token = $2::text "	+
 				"AND expiry > NOW() LIMIT 1",
@@ -1812,7 +1818,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 			const select_rows = pg.querySync (
 
-				"SELECT 1 from token "			+
+				"SELECT 1 FROM token "			+
 				"WHERE token = $1::text "		+
 				"AND providers->'" + provider_id_in_db	+
 				"' = 'true' "				+
@@ -2267,8 +2273,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			}
 
 			const response = {
-				"as-consumer"		: as_consumer,
-				"as-resource-owner"	: as_provider,
+				"as-consumer"	: as_consumer,
+				"as-provider"	: as_provider,
 			};
 
 			return END_SUCCESS (
@@ -2603,16 +2609,15 @@ if (cluster.isMaster)
 		);
 	}
 
-	log("yellow",`Master ${process.pid} started`);
+	log("yellow","Master started with pid : " + process.pid);
 
 	for (let i = 0; i < NUM_CPUS; i++) {
 		cluster.fork();
 	}
 
-	cluster.on("exit", (worker, code, signal) => {
+	cluster.on("exit", (worker, unused_var_code, unused_var_signal) => {
 
-		log("red",`Worker ${worker.process.pid} died. Restarting it.`);
-		log("yellow",`code = ${code}; signal = ${signal}.`);
+		log("red","Worker " + worker.process.pid + " died.");
 
 		cluster.fork();
 	});
@@ -2631,7 +2636,7 @@ else
 
 	drop_worker_privileges();
 
-	log("green",`Worker ${process.pid} started`);
+	log("green","Worker started with pid " + process.pid);
 }
 
 // EOF

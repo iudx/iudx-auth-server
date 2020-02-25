@@ -10,7 +10,7 @@ TUPLE = type(("x",))
 policy = "x can access *" # dummy policy
 provider.set_policy(policy)
 
-policy = 'all can access * for 2 hours if country = "IN"'
+policy = 'all can access * for 2 hours if tokens_per_day < 100'
 provider.set_policy(policy)
 
 assert policy == provider.get_policy()['response']['policy']
@@ -18,7 +18,7 @@ assert policy == provider.get_policy()['response']['policy']
 r = provider.audit_tokens(5)
 assert r['success'] == True
 audit_report        = r['response']
-as_provider         = audit_report["as-resource-owner"]
+as_provider         = audit_report["as-provider"]
 
 num_tokens_before = len(as_provider)
 
@@ -63,7 +63,7 @@ assert False == resource_server.introspect_token (token)['success']
 r = provider.audit_tokens(5)
 assert r["success"] == True
 audit_report = r['response']
-as_provider = audit_report["as-resource-owner"]
+as_provider = audit_report["as-provider"]
 
 num_tokens_after = len(as_provider)
 
