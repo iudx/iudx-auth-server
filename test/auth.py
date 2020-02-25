@@ -3,10 +3,18 @@
 import sys
 import json
 import requests
+from os import environ
+import urllib3
 
 class Auth():
 #{
-	def __init__(self, certificate, key, auth_server="auth.iudx.org.in", version=1):
+        ssl_verify = True
+
+        if environ["SERVER"] == "localhost":
+            ssl_verify = False
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+	def __init__(self, certificate, key, auth_server, version=1):
 	#
 		self.url		= "https://" + auth_server + "/auth/v" + str(version)
 	        self.credentials	= (certificate, key)
@@ -15,17 +23,15 @@ class Auth():
 	def call(self, api, body=None):
 	#
 		ret = True # success
-
 		body = json.dumps(body)
 
 		response = requests.post (
 			url	= self.url + "/" + api,
-			verify	= True,
+			verify	= Auth.ssl_verify,
 			cert	= self.credentials,
 			data	= body,
 			headers	= {"content-type":"application/json"}
 		)
-
 		if response.status_code != 200:
 		#
 			sys.stderr.write (
