@@ -24,7 +24,6 @@ class Auth():
 	#
 		ret = True # success
 		body = json.dumps(body)
-
 		response = requests.post (
 			url	= self.url + "/" + api,
 			verify	= Auth.ssl_verify,
