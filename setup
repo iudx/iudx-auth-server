@@ -88,4 +88,11 @@ echo boot > /etc/boot.conf
 echo /usr/bin/pkill tmux >> /etc/rc.shutdown
 echo /usr/sbin/rcctl stop postgresql >> /etc/rc.shutdown
 
-reboot
+if [ $1 == "noreboot" ]
+then
+    rcctl start postgresql
+    ./run.tmux
+    ./run.crl.tmux
+else
+    reboot
+fi
