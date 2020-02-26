@@ -1837,6 +1837,9 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
+			const provider_false = {};
+			provider_false[provider_id_in_db] = false;
+
 			pg.querySync (
 
 				"UPDATE token "						+
@@ -1845,9 +1848,11 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"WHERE token = $2::text "				+
 				"AND providers-> $3::text = 'true' "	+
 				"AND expiry > NOW()",
-					[JSON.stringify({provider_id_in_db:false}),
-					token_hash,
-					provider_id_in_db]
+					[
+						JSON.stringify(provider_false),
+						token_hash,
+						provider_id_in_db
+					]
 			);
 
 			++num_tokens_revoked;
@@ -1915,6 +1920,9 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 				"num-tokens-revoked"	: results.rowCount
 			};
 
+			const provider_false = {};
+			provider_false[provider_id_in_db] = false;
+
 			pool.query (
 
 				"UPDATE token "				+
@@ -1926,10 +1934,12 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 				"AND revoked = false "			+
 				"AND providers-> $4::text = 'true' ",
 
-				[JSON.stringify({provider_id_in_db:false}),
-				serial,
-				fingerprint,
-				provider_id_in_db],
+				[
+					JSON.stringify(provider_false),
+					serial,
+					fingerprint,
+					provider_id_in_db
+				],
 
 				(error_1, results_1) =>
 				{
@@ -2237,13 +2247,14 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"providers-> $1::text  "			+
 			"AS has_provider_revoked "			+
 			"FROM token "					+
-			"WHERE providers-> $2::text  "			+
+			"WHERE providers-> $1::text  "			+
 			"IS NOT NULL "					+
-			"AND issued_at >= (NOW() - $3::interval)",
+			"AND issued_at >= (NOW() - $2::interval)",
 
-			[provider_id_in_db,
-			 provider_id_in_db,
-			 hours + " hours"],
+			[
+				provider_id_in_db,
+				hours + " hours"
+			],
 
 		(error, results) =>
 		{
