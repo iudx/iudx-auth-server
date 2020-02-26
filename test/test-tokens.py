@@ -1,9 +1,14 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
+import os
 
 from auth import *
 from init import *
 
 import hashlib
+
+RS = "iisc.iudx.org.in" 
+if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
+    RS = "localhost" 
 
 TUPLE = type(("x",))
 
@@ -24,7 +29,7 @@ num_tokens_before = len(as_provider)
 
 body = [
 	{
-		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/iisc.iudx.org.in/resource-xyz-yzz",
+		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/" + RS+ "/resource-xyz-yzz",
 		"api"		: "/latest",
 		"methods"	: ["GET"],
 		"body"		: {"key":"some-key"}
@@ -52,7 +57,7 @@ assert len(s)	== 3
 assert s[0]	== 'auth.iudx.org.in'
 
 
-server_token = access_token['server-token']['iisc.iudx.org.in']
+server_token = access_token['server-token'][RS]
 if type(server_token) == TUPLE:
 	server_token = server_token[0]
 
