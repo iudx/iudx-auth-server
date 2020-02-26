@@ -732,7 +732,8 @@ function security (req, res, next)
 				if (is_valid_email(cert.subject.emailAddress))
 				{
 					res.locals.cert_class	= 2;
-					res.locals.email	= cert.subject
+					res.locals.email	= cert
+									.subject
 									.emailAddress
 									.toLowerCase();
 				}
@@ -1320,7 +1321,7 @@ app.post("/auth/v1/token", function (req, res) {
 				"request = $1::jsonb,"			+
 				"resource_ids = $2::jsonb,"		+
 				"server_token = $3::jsonb,"		+
-				"expiry = NOW() + $4::interval" 	+
+				"expiry = NOW() + $4::interval " 	+
 				"WHERE "				+
 				"id = $5::text AND "			+
 				"token = $6::text AND "			+
@@ -1838,14 +1839,14 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			}
 
 			const provider_false = {};
-			provider_false[provider_id_in_db] = false;
+				provider_false[provider_id_in_db] = false;
 
 			pg.querySync (
 
-				"UPDATE token "						+
-				"SET providers = "					+
-				"providers || $1::jsonb "				+
-				"WHERE token = $2::text "				+
+				"UPDATE token "				+
+				"SET providers = "			+
+				"providers || $1::jsonb "		+
+				"WHERE token = $2::text "		+
 				"AND providers-> $3::text = 'true' "	+
 				"AND expiry > NOW()",
 					[
@@ -2223,8 +2224,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		{
 			as_consumer.push ({
 				"token-issued-at"		: row.issued_at,
-				"introspected"			: row.introspected === "t",
-				"revoked"			: row.revoked      === "t",
+				"introspected"			: row.introspected,
+				"revoked"			: row.revoked,
 				"expiry"			: row.expiry,
 				"certificate-serial-number"	: row.cert_serial,
 				"certificate-fingerprint"	: row.cert_fingerprint,
@@ -2245,7 +2246,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"cert_serial,cert_fingerprint,"			+
 			"revoked,introspected,"				+
 			"providers-> $1::text  "			+
-			"AS has_provider_revoked "			+
+			"AS is_valid_token_for_provider "		+
 			"FROM token "					+
 			"WHERE providers-> $1::text  "			+
 			"IS NOT NULL "					+
@@ -2269,17 +2270,14 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			for (const row of results.rows)
 			{
 				const revoked = (
-					row.revoked		 === "t" ||
-					row.has_provider_revoked === "t"
+					row.revoked || (! row.is_valid_token_for_provider)
 				);
-
-				const introspected = (row.introspected === "t");
 
 				as_provider.push ({
 					"consumer"			: row.id,
 					"token-hash"			: row.token,
 					"token-issued-at"		: row.issued_at,
-					"introspected"			: introspected,
+					"introspected"			: row.introspected,
 					"revoked"			: revoked,
 					"expiry"			: row.expiry,
 					"certificate-serial-number"	: row.cert_serial,
@@ -2584,8 +2582,8 @@ function drop_worker_privileges()
 	{
 		if (EUID === 0)
 		{
-			process.setgid("aaa");
-			process.setuid("aaa");
+			process.setgid("_aaa");
+			process.setuid("_aaa");
 		}
 
 		unveil("/usr/lib",			"r" );
@@ -2599,8 +2597,8 @@ function drop_worker_privileges()
 	{
 		if (EUID === 0)
 		{
-			process.setgid("aaa");
-			chroot("/home/iudx-auth-server","aaa");
+			process.setgid("_aaa");
+			chroot("/home/iudx-auth-server","_aaa");
 			process.chdir ("/");
 		}
 	}
