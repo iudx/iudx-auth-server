@@ -1321,19 +1321,19 @@ app.post("/auth/v1/token", function (req, res) {
 				"request = $1::jsonb,"			+
 				"resource_ids = $2::jsonb,"		+
 				"server_token = $3::jsonb,"		+
-				"expiry = NOW() + interval '"		+
-					token_time + " seconds' "	+
+				"expiry = NOW() + $4::interval" 	+
 				"WHERE "				+
-				"id = $4::text AND "			+
-				"token = $5::text AND "			+
+				"id = $5::text AND "			+
+				"token = $6::text AND "			+
 				"expiry > NOW()";
 
 		parameters = [
 			JSON.stringify(new_request),			// 1
 			JSON.stringify(new_resource_ids_dict),		// 2
 			JSON.stringify(sha256_of_resource_server_token),// 3
-			consumer_id,					// 4
-			sha256_of_token,				// 5
+			token_time + " seconds",			// 4
+			consumer_id,					// 5
+			sha256_of_token,				// 6
 		];
 	}
 	else
@@ -1343,30 +1343,30 @@ app.post("/auth/v1/token", function (req, res) {
 		query = "INSERT INTO token VALUES(" 			+
 				"$1::text,"				+
 				"$2::text,"				+
-				"NOW() + interval '"			+
-					token_time + " seconds',"	+
-				"$3::jsonb,"				+
-				"$4::text,"				+
+				"NOW() + $3::interval,"			+
+				"$4::jsonb,"				+
 				"$5::text,"				+
+				"$6::text,"				+
 				"NOW(),"				+
-				"$6::jsonb,"				+
+				"$7::jsonb,"				+
 				"false,"				+
 				"false,"				+
-				"$7::int,"				+
-				"$8::jsonb,"				+
-				"$9::jsonb"				+
+				"$8::int,"				+
+				"$9::jsonb,"				+
+				"$10::jsonb"				+
 			")";
 
 		parameters = [
 			consumer_id,					// 1
 			sha256_of_token,				// 2
-			JSON.stringify(request),			// 3
-			cert.serialNumber,				// 4
-			cert.fingerprint,				// 5
-			JSON.stringify(resource_id_dict),		// 6
-			cert_class,					// 7
-			JSON.stringify(sha256_of_resource_server_token),// 8
-			JSON.stringify(providers)			// 9
+			token_time + " seconds",			// 3
+			JSON.stringify(request),			// 4
+			cert.serialNumber,				// 5
+			cert.fingerprint,				// 6
+			JSON.stringify(resource_id_dict),		// 7
+			cert_class,					// 8
+			JSON.stringify(sha256_of_resource_server_token),// 9
+			JSON.stringify(providers)			// 10
 		];
 	}
 
@@ -1821,10 +1821,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 				"SELECT 1 FROM token "			+
 				"WHERE token = $1::text "		+
-				"AND providers->'" + provider_id_in_db	+
-				"' = 'true' "				+
+				"AND providers-> $2::text "		+	
+				"= 'true' "				+
 				"AND expiry > NOW() LIMIT 1",
-					[token_hash]
+					[token_hash, provider_id_in_db]
 			);
 
 			if (select_rows.length === 0)
@@ -1838,15 +1838,22 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
+			const provider_false = {};
+			provider_false[provider_id_in_db] = false;
+
 			pg.querySync (
 
 				"UPDATE token "						+
 				"SET providers = "					+
-				"providers || '{\"" + provider_id_in_db + "\":false}'"	+
-				"WHERE token = $1::text "				+
-				"AND providers->'" + provider_id_in_db + "' = 'true' "	+
+				"providers || $1::jsonb "				+
+				"WHERE token = $2::text "				+
+				"AND providers-> $3::text = 'true' "	+
 				"AND expiry > NOW()",
-					[token_hash]
+					[
+						JSON.stringify(provider_false),
+						token_hash,
+						provider_id_in_db
+					]
 			);
 
 			++num_tokens_revoked;
@@ -1914,20 +1921,26 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 				"num-tokens-revoked"	: results.rowCount
 			};
 
+			const provider_false = {};
+			provider_false[provider_id_in_db] = false;
+
 			pool.query (
 
 				"UPDATE token "				+
 				"SET providers = "			+
-				"providers || '{\""			+
-					provider_id_in_db + "\":false}'"+
-				"WHERE cert_serial = $1::text "		+
-				"AND cert_fingerprint = $2::text "	+
+				"providers || $1::jsonb "		+
+				"WHERE cert_serial = $2::text "		+
+				"AND cert_fingerprint = $3::text "	+
 				"AND expiry > NOW() "			+
 				"AND revoked = false "			+
-				"AND providers->'"			+
-					provider_id_in_db + "' = 'true' ",
+				"AND providers-> $4::text = 'true' ",
 
-				[serial, fingerprint],
+				[
+					JSON.stringify(provider_false),
+					serial,
+					fingerprint,
+					provider_id_in_db
+				],
 
 				(error_1, results_1) =>
 				{
@@ -2198,9 +2211,9 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		"cert_fingerprint,introspected,revoked "		+
 		"FROM token "						+
 		"WHERE id = $1::text "					+
-		"AND issued_at >= (NOW() + '-" + hours + " hours')",
+		"AND issued_at >= (NOW() - $2::interval)",
 
-		[id],
+		[id, hours + " hours"],
 
 	(error, results) =>
 	{
@@ -2232,14 +2245,17 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"SELECT id,token,issued_at,expiry,request,"	+
 			"cert_serial,cert_fingerprint,"			+
 			"revoked,introspected,"				+
-			"providers->'" + provider_id_in_db		+
-			"' AS is_valid_token_for_provider "		+
+			"providers-> $1::text  "			+
+			"AS is_valid_token_for_provider "		+
 			"FROM token "					+
-			"WHERE providers->'" + provider_id_in_db 	+
-			"' IS NOT NULL "				+
-			"AND issued_at >= (NOW() + '-" + hours + " hours')",
+			"WHERE providers-> $1::text  "			+
+			"IS NOT NULL "					+
+			"AND issued_at >= (NOW() - $2::interval)",
 
-			[],
+			[
+				provider_id_in_db,
+				hours + " hours"
+			],
 
 		(error, results) =>
 		{
@@ -2325,9 +2341,9 @@ app.post("/auth/v1/group/add", function (req, res) {
 
 		"INSERT INTO groups "				+
 			"VALUES ($1::text, $2::text, $3::text,"	+
-			"NOW() + '" + valid_till + " hours')",
+			"NOW() + $4::interval)",
 
-		[provider_id_in_db, consumer_id, group_name],
+		[provider_id_in_db, consumer_id, group_name, valid_till + " hours"],
 
 	(error, results) =>
 	{
