@@ -1029,8 +1029,8 @@ app.post("/auth/v1/token", function (req, res) {
 				"AND consumer = $2::text "	+
 				"AND valid_till > NOW()",
 				[
-					provider_id_in_db,
-					consumer_id
+					provider_id_in_db,	// 1
+					consumer_id		// 2
 				]
 			);
 
@@ -1055,8 +1055,8 @@ app.post("/auth/v1/token", function (req, res) {
 				"AND resource_ids @> $2::jsonb "	+
 				"AND issued_at >= DATE_TRUNC('day',NOW())",
 				[
-					consumer_id,
-					JSON.stringify(resource_true),
+					consumer_id,			// 1
+					JSON.stringify(resource_true),	// 2
 				],
 			);
 
@@ -1224,8 +1224,8 @@ app.post("/auth/v1/token", function (req, res) {
 			"revoked = false AND "				+
 			"expiry > NOW() LIMIT 1",
 			[
-				consumer_id,
-				sha256_of_existing_token,
+				consumer_id,			// 1
+				sha256_of_existing_token,	// 2
 			]
 		);
 
@@ -1513,7 +1513,11 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			"AND token = $2::text "			+
 			"AND revoked = false "			+
 			"AND expiry > NOW() LIMIT 1",
-				[issued_to, sha256_of_token],
+			[
+				issued_to,	// 1
+				sha256_of_token	// 2
+			],
+
 		(error, results) =>
 		{
 			if (error)
@@ -1667,11 +1671,13 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			};
 
 			pool.query (
+
 				"UPDATE token SET introspected = true "		+
 				"WHERE token = $1::text "			+
 				"AND revoked = false "				+
 				"AND expiry > NOW()",
 					[sha256_of_token],
+
 				(error_1, results_1) =>
 				{
 					if (error_1 || results_1.rowCount === 0)
@@ -1760,7 +1766,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"WHERE id = $1::text " 	+
 				"AND token = $2::text "	+
 				"AND expiry > NOW() LIMIT 1",
-					[id, sha256_of_token]
+				[
+					id,		// 1
+					sha256_of_token	// 2
+				]
 			);
 
 			if (select_rows.length === 0)
@@ -1781,7 +1790,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"WHERE id = $1::text "			+
 				"AND token = $2::text "			+
 				"AND expiry > NOW()",
-					[id, sha256_of_token]
+				[
+					id,		// 1
+					sha256_of_token	// 2
+				]
 			);
 
 			++num_tokens_revoked;
@@ -1824,7 +1836,10 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"AND providers-> $2::text "		+	
 				"= 'true' "				+
 				"AND expiry > NOW() LIMIT 1",
-					[token_hash, provider_id_in_db]
+				[
+					token_hash,		// 1
+					provider_id_in_db	// 2
+				]
 			);
 
 			if (select_rows.length === 0)
@@ -1850,9 +1865,9 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"AND providers-> $3::text = 'true' "	+
 				"AND expiry > NOW()",
 					[
-						JSON.stringify(provider_false),
-						token_hash,
-						provider_id_in_db
+						JSON.stringify(provider_false),	// 1
+						token_hash,			// 2
+						provider_id_in_db		// 3
 					]
 			);
 
@@ -1904,8 +1919,11 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 		"AND cert_fingerprint = $3::text "	+
 		"AND expiry > NOW() "			+
 		"AND revoked = false",
-
-		[id, serial, fingerprint],
+		[
+			id,		// 1
+			serial,		// 2
+			fingerprint	// 3
+		],
 
 		(error,results) =>
 		{
@@ -1936,10 +1954,10 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 				"AND providers-> $4::text = 'true' ",
 
 				[
-					JSON.stringify(provider_false),
-					serial,
-					fingerprint,
-					provider_id_in_db
+					JSON.stringify(provider_false),	// 1
+					serial,				// 2
+					fingerprint,			// 3
+					provider_id_in_db		// 4
 				],
 
 				(error_1, results_1) =>
@@ -2014,9 +2032,9 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				"policy_in_json = $2::jsonb WHERE id = $3::text";
 
 			parameters = [
-				base64policy,
-				JSON.stringify(policy_in_json),
-				provider_id_in_db
+				base64policy,			// 1
+				JSON.stringify(policy_in_json),	// 2
+				provider_id_in_db		// 3
 			];
 		}
 		else
@@ -2025,9 +2043,9 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				"policy VALUES ($1::text, $2::text, $3::jsonb)";
 
 			parameters = [
-				provider_id_in_db,
-				base64policy,
-				JSON.stringify(policy_in_json)
+				provider_id_in_db,		// 1
+				base64policy,			// 2
+				JSON.stringify(policy_in_json)	// 3
 			];
 		}
 
@@ -2121,9 +2139,9 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				"policy_in_json = $2::jsonb WHERE id = $3::text";
 
 			parameters = [
-				base64policy,
-				JSON.stringify(policy_in_json),
-				provider_id_in_db
+				base64policy,			// 1
+				JSON.stringify(policy_in_json),	// 2
+				provider_id_in_db		// 3
 			];
 		}
 		else
@@ -2136,9 +2154,9 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				"VALUES ($1::text, $2::text, $3::jsonb)";
 
 			parameters = [
-				provider_id_in_db,
-				base64policy,
-				JSON.stringify(policy_in_json)
+				provider_id_in_db,		// 1
+				base64policy,			// 2
+				JSON.stringify(policy_in_json)	// 3
 			];
 		}
 
@@ -2212,8 +2230,10 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		"FROM token "						+
 		"WHERE id = $1::text "					+
 		"AND issued_at >= (NOW() - $2::interval)",
-
-		[id, hours + " hours"],
+		[
+			id,			// 1
+			hours + " hours"	// 2
+		],
 
 	(error, results) =>
 	{
@@ -2253,8 +2273,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"AND issued_at >= (NOW() - $2::interval)",
 
 			[
-				provider_id_in_db,
-				hours + " hours"
+				provider_id_in_db,	// 1
+				hours + " hours"	// 2
 			],
 
 		(error, results) =>
@@ -2342,8 +2362,12 @@ app.post("/auth/v1/group/add", function (req, res) {
 		"INSERT INTO groups "				+
 			"VALUES ($1::text, $2::text, $3::text,"	+
 			"NOW() + $4::interval)",
-
-		[provider_id_in_db, consumer_id, group_name, valid_till + " hours"],
+		[
+			provider_id_in_db,	// 1
+			consumer_id,		// 2
+			group_name,		// 3
+			valid_till + " hours"	// 4
+		],
 
 	(error, results) =>
 	{
@@ -2387,8 +2411,10 @@ app.post("/auth/v1/group/list", function (req, res) {
 			"WHERE id = $1::text "				+
 			"AND group_name = $2::text "			+
 			"AND valid_till > NOW()",
-
-			[provider_id_in_db, group_name],
+			[
+				provider_id_in_db,	// 1
+				group_name		// 2
+			],
 
 		(error, results) =>
 		{
@@ -2481,12 +2507,15 @@ app.post("/auth/v1/group/delete", function (req, res) {
 			"AND group_name = $2::text "			+
 			"AND valid_till > NOW()";
 
-	const parameters = [provider_id_in_db, group_name];
+	const parameters = [
+			provider_id_in_db,	// 1
+			group_name		// 2
+	];
 
 	if (consumer_id !== "*")
 	{
 		query += " AND consumer = $3::text ";
-		parameters.push(consumer_id);
+		parameters.push(consumer_id);	// 3
 	}
 
 	pool.query (query, parameters, (error, results) =>

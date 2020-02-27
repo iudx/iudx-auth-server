@@ -29,7 +29,7 @@ num_tokens_before = len(as_provider)
 
 body = [
 	{
-		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/" + RS+ "/resource-xyz-yzz",
+		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/" + RS + "/resource-xyz-yzz",
 		"api"		: "/latest",
 		"methods"	: ["GET"],
 		"body"		: {"key":"some-key"}
