@@ -2,6 +2,8 @@
 
 echo "============ Tests started ===========\n" | tee report
 
+error_code=0
+
 for f in `ls test*.py`
 do
 	echo "-----> $f" | tee -a report
@@ -11,6 +13,8 @@ do
 	then
 		echo | tee -a report
 		echo Test [$f] passed | tee -a report	
+	else
+		error_code=1	
 	fi
 
 	echo $output | tee -a report
@@ -19,3 +23,4 @@ do
 done
 
 echo "============ Tests ended =============" | tee -a report
+exit $error_code
