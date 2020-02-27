@@ -1321,7 +1321,7 @@ app.post("/auth/v1/token", function (req, res) {
 				"request = $1::jsonb,"			+
 				"resource_ids = $2::jsonb,"		+
 				"server_token = $3::jsonb,"		+
-				"expiry = NOW() + $4::interval" 	+
+				"expiry = NOW() + $4::interval " 	+
 				"WHERE "				+
 				"id = $5::text AND "			+
 				"token = $6::text AND "			+
@@ -1839,14 +1839,14 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			}
 
 			const provider_false = {};
-			provider_false[provider_id_in_db] = false;
+				provider_false[provider_id_in_db] = false;
 
 			pg.querySync (
 
-				"UPDATE token "						+
-				"SET providers = "					+
-				"providers || $1::jsonb "				+
-				"WHERE token = $2::text "				+
+				"UPDATE token "				+
+				"SET providers = "			+
+				"providers || $1::jsonb "		+
+				"WHERE token = $2::text "		+
 				"AND providers-> $3::text = 'true' "	+
 				"AND expiry > NOW()",
 					[
