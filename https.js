@@ -2229,7 +2229,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		"cert_fingerprint,introspected,revoked "		+
 		"FROM token "						+
 		"WHERE id = $1::text "					+
-		"AND issued_at >= (NOW() - $2::interval)",
+		"AND issued_at >= (NOW() - $2::interval) ",
+		"ORDER BY issued_at DESC",
 		[
 			id,			// 1
 			hours + " hours"	// 2
@@ -2270,7 +2271,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"FROM token "					+
 			"WHERE providers-> $1::text  "			+
 			"IS NOT NULL "					+
-			"AND issued_at >= (NOW() - $2::interval)",
+			"AND issued_at >= (NOW() - $2::interval) ",
+			"ORDER BY issued_at DESC",
 
 			[
 				provider_id_in_db,	// 1
