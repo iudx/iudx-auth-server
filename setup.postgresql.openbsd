@@ -9,6 +9,7 @@ export PGPASSWORD=`cat admin.db.password`
 
 sed -i "s/America/Asia" /var/postgresql/data/postgresql.conf
 sed -i "s/Los_Angeles/Kolkata" /var/postgresql/data/postgresql.conf
+sed -i "s/max_connections = 30/max_connections = 100" /var/postgresql/data/postgresql.conf
 
 psql -U postgres < schema.sql >/dev/null
 
