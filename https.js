@@ -2382,7 +2382,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 
 		"SELECT issued_at,expiry,request,cert_serial,"		+
 		"cert_fingerprint,introspected,revoked,"		+
-		"expiry > NOW() as expired "				+
+		"expiry < NOW() as expired "				+
 		"FROM token "						+
 		"WHERE id = $1::text "					+
 		"AND issued_at >= (NOW() - $2::interval) "		+
@@ -2423,7 +2423,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"revoked,introspected,"				+
 			"providers-> $1::text  "			+
 			"AS is_valid_token_for_provider,"		+
-			"expiry > NOW() as expired "			+
+			"expiry < NOW() as expired "			+
 			"FROM token "					+
 			"WHERE providers-> $1::text  "			+
 			"IS NOT NULL "					+

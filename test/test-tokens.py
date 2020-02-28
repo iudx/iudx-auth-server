@@ -74,12 +74,8 @@ num_tokens_after = len(as_provider)
 # number of tokens before and after request by consumer
 assert num_tokens_after > num_tokens_before
 
-<<<<<<< HEAD
-token_hash = hashlib.sha256(token.split("/")[2]).hexdigest()
-=======
 token_hash = hashlib.sha256(token).hexdigest()
 
->>>>>>> c1aa3d34abff59ad11bb90d026e9c1960ddc1339
 token_hash_found = False
 found = None
 
@@ -91,12 +87,7 @@ for a in as_provider:
 
 assert token_hash_found	== True
 assert found['revoked'] == False
-<<<<<<< HEAD
 assert True == provider.revoke_token_hashes(token_hash)['success']
-=======
-r = provider.revoke_token_hashes(token_hash)
-assert True == r['success']
->>>>>>> c1aa3d34abff59ad11bb90d026e9c1960ddc1339
 
 # check if token was revoked
 r = provider.audit_tokens(5)
@@ -112,10 +103,8 @@ for a in as_provider:
                 found = a
 		break
 
-<<<<<<< HEAD
+
 assert token_hash_found	== True
-=======
->>>>>>> c1aa3d34abff59ad11bb90d026e9c1960ddc1339
 assert found['revoked'] == True
 
 # test revoke-all (as provider)
@@ -144,7 +133,7 @@ num_tokens          = len(as_provider)
 assert num_tokens   >= 1
 
 for a in as_provider:
-        if a["revoked"] == False:
+        if a["revoked"] == False and a['expired'] == False:
                 cert_serial         = a["certificate-serial-number"]
                 cert_fingerprint    = a["certificate-fingerprint"]
                 break
@@ -152,20 +141,16 @@ for a in as_provider:
 r = provider.revoke_all(cert_serial, cert_fingerprint)
 assert True == r["success"]
 assert r["response"]["num-tokens-revoked"] >= 1
-print(r["response"]["num-tokens-revoked"], '\n')
 
-print(cert_serial, cert_fingerprint, 'n')
+r = provider.audit_tokens(100)
+assert r["success"] == True
+audit_report        = r['response']
+as_provider         = audit_report["as-provider"]
 
-r1 = provider.audit_tokens(100)
-assert r1["success"] == True
-audit_report1        = r1['response']
-as_provider1         = audit_report["as-provider"]
-
-for a in as_provider1:
-       # print('\n', a['token-issued-at'], a['revoked'], a['token-hash'])
+for a in as_provider:
 	if a['certificate-serial-number'] == cert_serial and a['certificate-fingerprint'] == cert_fingerprint:
-                if a['revoked'] == False:
-                        print(a, '\n')
+                if a['expired'] == False:
+                        assert a['revoked'] == True
 
 # test revoke API
 r = provider.get_token(body)
@@ -194,7 +179,7 @@ num_revoked_before  = 0
 for a in as_consumer:
         if a['revoked'] == True:
                 num_revoked_before = num_revoked_before + 1
-                
+
 assert True == provider.revoke_tokens(token)["success"]
 
 r = provider.audit_tokens(5)
