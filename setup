@@ -123,7 +123,7 @@ rcctl disable sndiod slaacd smtpd xenodm
 echo boot > /etc/boot.conf
 
 echo kern.seminfo.semmsl=250	>> /etc/sysctl.conf 
-echo kern.seminfo.semmns=320000	>> /etc/sysctl.conf 
+echo kern.seminfo.semmns=5000	>> /etc/sysctl.conf 
 echo kern.seminfo.semopm=100	>> /etc/sysctl.conf 
 echo kern.seminfo.semmni=128	>> /etc/sysctl.conf
 
@@ -133,7 +133,7 @@ echo /usr/sbin/rcctl stop postgresql >> /etc/rc.shutdown
 if [ $1 = "noreboot" ] || [ $2 = "noreboot" ]
 then
 	sysctl kern.seminfo.semmsl=250
-	sysctl kern.seminfo.semmns=320000
+	sysctl kern.seminfo.semmns=5000
 	sysctl kern.seminfo.semopm=100
 	sysctl kern.seminfo.semmni=128
 
