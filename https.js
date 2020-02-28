@@ -38,6 +38,7 @@ const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
 const http_request		= require("request");
 const pgNativeClient 		= require("pg-native");
+const pg			= new pgNativeClient();
 
 const TOKEN_LENGTH		= 16;
 const TOKEN_LENGTH_HEX		= 2 * TOKEN_LENGTH;
@@ -102,112 +103,34 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 
 const DB_SERVER	= "127.0.0.1";
 
-const USERS = [
-	"select_crl",
-
-	"select_token",
-	"insert_token",
-	"update_token",
-
-	"select_policy",
-	"insert_policy",
-	"update_policy",
-
-	"select_groups",
-	"insert_groups",
-	"update_groups",
-];
-
-const db = {
-	async	: {select:{}, insert:{}, update:{}},
-	sync	: {select:{}, insert:{}, update:{}}
+const password	= {
+	"DB"	: fs.readFileSync ("passwords/auth.db.password","ascii").trim(),
 };
 
-const password	= {};
+// async postgres connection
+const pool = new Pool ({
+	host		: DB_SERVER,
+	port		: 5432,
+	user		: "auth",
+	database	: "postgres",
+	password	: password.DB,
+});
 
-for (const u of USERS)
-{
-	password[u] = fs.readFileSync (
-			"passwords/"+ u +".db.password",
-			"ascii"
-	).trim();
+pool.connect();
 
-	const action	= u.split("_")[0];
-	const table	= u.split("_")[1];
-
-	db.async [action][table] = new Pool ({
-		host		: DB_SERVER,
-		port		: 5432,
-		user		: u,
-		database	: "postgres",
-		password	: password[u],
-	});
-
-	db.async[action][table].connect();
-
-	// sync queries are only for:
-	// SELECTing any table -OR- to UPDATE the token table 
-
-	if (
-		(action === "select")	||
-		(action === "update" && table === "token")
-	)
-	{
-		db.sync[action][table] = new pgNativeClient();
-
-		db.sync[action][table].connectSync (
-		"postgresql://" +u+ ":" +password[u]+ "@" + DB_SERVER + ":5432/postgres",
-			function(err)
-			{
-				if(err) {
-					throw err;
-				}
+// sync postgres connection
+pg.connectSync (
+	"postgresql://auth:"+ password.DB + "@" + DB_SERVER + ":5432/postgres",
+		function(err)
+		{
+			if(err) {
+				throw err;
 			}
-		);
+		}
+);
 
-		db.sync[action][table].query = db.sync[action][table].querySync;
-	}
-
-	delete password[u]; // forget the password
-}
-
-const select = {
-
-	token : {
-		async	: db.async.select.token.query,
-		sync	: db.sync.select.token.querySync,
-	},
-
-	crl : {
-		async	: db.async.select.crl.query,
-	},
-
-	policy : {
-		async	: db.async.select.policy.query,
-		sync	: db.sync.select.policy.querySync,
-	},
-
-	groups : {
-		async	: db.async.select.groups.query,
-		sync	: db.sync.select.groups.querySync,
-	}
-};
-
-const insert = {
-
-	token : {
-		async	: db.async.insert.token.query,
-		sync	: db.sync.insert.token.querySync,
-	}
-};
-
-const update = {
-	
-	token : {
-		async	: db.async.update.token.query,
-		sync	: db.sync.update.token.query,
-	}
-};
+const Sync	= pg.querySync;
+const Async	= pool.query;
 
 /* --- express --- */
 
@@ -736,112 +659,108 @@ function security (req, res, next)
 		if (error !== "OK")
 			return END_ERROR (res, 403, error);
 
-		select.crl.async (
-
-			"SELECT crl FROM crl LIMIT 1", [], (error,results) =>
+		Async ("SELECT crl FROM crl LIMIT 1", [], (error,results) =>
+		{
+			if (error || results.rows.length === 0)
 			{
-				if (error || results.rows.length === 0)
-				{
-					return END_ERROR (
-						res, 500,
-						"Internal error!", error
-					);
-				}
-
-				const CRL = results.rows[0].crl;
-
-				if (has_certificate_been_revoked(req.socket,cert,CRL))
-				{
-					return END_ERROR (
-						res, 403,
-						"Certificate has been revoked"
-					);
-				}
-
-				if (! (res.locals.body = body_to_json(req.body)))
-				{
-					return END_ERROR (
-						res, 400,
-						"Body is not a valid JSON"
-					);
-				}
-
-				res.locals.cert		= cert;
-				res.locals.cert_class	= integer_cert_class;
-				res.locals.email	= cert
-								.subject
-								.emailAddress
-								.toLowerCase();
-
-				return next();
+				return END_ERROR (
+					res, 500,
+					"Internal error!", error
+				);
 			}
-		);
+
+			const CRL = results.rows[0].crl;
+
+			if (has_certificate_been_revoked(req.socket,cert,CRL))
+			{
+				return END_ERROR (
+					res, 403,
+					"Certificate has been revoked"
+				);
+			}
+
+			if (! (res.locals.body = body_to_json(req.body)))
+			{
+				return END_ERROR (
+					res, 400,
+					"Body is not a valid JSON"
+				);
+			}
+
+			res.locals.cert		= cert;
+			res.locals.cert_class	= integer_cert_class;
+			res.locals.email	= cert
+							.subject
+							.emailAddress
+							.toLowerCase();
+
+			return next();
+		});
 	}
 	else
 	{
 		ocsp.check({cert:cert.raw, issuer:cert.issuerCertificate.raw},
-			function (err, ocsp_response)
+		function (err, ocsp_response)
+		{
+			if (err)
 			{
-				if (err)
-				{
-					return END_ERROR (
-						res, 403,
-						"Your certificate issuer did "	+
-						"NOT respond to an OCSP request"
-					);
-				}
-
-				if (ocsp_response.type !== "good")
-				{
-					return END_ERROR (
-						res, 403,
-						"Your certificate has been "	+
-						"revoked by your certificate issuer"
-					);
-				}
-
-				// certificate may not have a "emailAddress" field
-
-				const error = is_secure(req,res,cert,false);
-
-				if (error !== "OK")
-					return END_ERROR (res, 403, error);
-
-				res.locals.cert_class	= 1;
-				res.locals.email	= "";
-
-				if (is_valid_email(cert.subject.emailAddress))
-				{
-					res.locals.cert_class	= 2;
-					res.locals.email	= cert
-									.subject
-									.emailAddress
-									.toLowerCase();
-				}
-
-				if (res.locals.cert_class < min_class_required)
-				{
-					return END_ERROR (
-						res, 403,
-						"A class-" + min_class_required		+
-						" or above certificate is required "	+
-						"to call this API"
-					);
-				}
-
-				if (! (res.locals.body = body_to_json(req.body)))
-				{
-					return END_ERROR (
-						res, 400,
-						"Body is not a valid JSON"
-					);
-				}
-
-				res.locals.cert	= cert;
-
-				return next();
+				return END_ERROR (
+					res, 403,
+					"Your certificate issuer did "	+
+					"NOT respond to an OCSP request"
+				);
 			}
-		);
+
+			if (ocsp_response.type !== "good")
+			{
+				return END_ERROR (
+					res, 403,
+					"Your certificate has been "	+
+					"revoked by your certificate issuer"
+				);
+			}
+
+			// certificate may not have a "emailAddress" field
+
+			const error = is_secure(req,res,cert,false);
+
+			if (error !== "OK")
+				return END_ERROR (res, 403, error);
+
+			res.locals.cert_class	= 1;
+			res.locals.email	= "";
+
+			if (is_valid_email(cert.subject.emailAddress))
+			{
+				res.locals.cert_class	= 2;
+				res.locals.email	= cert
+								.subject
+								.emailAddress
+								.toLowerCase();
+			}
+
+			if (res.locals.cert_class < min_class_required)
+			{
+				return END_ERROR (
+					res, 403,
+					"A class-" + min_class_required		+
+					" or above certificate is required "	+
+					"to call this API"
+				);
+			}
+
+			if (! (res.locals.body = body_to_json(req.body)))
+			{
+				return END_ERROR (
+					res, 400,
+					"Body is not a valid JSON"
+				);
+			}
+
+			res.locals.cert	= cert;
+
+			return next();
+		});
 	}
 }
 
@@ -877,7 +796,7 @@ app.post("/auth/v1/token", function (req, res) {
 	if (! request_array)
 		return END_ERROR(res, 400, "'request' field is not a valid JSON");
 
-	const token_rows = select.token.sync (
+	const token_rows = Sync (
 
 		"SELECT COUNT(*)/60.0 "	+
 		"AS rate "		+
@@ -1072,7 +991,7 @@ app.post("/auth/v1/token", function (req, res) {
 		// to be generated later
 		sha256_of_resource_server_token	[resource_server]	= true;
 
-		const policy_rows = select.policy.sync (
+		const policy_rows = Sync (
 
 			"SELECT policy,policy_in_json FROM policy " +
 			"WHERE id = $1::text LIMIT 1",
@@ -1102,7 +1021,7 @@ app.post("/auth/v1/token", function (req, res) {
 
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
-			const group_rows = select.groups.sync (
+			const group_rows = Sync (
 
 				"SELECT DISTINCT group_name "	+
 				"FROM groups "			+
@@ -1129,7 +1048,7 @@ app.post("/auth/v1/token", function (req, res) {
 			const resource_true = {};
 				resource_true [resource] = true;
 
-			const tokens_per_day_rows = select.token.sync (
+			const tokens_per_day_rows = Sync (
 
 				"SELECT COUNT(*) FROM token "		+
 				"WHERE id = $1::text "			+
@@ -1294,7 +1213,7 @@ app.post("/auth/v1/token", function (req, res) {
 							.update(random_part_of_token)
 							.digest("hex");
 
-		existing_row = select.token.sync (
+		existing_row = Sync (
 
 			"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "	+
 			"AS token_time,request,resource_ids,"		+
@@ -1417,7 +1336,7 @@ app.post("/auth/v1/token", function (req, res) {
 			sha256_of_token,				// 6
 		];
 
-		update.token.async (query, parameters, (error,results) =>
+		Async (query, parameters, (error,results) =>
 		{
 			if (error || results.rowCount === 0)
 				return END_ERROR (res, 500, "Internal error!", error);
@@ -1460,7 +1379,7 @@ app.post("/auth/v1/token", function (req, res) {
 			JSON.stringify(providers)			// 10
 		];
 
-		insert.token.async (query, parameters, (error,results) =>
+		Async (query, parameters, (error,results) =>
 		{
 			if (error || results.rowCount === 0)
 				return END_ERROR (res, 500, "Internal error!", error);
@@ -1597,7 +1516,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 		// TODO select payment_required from token table
 
-		select.token.async (
+		Async (
 
 			"SELECT expiry,request,cert_class,"	+
 			"server_token,providers "		+
@@ -1770,7 +1689,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 				"consumer-certificate-class"	: results.rows[0].cert_class,
 			};
 
-			update.token.async (
+			Async (
 
 				"UPDATE token SET introspected = true "		+
 				"WHERE token = $1::text "			+
@@ -1860,7 +1779,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 						.update(random_part_of_token)
 						.digest("hex");
 
-			const select_rows = select.token.sync (
+			const select_rows = Sync (
 
 				"SELECT 1 FROM token "	+
 				"WHERE id = $1::text " 	+
@@ -1884,7 +1803,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			update.token.sync (
+			Sync (
 
 				"UPDATE token SET revoked = true "	+
 				"WHERE id = $1::text "			+
@@ -1929,7 +1848,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			const select_rows = select.token.sync (
+			const select_rows = Sync (
 
 				"SELECT 1 FROM token "			+
 				"WHERE token = $1::text "		+
@@ -1956,7 +1875,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			const provider_false = {};
 				provider_false[provider_id_in_db] = false;
 
-			update.token.sync (
+			Sync (
 
 				"UPDATE token "				+
 				"SET providers = "			+
@@ -2011,7 +1930,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	update.token.async (
+	Async (
 
 		"UPDATE token SET revoked = true "	+
 		"WHERE id = $1::text "			+
@@ -2042,7 +1961,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 			const provider_false = {};
 			provider_false[provider_id_in_db] = false;
 
-			update.token.async (
+			Async (
 
 				"UPDATE token "				+
 				"SET providers = "			+
@@ -2117,7 +2036,8 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
 
-	select.policy.async (
+	Async (
+
 		"SELECT 1 FROM policy WHERE id = $1::text LIMIT 1",
 			[provider_id_in_db], (error, results) =>
 	{
@@ -2138,7 +2058,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				provider_id_in_db		// 3
 			];
 
-			update.policy.async (query, parameters, (error_1, results_1) =>
+			Async (query, parameters, (error_1, results_1) =>
 			{
 				if (error_1 || results_1.rowCount === 0)
 				{
@@ -2161,7 +2081,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				JSON.stringify(policy_in_json)	// 3
 			];
 
-			insert.policy.async (query, parameters, (error_1, results_1) =>
+			Async (query, parameters, (error_1, results_1) =>
 			{
 				if (error_1 || results_1.rowCount === 0)
 				{
@@ -2210,7 +2130,8 @@ app.post("/auth/v1/acl/append", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
 
-	select.policy.async ("SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
+	Async ("SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
+
 		[provider_id_in_db], (error, results) =>
 	{
 		if (error)
@@ -2257,7 +2178,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				provider_id_in_db		// 3
 			];
 
-			update.policy.async (query, parameters, (error_1, results_1) =>
+			Async (query, parameters, (error_1, results_1) =>
 			{
 				if (error_1 || results_1.rowCount === 0)
 				{
@@ -2284,7 +2205,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				JSON.stringify(policy_in_json)	// 3
 			];
 
-			insert.policy.async (query, parameters, (error_1, results_1) =>
+			Async (query, parameters, (error_1, results_1) =>
 			{
 				if (error_1 || results_1.rowCount === 0)
 				{
@@ -2311,7 +2232,7 @@ app.post("/auth/v1/acl", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	select.policy.async (
+	Async (
 
 		"SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
 			[provider_id_in_db], (error, results) =>
@@ -2349,7 +2270,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 	const as_consumer = [];
 	const as_provider = [];
 
-	select.token.async (
+	Async (
 
 		"SELECT issued_at,expiry,request,cert_serial,"		+
 		"cert_fingerprint,introspected,revoked,"		+
@@ -2389,7 +2310,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		const email_domain	= id.split("@")[1];
 		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-		select.token.async (
+		Async (
 
 			"SELECT id,token,issued_at,expiry,request,"	+
 			"cert_serial,cert_fingerprint,"			+
@@ -2488,7 +2409,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	insert.groups.async (
+	Async (
 
 		"INSERT INTO groups "				+
 			"VALUES ($1::text, $2::text, $3::text,"	+
@@ -2536,7 +2457,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 
 	if (group_name)
 	{
-		select.groups.async (
+		Async (
 
 			"SELECT consumer, valid_till FROM groups "	+
 			"WHERE id = $1::text "				+
@@ -2569,7 +2490,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 	}
 	else
 	{
-		select.groups.async (
+		Async (
 
 			"SELECT consumer,group_name,valid_till "	+
 			"FROM groups "					+
@@ -2649,7 +2570,7 @@ app.post("/auth/v1/group/delete", function (req, res) {
 		parameters.push(consumer_id);	// 3
 	}
 
-	update.groups.async (query, parameters, (error, results) =>
+	Async (query, parameters, (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Internal error!", error);
