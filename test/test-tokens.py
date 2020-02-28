@@ -25,6 +25,7 @@ assert r['success'] == True
 audit_report        = r['response']
 as_provider         = audit_report["as-provider"]
 
+
 num_tokens_before = len(as_provider)
 body = [
 	{
@@ -73,7 +74,12 @@ num_tokens_after = len(as_provider)
 # number of tokens before and after request by consumer
 assert num_tokens_after > num_tokens_before
 
+<<<<<<< HEAD
 token_hash = hashlib.sha256(token.split("/")[2]).hexdigest()
+=======
+token_hash = hashlib.sha256(token).hexdigest()
+
+>>>>>>> c1aa3d34abff59ad11bb90d026e9c1960ddc1339
 token_hash_found = False
 found = None
 
@@ -85,7 +91,12 @@ for a in as_provider:
 
 assert token_hash_found	== True
 assert found['revoked'] == False
+<<<<<<< HEAD
 assert True == provider.revoke_token_hashes(token_hash)['success']
+=======
+r = provider.revoke_token_hashes(token_hash)
+assert True == r['success']
+>>>>>>> c1aa3d34abff59ad11bb90d026e9c1960ddc1339
 
 # check if token was revoked
 r = provider.audit_tokens(5)
@@ -101,7 +112,10 @@ for a in as_provider:
                 found = a
 		break
 
+<<<<<<< HEAD
 assert token_hash_found	== True
+=======
+>>>>>>> c1aa3d34abff59ad11bb90d026e9c1960ddc1339
 assert found['revoked'] == True
 
 # test revoke-all (as provider)

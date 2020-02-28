@@ -10,7 +10,6 @@
     "express": "^4.17.1",
     "geoip-lite": "^1.4.0",
     "immutable": "^4.0.0-rc.12",
-    "jshint": "^2.11.0",
     "jsprim": "^2.0.0",
     "logger": "0.0.1",
     "node-color-log": "^2.2.0",
@@ -25,7 +24,6 @@
     "verror": "^1.10.0"
   },
   "devDependencies": {
-    "eslint": "^6.8.0"
   },
   "scripts": {
     "test": "echo \"Test-Mode\" && nodejs https.js test",

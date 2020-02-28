@@ -87,10 +87,16 @@ CREATE UNIQUE INDEX idx_token_id ON public.token(id,token);
 
 ALTER TABLE public.token OWNER TO postgres;
 
-
 --
 -- ACCESS CONTROLS 
 --
+
+CREATE USER auth with PASSWORD 'XXXauth';
+
+GRANT SELECT ON TABLE public.crl TO auth;
+GRANT SELECT,INSERT,UPDATE ON TABLE public.token TO auth;
+GRANT SELECT,INSERT,UPDATE ON TABLE public.groups TO auth;
+GRANT SELECT,INSERT,UPDATE ON TABLE public.policy TO auth;
 
 CREATE USER select_crl with PASSWORD 'XXXselect_crl';
 CREATE USER update_crl with PASSWORD 'XXXupdate_crl';
