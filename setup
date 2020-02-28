@@ -59,6 +59,7 @@ chmod 400 telegram.*
 chmod 400 *.sql
 
 # setup postgresql
+
 mv passwords/admin.db.password /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/admin.db.password
 
