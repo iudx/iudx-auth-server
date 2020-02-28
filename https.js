@@ -103,7 +103,7 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 const DB_SERVER	= "127.0.0.1";
 
 const USERS = [
-	"select_crl",
+	"select.crl",
 
 	"select.token",
 	"insert.token",
@@ -132,8 +132,8 @@ for (const u of USERS)
 			"ascii"
 	).trim();
 
-	const action	= u.split("_")[0];
-	const table	= u.split("_")[1];
+	const action	= u.split(".")[0];
+	const table	= u.split(".")[1];
 
 	db.async [action][table] = new Pool ({
 		host		: DB_SERVER,
