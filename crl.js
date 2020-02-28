@@ -20,7 +20,7 @@ const pledge 		= is_openbsd ? require("node-pledge")	: null;
 const unveil		= is_openbsd ? require("openbsd-unveil"): null;
 
 pg.connectSync (
-	"postgresql://crl:"+ db_password+ "@127.0.0.1:5432/postgres",
+	"postgresql://update_crl:"+ db_password+ "@127.0.0.1:5432/postgres",
 	function(err) {
 		if(err)
 			throw err;
