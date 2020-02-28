@@ -179,16 +179,16 @@ const select = {
 	},
 
 	crl : {
-		async	: db.async.select.token.query,
+		async	: db.async.select.crl.query,
 	},
 
 	policy : {
-		async	: db.async.select.token.query,
+		async	: db.async.select.policy.query,
 		sync	: db.sync.select.policy.querySync,
 	},
 
 	groups : {
-		async	: db.async.select.token.query,
+		async	: db.async.select.groups.query,
 		sync	: db.sync.select.groups.querySync,
 	}
 };
@@ -196,8 +196,8 @@ const select = {
 const insert = {
 
 	token : {
-		async	: db.async.select.token.query,
-		sync	: db.sync.select.groups.querySync,
+		async	: db.async.insert.token.query,
+		sync	: db.sync.insert.token.querySync,
 	}
 };
 
