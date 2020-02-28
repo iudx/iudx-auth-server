@@ -11,19 +11,19 @@ fi
 
 if [ $1 == "test" ]
 then
-	openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyout ca.key -out ca.iudx.org.in.crt
+	openssl req -x509 -nodes -days 365 -subj "/CN=localhost/emailAddress=ca@iudx.org.in" -newkey rsa:2048 -keyout ca.key -out ca.iudx.org.in.crt
 
-	openssl req -new -newkey rsa:2048 -nodes -out consumer.csr -keyout consumer.key.pem -subj "/emailAddress=barun@iisc.ac.in"
-	openssl req -new -newkey rsa:2048 -nodes -out provider.csr -keyout provider.key.pem -subj "/emailAddress=arun.babu@rbccps.org"
-	openssl req -new -newkey rsa:2048 -nodes -out r-server.csr -keyout r-server.key.pem -subj "/cn=iisc.iudx.org.in"
-	openssl req -new -newkey rsa:2048 -nodes -out f-server.csr -keyout f-server.key.pem -subj "/cn=google.com"
-	openssl req -new -newkey rsa:2048 -nodes -out l-server.csr -keyout l-server.key.pem -subj "/cn=localhost"
+	openssl req -new -newkey rsa:2048 -nodes -out consumer.csr -keyout consumer.key.pem -subj "/emailAddress=barun@iisc.ac.in/id-qt-unotice=class:2"
+	openssl req -new -newkey rsa:2048 -nodes -out provider.csr -keyout provider.key.pem -subj "/emailAddress=arun.babu@rbccps.org/id-qt-unotice=class:3"
+	openssl req -new -newkey rsa:2048 -nodes -out r-server.csr -keyout r-server.key.pem -subj "/cn=iisc.iudx.org.in/id-qt-unotice=class:1"
+	openssl req -new -newkey rsa:2048 -nodes -out f-server.csr -keyout f-server.key.pem -subj "/cn=google.com/id-qt-unotice=class:1"
+	openssl req -new -newkey rsa:2048 -nodes -out l-server.csr -keyout l-server.key.pem -subj "/cn=localhost/id-qt-unotice=class:1"
 
-	openssl x509 -signkey ca.key -in consumer.csr -req -days 365 -out consumer.pem 
-	openssl x509 -signkey ca.key -in provider.csr -req -days 365 -out provider.pem 
-	openssl x509 -signkey ca.key -in r-server.csr -req -days 365 -out r-server.pem 
-	openssl x509 -signkey ca.key -in f-server.csr -req -days 365 -out f-server.pem 
-	openssl x509 -signkey ca.key -in l-server.csr -req -days 365 -out l-server.pem 
+	openssl x509 -signkey ca.key -in consumer.csr -req -days 365 -sha256 -out consumer.pem 
+	openssl x509 -signkey ca.key -in provider.csr -req -days 365 -sha256 -out provider.pem 
+	openssl x509 -signkey ca.key -in r-server.csr -req -days 365 -sha256 -out r-server.pem 
+	openssl x509 -signkey ca.key -in f-server.csr -req -days 365 -sha256 -out f-server.pem 
+	openssl x509 -signkey ca.key -in l-server.csr -req -days 365 -sha256 -out l-server.pem 
 
 	cp *.pem /home/build/
 fi
