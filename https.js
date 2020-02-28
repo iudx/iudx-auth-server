@@ -129,9 +129,6 @@ pg.connectSync (
 		}
 );
 
-const Sync	= pg.querySync;
-const Async	= pool.query;
-
 /* --- express --- */
 
 const app = express();
@@ -659,7 +656,7 @@ function security (req, res, next)
 		if (error !== "OK")
 			return END_ERROR (res, 403, error);
 
-		Async ("SELECT crl FROM crl LIMIT 1", [], (error,results) =>
+		pool.query ("SELECT crl FROM crl LIMIT 1", [], (error,results) =>
 		{
 			if (error || results.rows.length === 0)
 			{
@@ -796,7 +793,7 @@ app.post("/auth/v1/token", function (req, res) {
 	if (! request_array)
 		return END_ERROR(res, 400, "'request' field is not a valid JSON");
 
-	const token_rows = Sync (
+	const token_rows = pg.querySync (
 
 		"SELECT COUNT(*)/60.0 "	+
 		"AS rate "		+
@@ -991,7 +988,7 @@ app.post("/auth/v1/token", function (req, res) {
 		// to be generated later
 		sha256_of_resource_server_token	[resource_server]	= true;
 
-		const policy_rows = Sync (
+		const policy_rows = pg.querySync (
 
 			"SELECT policy,policy_in_json FROM policy " +
 			"WHERE id = $1::text LIMIT 1",
@@ -1021,7 +1018,7 @@ app.post("/auth/v1/token", function (req, res) {
 
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
-			const group_rows = Sync (
+			const group_rows = pg.querySync (
 
 				"SELECT DISTINCT group_name "	+
 				"FROM groups "			+
@@ -1048,7 +1045,7 @@ app.post("/auth/v1/token", function (req, res) {
 			const resource_true = {};
 				resource_true [resource] = true;
 
-			const tokens_per_day_rows = Sync (
+			const tokens_per_day_rows = pg.querySync (
 
 				"SELECT COUNT(*) FROM token "		+
 				"WHERE id = $1::text "			+
@@ -1213,7 +1210,7 @@ app.post("/auth/v1/token", function (req, res) {
 							.update(random_part_of_token)
 							.digest("hex");
 
-		existing_row = Sync (
+		existing_row = pg.querySync (
 
 			"SELECT EXTRACT(EPOCH FROM (expiry - NOW())) "	+
 			"AS token_time,request,resource_ids,"		+
@@ -1336,7 +1333,7 @@ app.post("/auth/v1/token", function (req, res) {
 			sha256_of_token,				// 6
 		];
 
-		Async (query, parameters, (error,results) =>
+		pool.query (query, parameters, (error,results) =>
 		{
 			if (error || results.rowCount === 0)
 				return END_ERROR (res, 500, "Internal error!", error);
@@ -1379,7 +1376,7 @@ app.post("/auth/v1/token", function (req, res) {
 			JSON.stringify(providers)			// 10
 		];
 
-		Async (query, parameters, (error,results) =>
+		pool.query (query, parameters, (error,results) =>
 		{
 			if (error || results.rowCount === 0)
 				return END_ERROR (res, 500, "Internal error!", error);
@@ -1516,7 +1513,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 		// TODO select payment_required from token table
 
-		Async (
+		pool.query (
 
 			"SELECT expiry,request,cert_class,"	+
 			"server_token,providers "		+
@@ -1689,7 +1686,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 				"consumer-certificate-class"	: results.rows[0].cert_class,
 			};
 
-			Async (
+			pool.query (
 
 				"UPDATE token SET introspected = true "		+
 				"WHERE token = $1::text "			+
@@ -1779,7 +1776,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 						.update(random_part_of_token)
 						.digest("hex");
 
-			const select_rows = Sync (
+			const select_rows = pg.querySync (
 
 				"SELECT 1 FROM token "	+
 				"WHERE id = $1::text " 	+
@@ -1803,7 +1800,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			Sync (
+			pg.querySync (
 
 				"UPDATE token SET revoked = true "	+
 				"WHERE id = $1::text "			+
@@ -1848,7 +1845,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			const select_rows = Sync (
+			const select_rows = pg.querySync (
 
 				"SELECT 1 FROM token "			+
 				"WHERE token = $1::text "		+
@@ -1875,7 +1872,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			const provider_false = {};
 				provider_false[provider_id_in_db] = false;
 
-			Sync (
+			pg.querySync (
 
 				"UPDATE token "				+
 				"SET providers = "			+
@@ -1930,7 +1927,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	Async (
+	pool.query (
 
 		"UPDATE token SET revoked = true "	+
 		"WHERE id = $1::text "			+
@@ -1961,7 +1958,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 			const provider_false = {};
 			provider_false[provider_id_in_db] = false;
 
-			Async (
+			pool.query (
 
 				"UPDATE token "				+
 				"SET providers = "			+
@@ -2036,7 +2033,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
 
-	Async (
+	pool.query (
 
 		"SELECT 1 FROM policy WHERE id = $1::text LIMIT 1",
 			[provider_id_in_db], (error, results) =>
@@ -2058,7 +2055,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				provider_id_in_db		// 3
 			];
 
-			Async (query, parameters, (error_1, results_1) =>
+			pool.query (query, parameters, (error_1, results_1) =>
 			{
 				if (error_1 || results_1.rowCount === 0)
 				{
@@ -2081,7 +2078,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				JSON.stringify(policy_in_json)	// 3
 			];
 
-			Async (query, parameters, (error_1, results_1) =>
+			pool.query (query, parameters, (error_1, results_1) =>
 			{
 				if (error_1 || results_1.rowCount === 0)
 				{
@@ -2130,7 +2127,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
 
-	Async ("SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
+	pool.query ("SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
 
 		[provider_id_in_db], (error, results) =>
 	{
@@ -2178,7 +2175,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				provider_id_in_db		// 3
 			];
 
-			Async (query, parameters, (error_1, results_1) =>
+			pool.query (query, parameters, (error_1, results_1) =>
 			{
 				if (error_1 || results_1.rowCount === 0)
 				{
@@ -2205,7 +2202,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				JSON.stringify(policy_in_json)	// 3
 			];
 
-			Async (query, parameters, (error_1, results_1) =>
+			pool.query (query, parameters, (error_1, results_1) =>
 			{
 				if (error_1 || results_1.rowCount === 0)
 				{
@@ -2232,7 +2229,7 @@ app.post("/auth/v1/acl", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	Async (
+	pool.query (
 
 		"SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
 			[provider_id_in_db], (error, results) =>
@@ -2270,14 +2267,14 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 	const as_consumer = [];
 	const as_provider = [];
 
-	Async (
+	pool.query (
 
 		"SELECT issued_at,expiry,request,cert_serial,"		+
 		"cert_fingerprint,introspected,revoked,"		+
 		"expiry > NOW() as expired "				+
 		"FROM token "						+
 		"WHERE id = $1::text "					+
-		"AND issued_at >= (NOW() - $2::interval) ",
+		"AND issued_at >= (NOW() - $2::interval) "		+
 		"ORDER BY issued_at DESC",
 		[
 			id,			// 1
@@ -2310,7 +2307,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		const email_domain	= id.split("@")[1];
 		const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-		Async (
+		pool.query (
 
 			"SELECT id,token,issued_at,expiry,request,"	+
 			"cert_serial,cert_fingerprint,"			+
@@ -2321,7 +2318,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"FROM token "					+
 			"WHERE providers-> $1::text  "			+
 			"IS NOT NULL "					+
-			"AND issued_at >= (NOW() - $2::interval) ",
+			"AND issued_at >= (NOW() - $2::interval) "	+
 			"ORDER BY issued_at DESC",
 
 			[
@@ -2409,7 +2406,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
-	Async (
+	pool.query (
 
 		"INSERT INTO groups "				+
 			"VALUES ($1::text, $2::text, $3::text,"	+
@@ -2457,7 +2454,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 
 	if (group_name)
 	{
-		Async (
+		pool.query (
 
 			"SELECT consumer, valid_till FROM groups "	+
 			"WHERE id = $1::text "				+
@@ -2490,7 +2487,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 	}
 	else
 	{
-		Async (
+		pool.query (
 
 			"SELECT consumer,group_name,valid_till "	+
 			"FROM groups "					+
@@ -2570,7 +2567,7 @@ app.post("/auth/v1/group/delete", function (req, res) {
 		parameters.push(consumer_id);	// 3
 	}
 
-	Async (query, parameters, (error, results) =>
+	pool.query (query, parameters, (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Internal error!", error);

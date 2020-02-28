@@ -25,6 +25,7 @@ assert r['success'] == True
 audit_report        = r['response']
 as_provider         = audit_report["as-provider"]
 
+
 num_tokens_before = len(as_provider)
 
 body = [
@@ -77,8 +78,6 @@ assert num_tokens_after > num_tokens_before
 
 token_hash = hashlib.sha256(token.split("/")[2]).hexdigest()
 
-print "Token_hash",token_hash
-
 token_hash_found = False
 found = None
 for a in as_provider:
@@ -88,11 +87,9 @@ for a in as_provider:
 		break
 
 assert token_hash_found	== True
-print "Found 1",found
 assert found['revoked'] == False
 r = provider.revoke_token_hashes(token_hash)
 assert True == r['success']
-print "after revoke",r
 
 r = provider.audit_tokens(5)
 assert r["success"] == True
@@ -106,8 +103,6 @@ for a in as_provider:
 		token_hash_found = True
                 found = a
 		break
-
-print "Found",found
 
 assert found['revoked'] == True
 

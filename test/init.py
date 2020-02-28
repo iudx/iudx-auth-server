@@ -4,7 +4,7 @@ import os
 from auth import *
 
 auth_server = "auth.iudx.org.in"
-home = os.path.expanduser("~") + "/"
+home        = os.path.expanduser("~") + "/"
 
 if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 #
