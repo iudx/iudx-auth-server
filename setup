@@ -9,6 +9,19 @@ then
 	exit
 fi
 
+if [ $1 == "test" ]
+then
+	openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyout ca.iudx.org.in.key -out ca.iudx.org.in.crt
+
+	openssl req -new -newkey rsa:2048 -nodes -out consumer.csr.pem -keyout consumer.key.pem -subj "/emailAddress=barun@iisc.ac.in"
+	openssl req -new -newkey rsa:2048 -nodes -out provider.csr.pem -keyout provider.key.pem -subj "/emailAddress=arun.babu@rbccps.org"
+	openssl req -new -newkey rsa:2048 -nodes -out r-server.csr.pem -keyout r-server.key.pem -subj "/cn=iisc.iudx.org.in"
+	openssl req -new -newkey rsa:2048 -nodes -out f-server.csr.pem -keyout f-server.key.pem -subj "/cn=google.com"
+	openssl req -new -newkey rsa:2048 -nodes -out l-server.csr.pem -keyout l-server.key.pem -subj "/cn=localhost"
+
+	cp *.key.pem /home/build/
+fi
+
 syspatch
 
 useradd -s /sbin/nologin -d /nonexistent _aaa
@@ -19,15 +32,38 @@ rcctl enable postgresql
 rm -rf passwords
 mkdir passwords
 
-touch passwords/crl.db.password
-touch passwords/auth.db.password
 touch passwords/admin.db.password
+
+#------- Passwords for various operations -----------
+
+touch passwords/select_crl.db.password
+touch passwords/update_crl.db.password
+
+touch passwords/select_token.db.password
+touch passwords/insert_token.db.password
+touch passwords/update_token.db.password
+
+touch passwords/select_policy.db.password
+touch passwords/insert_policy.db.password
+touch passwords/update_policy.db.password
+
+touch passwords/select_groups.db.password
+touch passwords/insert_groups.db.password
+touch passwords/update_groups.db.password
+
+#----------------------------------------------------
 
 chmod 400 passwords/*
 
-head /dev/urandom | sha256 > passwords/crl.db.password
-head /dev/urandom | sha256 > passwords/auth.db.password
-head /dev/urandom | sha256 > passwords/admin.db.password
+for f in `ls passwords`
+do
+	head /dev/urandom | sha256 > passwords/$f 
+
+	password=`cat passwords/$f`
+	label=`echo $f | cut -f1 -d'.'`
+
+	sed -i "s/XXX$label/$password/" schema.sql 
+done
 
 echo your-telegram-api-key > telegram.apikey
 echo your-telegram-chat-id > telegram.chatid
@@ -35,13 +71,8 @@ echo your-telegram-chat-id > telegram.chatid
 chmod 400 telegram.*
 chmod 400 *.sql
 
-crl_password=`cat passwords/crl.db.password`
-sed -i "s/XXXcrlXXX/$crl_password/" schema.sql 
-
-auth_password=`cat passwords/auth.db.password`
-sed -i "s/XXXauthXXX/$auth_password/" schema.sql 
-
 # setup postgresql
+
 mv passwords/admin.db.password /var/postgresql/
 chown _postgresql:_postgresql /var/postgresql/admin.db.password
 
@@ -88,7 +119,7 @@ echo boot > /etc/boot.conf
 echo /usr/bin/pkill tmux >> /etc/rc.shutdown
 echo /usr/sbin/rcctl stop postgresql >> /etc/rc.shutdown
 
-if [ $1 = "noreboot" ]
+if [ $1 = "noreboot" ] || [ $2 = "noreboot" ]
 then
     rcctl start postgresql
     ./run.tmux
