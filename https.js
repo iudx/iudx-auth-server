@@ -737,6 +737,7 @@ function security (req, res, next)
 			return END_ERROR (res, 403, error);
 
 		select.crl.async (
+
 			"SELECT crl FROM crl LIMIT 1", [], (error,results) =>
 			{
 				if (error || results.rows.length === 0)
@@ -2311,6 +2312,7 @@ app.post("/auth/v1/acl", function (req, res) {
 	const provider_id_in_db	= sha1_id + "@" + email_domain;
 
 	select.policy.async (
+
 		"SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
 			[provider_id_in_db], (error, results) =>
 	{
