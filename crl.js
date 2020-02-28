@@ -10,7 +10,7 @@ const pgNativeClient 	= require("pg-native");
 const pg		= new pgNativeClient();
 
 const db_password	= fs.readFileSync (
-				"passwords/crl.db.password",
+				"passwords/update_crl.db.password",
 				"ascii"
 			).trim();
 

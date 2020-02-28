@@ -19,7 +19,7 @@ then
 	openssl req -new -newkey rsa:2048 -nodes -out f-server.csr.pem -keyout f-server.key.pem -subj "/cn=google.com"
 	openssl req -new -newkey rsa:2048 -nodes -out l-server.csr.pem -keyout l-server.key.pem -subj "/cn=localhost"
 
-	cp *.key.pem ~/
+	cp *.key.pem /home/build/
 fi
 
 syspatch
@@ -119,7 +119,7 @@ echo boot > /etc/boot.conf
 echo /usr/bin/pkill tmux >> /etc/rc.shutdown
 echo /usr/sbin/rcctl stop postgresql >> /etc/rc.shutdown
 
-if [ $2 = "noreboot" ]
+if [ $1 = "noreboot" ] || [ $2 = "noreboot" ]
 then
     rcctl start postgresql
     ./run.tmux

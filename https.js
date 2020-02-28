@@ -2350,7 +2350,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 	select.token.async (
 
 		"SELECT issued_at,expiry,request,cert_serial,"		+
-		"cert_fingerprint,introspected,revoked "		+
+		"cert_fingerprint,introspected,revoked,"		+
+		"expiry > NOW() as expired "				+
 		"FROM token "						+
 		"WHERE id = $1::text "					+
 		"AND issued_at >= (NOW() - $2::interval) ",
@@ -2372,6 +2373,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 				"introspected"			: row.introspected,
 				"revoked"			: row.revoked,
 				"expiry"			: row.expiry,
+				"expired"			: row.expired,
 				"certificate-serial-number"	: row.cert_serial,
 				"certificate-fingerprint"	: row.cert_fingerprint,
 				"request"			: row.request,
@@ -2391,7 +2393,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"cert_serial,cert_fingerprint,"			+
 			"revoked,introspected,"				+
 			"providers-> $1::text  "			+
-			"AS is_valid_token_for_provider "		+
+			"AS is_valid_token_for_provider,"		+
+			"expiry > NOW() as expired "			+
 			"FROM token "					+
 			"WHERE providers-> $1::text  "			+
 			"IS NOT NULL "					+
@@ -2405,7 +2408,6 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 
 		(error, results) =>
 		{
-
 			if (error)
 			{
 				return END_ERROR (
@@ -2426,6 +2428,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 					"introspected"			: row.introspected,
 					"revoked"			: revoked,
 					"expiry"			: row.expiry,
+					"expired"			: row.expired,
 					"certificate-serial-number"	: row.cert_serial,
 					"certificate-fingerprint"	: row.cert_fingerprint,
 					"request"			: row.request,
