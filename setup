@@ -9,7 +9,9 @@ then
 	exit
 fi
 
-if [ $1 == "test" ]
+syspatch
+
+if [ $1 = "test" ]
 then
 	openssl req -x509 -nodes -days 365 -subj "/CN=localhost/emailAddress=ca@iudx.org.in" -newkey rsa:2048 -keyout ca.key -out ca.iudx.org.in.crt
 
@@ -27,8 +29,6 @@ then
 
 	cp *.pem /home/build/
 fi
-
-syspatch
 
 useradd -s /sbin/nologin -d /nonexistent _aaa
 
@@ -132,9 +132,14 @@ echo /usr/sbin/rcctl stop postgresql >> /etc/rc.shutdown
 
 if [ $1 = "noreboot" ] || [ $2 = "noreboot" ]
 then
-    rcctl start postgresql
-    ./run.tmux
-    ./run.crl.tmux
+	sysctl kern.seminfo.semmsl=250
+	sysctl kern.seminfo.semmns=320000
+	sysctl kern.seminfo.semopm=100
+	sysctl kern.seminfo.semmni=128
+
+	rcctl start postgresql
+	./run.tmux
+	./run.crl.tmux
 else
-    reboot
+	reboot
 fi
