@@ -1,0 +1,15 @@
+image: openbsd/latest
+secrets:
+- b23f1abf-6393-45d8-8160-e1d0f9c7617b
+tasks:
+- get_script: |
+    ftp -o - https://iudx.org.in/install/auth > ftp-script.sh
+    sed -i "s/setup/setup noreboot/" ftp-script.sh
+- build: |
+    doas sh ftp-script.sh 
+- test: |
+    doas pkg_add py-requests
+    cd /home/iudx-auth-server/test
+    doas chmod 775 .
+    export AUTH_SERVER='localhost'
+    ./run
