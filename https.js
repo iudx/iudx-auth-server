@@ -1239,7 +1239,7 @@ app.post("/auth/v1/token", function (req, res) {
 			return END_ERROR (res, 403, "Invalid existing-token");
 		}
 
-		const sha256_of_existing_token	= sha256(random_part_of_token);
+		const sha256_of_existing_token	= sha256(existing_token);
 
 		existing_row = pg.querySync (
 
@@ -1272,18 +1272,22 @@ app.post("/auth/v1/token", function (req, res) {
 		for (const key in existing_row[0].server_token)
 			resource_server_token [key] = true;
 
-		token = random_part_of_token; // given by the user
+		token = existing_token; // as given by the user
 	}
 	else
 	{
-		token = crypto.randomBytes(TOKEN_LEN).toString("hex");
+		const random_part_of_token = crypto
+						.randomBytes(TOKEN_LEN)
+						.toString("hex");
+
+		/* Token format: issued-by / issued-to / random-hex-string */
+
+		token = SERVER_NAME + "/" + consumer_id + "/" + random_part_of_token;
 	}
 
 	const response = {
 
-		/* Token format: issued-by / issued-to / token */
-
-		"token"		: SERVER_NAME + "/" + consumer_id + "/" + token,
+		"token"		: token,
 		"token-type"	: "IUDX",
 		"expires-in"	: token_time,
 
@@ -1487,13 +1491,22 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 	{
 		server_token = true;
 	}
-	else if (
-		(! is_string_safe(server_token))				||
-		(! server_token.startsWith(resource_server_name_in_cert + "/"))	||
-		(server_token.split("/")[1].length > TOKEN_LEN_HEX)
-	)
+	else
 	{
-		return END_ERROR (res, 400, "Invalid 'server-token' field");
+		if (! is_string_safe(server_token))
+			return END_ERROR (res, 400, "Invalid 'server-token'");
+
+		if ((server_token.match(/\//g) || []).length !== 1)
+			return END_ERROR (res, 400, "Invalid 'server-token'");
+
+		const issued_to			= server_token.split("/")[0];
+		const random_part_of_token	= server_token.split("/")[1];
+
+		if (issued_to !== resource_server_name_in_cert)
+			return END_ERROR (res, 400, "Invalid 'server-token'");
+
+		if (random_part_of_token.length > TOKEN_LEN_HEX)
+			return END_ERROR (res, 400, "Invalid 'server-token'");
 	}
 
 	const consumer_request = body.request;
@@ -1555,7 +1568,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 		// TODO select payment_required from token table
 
-		const sha256_of_token = sha256(random_part_of_token);
+		const sha256_of_token = sha256(token);
 
 		pool.query (
 
@@ -1818,7 +1831,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			const sha256_of_token = sha256(random_part_of_token);
+			const sha256_of_token = sha256(token);
 
 			const select_rows = pg.querySync (
 
