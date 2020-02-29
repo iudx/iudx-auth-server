@@ -76,7 +76,7 @@ num_tokens_after = len(as_provider)
 # number of tokens before and after request by consumer
 assert num_tokens_after > num_tokens_before
 
-token_hash = hashlib.sha256(token.split("/")[2]).hexdigest()
+token_hash = hashlib.sha256(token).hexdigest()
 
 token_hash_found = False
 found = None

@@ -1505,7 +1505,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 		if (issued_to !== resource_server_name_in_cert)
 			return END_ERROR (res, 400, "Invalid 'server-token'");
 
-		if (random_part_of_token.length > TOKEN_LEN_HEX)
+		if (random_part_of_token.length !== TOKEN_LEN_HEX)
 			return END_ERROR (res, 400, "Invalid 'server-token'");
 	}
 
