@@ -1489,8 +1489,8 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 	}
 	else if (
 		(! is_string_safe(server_token))				||
-		(! server_token.startsWith(resource_server_name_in_cert) + "/")	||
-		(server_token.length > MAX_SAFE_STRING_LEN)
+		(! server_token.startsWith(resource_server_name_in_cert + "/"))	||
+		(server_token.split("/")[1].length > TOKEN_LEN_HEX)
 	)
 	{
 		return END_ERROR (res, 400, "Invalid 'server-token' field");
