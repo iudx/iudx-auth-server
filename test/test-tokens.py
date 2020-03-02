@@ -27,7 +27,6 @@ as_provider         = audit_report["as-provider"]
 
 
 num_tokens_before = len(as_provider)
-
 body = [
 	{
 		"resource-id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/" + RS + "/resource-xyz-yzz",
@@ -70,7 +69,6 @@ r = provider.audit_tokens(5)
 assert r["success"] == True
 audit_report = r['response']
 as_provider = audit_report["as-provider"]
-
 num_tokens_after = len(as_provider)
 
 # number of tokens before and after request by consumer
@@ -80,6 +78,7 @@ token_hash = hashlib.sha256(token).hexdigest()
 
 token_hash_found = False
 found = None
+
 for a in as_provider:
 	if a['token-hash'] == token_hash:
 		token_hash_found = True
@@ -88,9 +87,9 @@ for a in as_provider:
 
 assert token_hash_found	== True
 assert found['revoked'] == False
-r = provider.revoke_token_hashes(token_hash)
-assert True == r['success']
+assert True == provider.revoke_token_hashes(token_hash)['success']
 
+# check if token was revoked
 r = provider.audit_tokens(5)
 assert r["success"] == True
 audit_report = r['response']
@@ -104,5 +103,93 @@ for a in as_provider:
                 found = a
 		break
 
+
+assert token_hash_found	== True
 assert found['revoked'] == True
 
+# test revoke-all (as provider)
+r = provider.get_token(body)
+access_token = r['response']
+
+assert r['success']     == True
+assert None             != access_token
+assert 7200             == access_token['expires-in']
+
+token = access_token['token']
+
+if type(token) == TUPLE:
+	token = token[0]
+
+s = token.split("/")
+
+assert len(s)	== 3
+assert s[0]	== 'auth.iudx.org.in'
+
+r = provider.audit_tokens(100)
+assert r["success"] == True
+audit_report        = r['response']
+as_provider         = audit_report["as-provider"]
+num_tokens          = len(as_provider)
+assert num_tokens   >= 1
+
+for a in as_provider:
+        if a["revoked"] == False and a['expired'] == False:
+                cert_serial         = a["certificate-serial-number"]
+                cert_fingerprint    = a["certificate-fingerprint"]
+                break
+
+r = provider.revoke_all(cert_serial, cert_fingerprint)
+assert True == r["success"]
+assert r["response"]["num-tokens-revoked"] >= 1
+
+r = provider.audit_tokens(100)
+assert r["success"] == True
+audit_report        = r['response']
+as_provider         = audit_report["as-provider"]
+
+for a in as_provider:
+	if a['certificate-serial-number'] == cert_serial and a['certificate-fingerprint'] == cert_fingerprint:
+                if a['expired'] == False:
+                        assert a['revoked'] == True
+
+# test revoke API
+r = provider.get_token(body)
+access_token = r['response']
+
+assert r['success']     == True
+assert None             != access_token
+assert 7200             == access_token['expires-in']
+
+token = access_token['token']
+
+if type(token) == TUPLE:
+	token = token[0]
+
+s = token.split("/")
+
+assert len(s)	== 3
+assert s[0]	== 'auth.iudx.org.in'
+
+r = provider.audit_tokens(5)
+assert r["success"] == True
+audit_report        = r['response']
+as_consumer         = audit_report["as-consumer"]
+num_revoked_before  = 0
+
+for a in as_consumer:
+        if a['revoked'] == True:
+                num_revoked_before = num_revoked_before + 1
+
+assert True == provider.revoke_tokens(token)["success"]
+
+r = provider.audit_tokens(5)
+assert r["success"] == True
+audit_report        = r['response']
+as_consumer         = audit_report["as-consumer"]
+num_revoked_after   = 0
+
+for a in as_consumer:
+        if a['revoked'] == True:
+                num_revoked_after = num_revoked_after + 1
+
+assert num_revoked_before < num_revoked_after
