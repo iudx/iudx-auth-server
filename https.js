@@ -922,7 +922,7 @@ app.post("/auth/v1/token", function (req, res) {
 
 	for (const row of request_array)
 	{
-		let resource = row["id"];
+		let resource = row.id;
 
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
@@ -1676,7 +1676,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 			for (const r of request)
 			{
-				const split		= r["id"].split("/");
+				const split		= r.id.split("/");
 
 				const provider 		= split[1] + "@" + split[0];
 				const resource_server	= split[2];
@@ -1730,7 +1730,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 					for (const r2 of request_for_resource_server)
 					{
-						if (r1["id"] === r2["id"])
+						if (r1.id === r2.id)
 						{
 							const keys2 = Object
 								.keys(request_for_resource_server);
@@ -1740,7 +1740,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 							for (const k of keys)
 							{
 								if (JSON.stringify(r1[k]) !== JSON.stringify(r2[k]))
-									return END_ERROR (res, 403, "Unauthorized to access : " + r1["id"] + " for key : " + k);
+									return END_ERROR (res, 403, "Unauthorized to access : " + r1.id + " for key : " + k);
 							}
 
 							resource_found = true;
