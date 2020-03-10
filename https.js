@@ -610,6 +610,8 @@ function body_to_json (body)
 	}
 }
 
+/* --- basic security checks to be done at every API call --- */
+
 function security (req, res, next)
 {
 	if (! has_started_serving_apis)
