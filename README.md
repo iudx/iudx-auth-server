@@ -63,7 +63,7 @@ Also, change the `/home/iudx-auth-server/https-certificate.pem` and `/home/iudx-
 |   `-- to-prove
 |-- https.js			// the main Auth server code
 |-- install			// the install script for the Auth server	
-|-- pf.conf			// the firewall rules
+|-- pf.conf			// the firewall rules to be copied to /etc
 |-- schema.sql			// the database schema
 |-- public			// the documentation for each API
 |   `-- help
@@ -84,7 +84,7 @@ Also, change the `/home/iudx-auth-server/https-certificate.pem` and `/home/iudx-
 |       |   |-- revoke-all.txt
 |       |   `-- revoke.txt
 |       `-- token.txt
-|-- rc.local			// the code to be run at every startup
+|-- rc.local			// the code to be run at every startup (dest = /etc)
 |-- run				// the nodejs https.js shell script
 |-- run.crl			// the nodejs crl.js shell script 
 |-- run.crl.tmux		// run the 'run.crl' file in tmux
