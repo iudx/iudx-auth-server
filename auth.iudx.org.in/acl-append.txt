@@ -3,7 +3,7 @@ Append access control policy
 ----------------------------
 
 Endpoint:
-	https://<server>/auth/v1/acl/append
+	https://<auth-server>/auth/v1/acl/append
 
 Methods:
 	POST

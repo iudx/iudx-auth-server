@@ -3,7 +3,7 @@ Get access control list
 -----------------------
 
 Endpoint:
-	https://<server>/auth/v1/acl
+	https://<auth-server>/auth/v1/acl
 
 Methods:
 	POST	

@@ -98,35 +98,35 @@ GRANT SELECT,INSERT,UPDATE ON TABLE public.token TO auth;
 GRANT SELECT,INSERT,UPDATE ON TABLE public.groups TO auth;
 GRANT SELECT,INSERT,UPDATE ON TABLE public.policy TO auth;
 
-CREATE USER select_crl with PASSWORD 'XXXselect_crl';
+-- CREATE USER select_crl with PASSWORD 'XXXselect_crl';
 CREATE USER update_crl with PASSWORD 'XXXupdate_crl';
 
-CREATE USER select_token with PASSWORD 'XXXselect_token';
-CREATE USER insert_token with PASSWORD 'XXXinsert_token';
-CREATE USER update_token with PASSWORD 'XXXupdate_token';
+-- CREATE USER select_token with PASSWORD 'XXXselect_token';
+-- CREATE USER insert_token with PASSWORD 'XXXinsert_token';
+-- CREATE USER update_token with PASSWORD 'XXXupdate_token';
 
-CREATE USER select_policy with PASSWORD 'XXXselect_policy';
-CREATE USER insert_policy with PASSWORD 'XXXinsert_policy';
-CREATE USER update_policy with PASSWORD 'XXXupdate_policy';
+-- CREATE USER select_policy with PASSWORD 'XXXselect_policy';
+-- CREATE USER insert_policy with PASSWORD 'XXXinsert_policy';
+-- CREATE USER update_policy with PASSWORD 'XXXupdate_policy';
 
-CREATE USER select_groups with PASSWORD 'XXXselect_groups';
-CREATE USER insert_groups with PASSWORD 'XXXinsert_groups';
-CREATE USER update_groups with PASSWORD 'XXXupdate_groups';
+-- CREATE USER select_groups with PASSWORD 'XXXselect_groups';
+-- CREATE USER insert_groups with PASSWORD 'XXXinsert_groups';
+-- CREATE USER update_groups with PASSWORD 'XXXupdate_groups';
 
-GRANT SELECT ON TABLE public.crl TO select_crl;
+-- GRANT SELECT ON TABLE public.crl TO select_crl;
 GRANT UPDATE ON TABLE public.crl TO update_crl;
 
-GRANT SELECT ON TABLE public.token TO select_token;
-GRANT INSERT ON TABLE public.token TO insert_token;
-GRANT UPDATE ON TABLE public.token TO update_token;
+-- GRANT SELECT ON TABLE public.token TO select_token;
+-- GRANT INSERT ON TABLE public.token TO insert_token;
+-- GRANT UPDATE ON TABLE public.token TO update_token;
 
-GRANT SELECT ON TABLE public.groups TO select_groups;
-GRANT INSERT ON TABLE public.groups TO insert_groups;
-GRANT UPDATE ON TABLE public.groups TO update_groups;
+-- GRANT SELECT ON TABLE public.groups TO select_groups;
+-- GRANT INSERT ON TABLE public.groups TO insert_groups;
+-- GRANT UPDATE ON TABLE public.groups TO update_groups;
 
-GRANT SELECT ON TABLE public.policy TO select_policy;
-GRANT INSERT ON TABLE public.policy TO insert_policy;
-GRANT UPDATE ON TABLE public.policy TO update_policy;
+-- GRANT SELECT ON TABLE public.policy TO select_policy;
+-- GRANT INSERT ON TABLE public.policy TO insert_policy;
+-- GRANT UPDATE ON TABLE public.policy TO update_policy;
 
 --
 -- PostgreSQL database dump complete

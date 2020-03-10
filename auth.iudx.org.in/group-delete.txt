@@ -3,7 +3,7 @@ Delete a consumer from a group
 ------------------------------
 
 Endpoint:
-	https://<server>/auth/v1/group/delete
+	https://<auth-server>/auth/v1/group/delete
 
 Methods:
 	POST

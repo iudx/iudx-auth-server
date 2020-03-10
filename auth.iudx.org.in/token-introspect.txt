@@ -3,7 +3,7 @@ Token introspection
 -------------------
 
 Endpoint:
-	https://<server>/auth/v1/introspect
+	https://<auth-server>/auth/v1/token/introspect
 
 Methods:
 	POST
@@ -21,7 +21,8 @@ Called by:
 
 	Note-2:
 	This API must be only called by the resource-server after ensuring that
-	the "resource-ids" requested by consumer is valid.
+	the resource "id"s requested by consumer is valid. This reduces the number
+	of API calls to the Auth server.
 
 Headers:
 	content-type	: "application/json"
@@ -104,7 +105,7 @@ CURL example:
 
 	Request:
 
-		curl -XPOST https://auth.iudx.org.in/auth/v1/introspect					\
+		curl -XPOST https://auth.iudx.org.in/auth/v1/token/introspect				\
 
 			--cert resource-server-certificate.pem --key private-key.pem			\
 
@@ -124,7 +125,7 @@ CURL example:
 
 			"request" : [
 					{
-					  "resource-id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r3",
+					  "id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r3",
 					  "apis": ["/*"],
 					  "methods": ["*"]
 					}
@@ -144,7 +145,7 @@ CURL example:
 			Indicates till what time the token is valid.
 
 		4. request:
-			The list of resource-id's, methods, and APIs for which
+			The list of resource id's, methods, and APIs for which
 			the token is valid.
 
 See also:

@@ -3,7 +3,7 @@ Set access control policy
 -------------------------
 
 Endpoint:
-	https://<server>/auth/v1/acl/set
+	https://<auth-server>/auth/v1/acl/set
 
 Methods:
 	POST
@@ -36,7 +36,7 @@ Aperture policy language:
 	and are in the format:
 
 		<consumer(s)>
-			CAN access <resource-id(s)>
+			CAN access <resource id(s)>
 			FOR <n> <second(s)/minute(s)/week(s)/month(s)/year(s)>
 			IF <condition> AND/OR <more-conditions>
 
@@ -78,7 +78,7 @@ Variables in policy language:
 	+--------------------------------------------------------------------------------------------------+
 	| Variable	    | Type   | Description							   |
 	|-------------------+--------+---------------------------------------------------------------------|
-	| api		    | string | The api the consumer is requesting to access on a resource-id.	   |
+	| api		    | string | The api the consumer is requesting to access on a resource id.	   |
 	| method	    | string | The method the consumer is requesting to access on the APIs.	   |
 	| body.*	    | string | The list of variables to be passed in the body of an API.	   |
 	| time		    | time   | The time at which the data request was made.		   	   |

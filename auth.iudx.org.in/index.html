@@ -28,10 +28,12 @@ body {
 		2. Data consumers   (users who wish to access one or more data provider's data)
 		3. Resource servers (which hosts the data provider's data)
 
-	through <a href="https://auth.iudx.org.in">HTTPS</a> (using a valid client-side X.509 certificate).
+	through <a href="https://auth.iudx.org.in">HTTPS</a> (using a valid client-side <a href="https://en.wikipedia.org/wiki/X.509">X.509</a> certificate).
 
 <b>2. Setup</b>
 <p><img src="setup.svg" alt="[Setup]"></p>
+
+	<b><font color=red>[Note]</font></b> In the above setup, the <b>Resource server administrator</b> and the <b>Data provider</b> may also be the same person.
 
 <b>3. Data access flow</b>
 <p><img src="consumer.svg" alt="[Data access flow]"></p>
@@ -53,13 +55,13 @@ body {
 	 5. Validate an access token (to be called by resource servers):
 		<a href="token-introspect.txt">/auth/v1/token/introspect</a>
 
-	 6. Revoke tokens (can be called by both data providers and data consumers):
+	 6. Revoke tokens (can be called by both data providers and consumers):
 		<a href="token-revoke.txt">/auth/v1/token/revoke</a>
 
-	 7. Revoke all tokens for a given certificate (can be called by both data providers and data consumers):
+	 7. Revoke all tokens for a given certificate (can be called by both data providers and consumers):
 		<a href="token-revoke-all.txt">/auth/v1/token/revoke-all</a>
 
-	 8. Audit tokens (can be called by both data providers and data consumers):
+	 8. Audit tokens (can be called by both data providers and consumers):
 		<a href="audit-tokens.txt">/auth/v1/audit/tokens</a>
 
 	 9. Add a consumer to a group (to be called by a data provider):
@@ -71,14 +73,14 @@ body {
 	11. List current consumers in a group (to be called by a data provider):
 		<a href="group-list.txt">/auth/v1/group/list</a>
 
-	12. Get the user's certificate details (can be called by both data providers and data consumers):
+	12. Get the user's certificate details (can be called by both data providers and consumers):
 		<a href="certificate-info.txt">/auth/v1/certificate-info</a>
 
 <b>5. Authentication</b>
 
 	All APIs require a valid client-side certificate (X.509).
 
-	Data providers and data consumers <b>must</b> have a valid <b>emailAddress</b> field in the certificate.
+	Data providers and consumers <b>must</b> have a valid <b>emailAddress</b> field in the certificate.
 
 	Where as, the resource server's certificate must have a valid hostname (FQDN) as the <b>Common Name (CN)</b>.
 	Also, for a resource server, the hostname in the certificate <b>must</b> match with the IP from where the API is being called.

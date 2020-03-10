@@ -816,7 +816,7 @@ app.post("/auth/v1/token", function (req, res) {
 
 	const request_array			= object_to_array(body.request);
 
-	if ((! request_array) || request_array.length < 1)
+	if ((! request_array) || (request_array.length < 1))
 	{
 		return END_ERROR (
 			res, 400,
@@ -825,7 +825,7 @@ app.post("/auth/v1/token", function (req, res) {
 		);
 	}
 
-	const token_rows = pg.querySync (
+	const rows = pg.querySync (
 
 		"SELECT COUNT(*)/60.0 "	+
 		"AS rate "		+
@@ -838,7 +838,7 @@ app.post("/auth/v1/token", function (req, res) {
 	);
 
 	// in last 1 minute
-	const tokens_rate_per_second = parseFloat (token_rows[0].rate);
+	const tokens_rate_per_second = parseFloat (rows[0].rate);
 
 	if (tokens_rate_per_second > 1) // tokens per second
 	{
@@ -920,13 +920,13 @@ app.post("/auth/v1/token", function (req, res) {
 
 	for (const row of request_array)
 	{
-		let resource = row["resource-id"];
+		let resource = row["id"];
 
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
 			return END_ERROR (
 				res, 400,
-				"Invalid 'resource-id "		+
+				"Invalid resource id "		+
 				"(contains unsafe chars)' : "	+ resource
 			);
 		}
@@ -959,7 +959,7 @@ app.post("/auth/v1/token", function (req, res) {
 			);
 		}
 
-		if (row.provider) // the resource-id is not in the catalog ?
+		if (row.provider) // the resource id is not in the catalog ?
 		{
 			if (typeof row.provider !== "string")
 			{
@@ -994,7 +994,7 @@ app.post("/auth/v1/token", function (req, res) {
 		if ((resource.match(/\//g) || []).length < 3)
 		{
 			return END_ERROR (res, 400,
-				"Invalid 'resource-id' "		+
+				"Invalid resource id "		+
 				"(it must have at least 3 '/' chars): "	+
 					resource
 			);
@@ -1022,7 +1022,7 @@ app.post("/auth/v1/token", function (req, res) {
 		// to be generated later
 		sha256_of_resource_server_token	[resource_server]	= true;
 
-		const policy_rows = pg.querySync (
+		const rows = pg.querySync (
 
 			"SELECT policy,policy_in_json FROM policy " +
 			"WHERE id = $1::text LIMIT 1",
@@ -1031,21 +1031,21 @@ app.post("/auth/v1/token", function (req, res) {
 			]
 		);
 
-		if (policy_rows.length === 0)
+		if (rows.length === 0)
 		{
 			return END_ERROR (res, 400,
-				"Invalid 'resource-id (no policy found)': " +
+				"Invalid resource id (no policy found)': " +
 					resource
 			);
 		}
 
 		const policy_in_text = Buffer.from (
-						policy_rows[0].policy, "base64"
+						rows[0].policy, "base64"
 					)
 					.toString("ascii")
 					.toLowerCase();
 
-		const policy_in_json	= policy_rows[0].policy_in_json;
+		const policy_in_json	= rows[0].policy_in_json;
 
 		// full name of resource eg: bangalore.domain.com/streetlight-1
 		context.resource = resource_server + "/" + resource_name;
@@ -1054,7 +1054,7 @@ app.post("/auth/v1/token", function (req, res) {
 
 		if (policy_in_text.search(" consumer-in-group") > 0)
 		{
-			const group_rows = pg.querySync (
+			const rows = pg.querySync (
 
 				"SELECT DISTINCT group_name "	+
 				"FROM groups "			+
@@ -1068,7 +1068,7 @@ app.post("/auth/v1/token", function (req, res) {
 			);
 
 			const group_array = [];
-			for (const g of group_rows)
+			for (const g of rows)
 				group_array.push(g.group_name);
 
 			context.conditions.groups = group_array.join();
@@ -1081,7 +1081,7 @@ app.post("/auth/v1/token", function (req, res) {
 			const resource_true = {};
 				resource_true [resource] = true;
 
-			const tokens_per_day_rows = pg.querySync (
+			const rows = pg.querySync (
 
 				"SELECT COUNT(*) FROM token "		+
 				"WHERE id = $1::text "			+
@@ -1094,7 +1094,7 @@ app.post("/auth/v1/token", function (req, res) {
 			);
 
 			context.conditions.tokens_per_day = parseInt (
-				tokens_per_day_rows[0].count, 10
+				rows[0].count, 10
 			);
 		}
 
@@ -1191,7 +1191,7 @@ app.post("/auth/v1/token", function (req, res) {
 			token_time = Math.min(requested_token_time,token_time);
 
 		const response = {
-			"resource-id"	: resource,
+			"id"		: resource,
 			"methods"	: row.methods,
 			"apis"		: row.apis,
 			"body"		: row.body ? row.body : null,
@@ -1674,7 +1674,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 			for (const r of request)
 			{
-				const split		= r["resource-id"].split("/");
+				const split		= r["id"].split("/");
 
 				const provider 		= split[1] + "@" + split[0];
 				const resource_server	= split[2];
@@ -1728,7 +1728,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 					for (const r2 of request_for_resource_server)
 					{
-						if (r1["resource-id"] === r2["resource-id"])
+						if (r1["id"] === r2["id"])
 						{
 							const keys2 = Object
 								.keys(request_for_resource_server);
@@ -1738,7 +1738,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 							for (const k of keys)
 							{
 								if (JSON.stringify(r1[k]) !== JSON.stringify(r2[k]))
-									return END_ERROR (res, 403, "Unauthorized to access : " + r1["resource-id"] + " for key : " + k);
+									return END_ERROR (res, 403, "Unauthorized to access : " + r1["id"] + " for key : " + k);
 							}
 
 							resource_found = true;
@@ -1871,7 +1871,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 			const sha256_of_token = sha256(token);
 
-			const select_rows = pg.querySync (
+			const rows = pg.querySync (
 
 				"SELECT 1 FROM token "	+
 				"WHERE id = $1::text " 	+
@@ -1883,7 +1883,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				]
 			);
 
-			if (select_rows.length === 0)
+			if (rows.length === 0)
 			{
 				return END_ERROR (
 					res, 400,
@@ -1947,7 +1947,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			const select_rows = pg.querySync (
+			const rows = pg.querySync (
 
 				"SELECT 1 FROM token "		+
 				"WHERE token = $1::text "	+
@@ -1960,7 +1960,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				]
 			);
 
-			if (select_rows.length === 0)
+			if (rows.length === 0)
 			{
 				return END_ERROR (
 					res, 400,

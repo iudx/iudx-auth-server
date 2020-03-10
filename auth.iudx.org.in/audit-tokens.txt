@@ -3,7 +3,7 @@ Audit access tokens
 -------------------
 
 Endpoint:
-	https://<server>/auth/v1/audit/tokens
+	https://<auth-server>/auth/v1/audit/tokens
 
 Methods:
 	POST
@@ -60,7 +60,7 @@ CURL example:
 	    "certificate-fingerprint"	: "8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70",
 	    "request": [
 	     {
-        	"resource-id": "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/resource-1",
+        	"id": "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/resource-1",
 	        "methods": [
         	  "GET"
 	        ],
@@ -86,7 +86,7 @@ CURL example:
 	    "certificate-fingerprint"	: "8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70",
 	    "request": [
 	     {
-        	"resource-id": "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/resource-1",
+        	"id": "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/resource-1",
 	        "methods": [
         	  "GET"
 	        ],
