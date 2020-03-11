@@ -77,25 +77,6 @@ Below is the list of tables used. There are no join queries in the project.
 |-- install			// the install script for the Auth server	
 |-- pf.conf			// the firewall rules to be copied to /etc
 |-- schema.sql			// the database schema
-|-- public			// the documentation for each API
-|   `-- help
-|       |-- acl
-|       |   |-- append.txt
-|       |   `-- set.txt
-|       |-- acl.txt
-|       |-- audit
-|       |   `-- tokens.txt
-|       |-- certificate-info.txt
-|       |-- copy.sh
-|       |-- group
-|       |   |-- add.txt
-|       |   |-- delete.txt
-|       |   `-- list.txt
-|       |-- token
-|       |   |-- introspect.txt
-|       |   |-- revoke-all.txt
-|       |   `-- revoke.txt
-|       `-- token.txt
 |-- rc.local			// the code to be run at every startup (dest = /etc)
 |-- run				// the nodejs https.js shell script
 |-- run.crl			// the nodejs crl.js shell script 
