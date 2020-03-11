@@ -45,7 +45,11 @@ to find the tmux sessions to manage.
 
 Also, change the `/home/iudx-auth-server/https-certificate.pem` and `/home/iudx-auth-server/https-key.pem` with real TLS certificate and key.
 
-## 4. Project organization 
+## 4. LICENSE
+
+This project is released under [ISC license](https://opensource.org/licenses/ISC); and the (node-aperture)[https://github.com/rbccps-iisc/node-aperture] is released under Mozilla Public License 2.0.
+
+## 5. Project organization 
 ```
 .
 |-- CCAIndia2014.cer		// CCA's 2014 certificate
