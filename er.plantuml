@@ -1,4 +1,6 @@
 @startuml
+skinparam monochrome true
+
 entity policy {
 	id				varchar			PRIMARY KEY
 	policy			varchar(3145728)	NOT NULL

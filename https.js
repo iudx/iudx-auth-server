@@ -368,6 +368,10 @@ function is_certificate_ok (req, cert, validate_email)
 
 		if (issuer_domain !== issued_to_domain)
 		{
+			// TODO
+			// As this could be a fraud commited by a sub-CA
+			// maybe revoke the sub-CA certificate
+
 			log ("red",
 				"Invalid certificate: issuer = "+
 					issuer_domain		+
@@ -745,7 +749,9 @@ function security (req, res, next)
 				);
 			}
 
-			// certificate may not have a "emailAddress" field
+			// certificates issued by other CAs
+			// may not have an "emailAddress" field
+			// by default consider it as a class-1 certificate
 
 			const error = is_secure(req,res,cert,false);
 
@@ -754,6 +760,9 @@ function security (req, res, next)
 
 			res.locals.cert_class	= 1;
 			res.locals.email	= "";
+
+			// but if the certificate has a valid "emailAddress"
+			// field we consider it as a class-2 certificate
 
 			if (is_valid_email(cert.subject.emailAddress))
 			{
