@@ -47,15 +47,21 @@ Also, change the `/home/iudx-auth-server/https-certificate.pem` and `/home/iudx-
 
 ## 4. LICENSE
 
-This project is released under [ISC license](https://opensource.org/licenses/ISC); and the (node-aperture)[https://github.com/rbccps-iisc/node-aperture] is released under Mozilla Public License 2.0.
+This project is released under [ISC license](https://opensource.org/licenses/ISC); and the [node-aperture](https://github.com/rbccps-iisc/node-aperture) is released under [Mozilla Public License 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 
-## 5. Project organization 
+## 5. Database structure
+
+![Alt text](https://raw.githubusercontent.com/iudx/iudx-auth-server/master/er.svg?sanitize=true)
+
+## 6. Project organization 
 ```
 .
 |-- CCAIndia2014.cer		// CCA's 2014 certificate
 |-- CCAIndia2015.cer		// CCA's 2015 certificate
 |-- LICENSE			// ISC License
 |-- README.md			// Readme file
+|-- er.plantuml			// The database structure in plantuml 
+|-- er.svg			// The database structure in svg format 
 |-- ca.iudx.org.in.crt		// ca.iudx.org.in's certificate
 |-- check.sh			// JavaScript linter
 |-- crl.js			// stores the certificate revocation list in DB

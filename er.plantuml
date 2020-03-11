@@ -1,0 +1,38 @@
+@startuml
+entity policy {
+	id				varchar			PRIMARY KEY
+	policy			varchar(3145728)	NOT NULL
+	policy_in_json		jsonb				NOT NULL
+}
+
+entity token {
+	id				varchar		NOT NULL
+	token				varchar		NOT NULL
+	expiry			timestamp		NOT NULL
+	request			jsonb			NOT NULL
+	cert_serial			varchar		NOT NULL
+	cert_fingerprint		varchar		NOT NULL
+	issued_at			timestamp		NOT NULL
+	resource_ids		jsonb			NOT NULL
+	introspected		boolean		NOT NULL
+	revoked			boolean		NOT NULL
+	cert_class			integer		NOT NULL
+	server_token		jsonb			NOT NULL
+	providers			jsonb			NOT NULL
+}
+
+entity groups {
+	id			varchar		NOT NULL
+	consumer		varchar		NOT NULL
+	group_name	varchar		NOT NULL
+	valid_till		timestamp		NOT NULL
+}
+
+entity crl {
+	crl	jsonb		NOT NULL		DEFAULT '[]'
+}
+
+policy -[hidden]- token 
+token -[hidden]- groups 
+groups -[hidden]- crl
+@enduml
