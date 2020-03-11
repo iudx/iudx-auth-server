@@ -2045,7 +2045,6 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 		"WHERE id = $1::text "			+
 		"AND cert_serial = $2::text "		+
 		"AND cert_fingerprint = $3::text "	+
-		"AND revoked = false "			+
 		"AND expiry > NOW() "			+
 		"AND revoked = false",
 		[
