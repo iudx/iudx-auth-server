@@ -51,6 +51,8 @@ This project is released under [ISC license](https://opensource.org/licenses/ISC
 
 ## 5. Database structure
 
+Below is the list of tables used. There are no join queries in the project.
+
 ![Alt text](https://raw.githubusercontent.com/iudx/iudx-auth-server/master/er.svg?sanitize=true)
 
 ## 6. Project organization 
