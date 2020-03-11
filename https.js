@@ -1780,6 +1780,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 				"UPDATE token SET introspected = true "	+
 				"WHERE token = $1::text "		+
+				"AND introspected = false "		+
 				"AND revoked = false "			+
 				"AND expiry > NOW()",
 				[
@@ -1911,6 +1912,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"UPDATE token SET revoked = true "	+
 				"WHERE id = $1::text "			+
 				"AND token = $2::text "			+
+				"AND revoked  = false "			+
 				"AND expiry > NOW()",
 				[
 					id,		// 1
@@ -2043,6 +2045,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 		"WHERE id = $1::text "			+
 		"AND cert_serial = $2::text "		+
 		"AND cert_fingerprint = $3::text "	+
+		"AND revoked = false "			+
 		"AND expiry > NOW() "			+
 		"AND revoked = false",
 		[
