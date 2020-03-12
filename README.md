@@ -1,5 +1,8 @@
 # India Urban Data eXchange (IUDX) Authentication, Authorization, and Accounting (AAA) Server
 
+[![builds.sr.ht status](https://builds.sr.ht/~iudx-auth.svg)](https://builds.sr.ht/~iudx-auth?)
+
+
 IUDX AAA is the Auth server for accessing [IUDX](https://www.iudx.org.in) services.
 
 ## 1. Read the API documentation
