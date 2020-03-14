@@ -2,8 +2,7 @@
 ![ISC license](https://img.shields.io/badge/license-ISC-blue.svg) [![builds.sr.ht status](https://builds.sr.ht/~iudx-auth.svg)](https://builds.sr.ht/~iudx-auth?)
 
 
-
-IUDX AAA is the Auth server for accessing [IUDX](https://www.iudx.org.in) services.
+IUDX-AAA is the Authentication, Authorization, and Accounting server for accessing [IUDX](https://www.iudx.org.in) services.
 
 ## 1. Read the API documentation
 Please visit [IUDX Auth server](http://auth.iudx.org.in) for APIs and flows.
