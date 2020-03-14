@@ -1,7 +1,6 @@
 # India Urban Data eXchange (IUDX) Authentication, Authorization, and Accounting (AAA) Server
 ![ISC license](https://img.shields.io/badge/license-ISC-blue.svg) [![builds.sr.ht status](https://builds.sr.ht/~iudx-auth.svg)](https://builds.sr.ht/~iudx-auth?)
 
-
 IUDX-AAA is the Authentication, Authorization, and Accounting server for accessing [IUDX](https://www.iudx.org.in) services.
 
 ## 1. Read the API documentation
@@ -16,14 +15,14 @@ Please see [OpenBSD FAQ - Installation Guide](https://www.openbsd.org/faq/faq4.h
 
 After installing OpenBSD, please run the command as root:
 
-```
+```bash
 ftp -o - https://iudx.org.in/install/auth | sh
 ```
 
 This will install the Auth server at `/home/iudx-auth-server/`.
 
 The system will reboot after the setup; after which, the Auth server should be
-ready at https://localhost.
+ready at <https://localhost>.
 
 Please read the API documentation at http://auth.iudx.org.in
 
@@ -39,7 +38,7 @@ to get telegram notifications.
 ## 3. After install (as root) 
 You may run the command
 
-```
+```bash
 tmux ls
 ```
 
@@ -58,7 +57,7 @@ Below is the list of tables used. There are no join queries in the project.
 ![Alt text](https://raw.githubusercontent.com/iudx/iudx-auth-server/master/er.svg?sanitize=true)
 
 ## 6. Project organization 
-```
+```bash
 .
 |-- CCAIndia2014.cer		// CCA's 2014 certificate
 |-- CCAIndia2015.cer		// CCA's 2015 certificate
