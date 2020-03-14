@@ -3,7 +3,7 @@ skinparam monochrome true
 hide circle
 
 entity policy {
-	id				varchar			PRIMARY KEY	// The id of the provider in the format : hex-of-sha1-of-email@domain-of-email in lower case
+	id				varchar			PRIMARY KEY	// The id of the provider in the format : domain-of-email/hex-of-sha1-of-email-id in lower case
 	policy			varchar(3145728)	NOT NULL		// The access control policy in aperture language; base64 encoded
 	policy_in_json		jsonb				NOT NULL		// The complied version of aperture access control policy in json format
 }

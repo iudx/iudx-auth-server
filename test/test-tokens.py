@@ -51,11 +51,10 @@ token = access_token['token'],
 if type(token) == TUPLE:
 	token = token[0]
 
-s = token.split("/")
+s = token.split(":")
 
 assert len(s)	== 3
 assert s[0]	== 'auth.iudx.org.in'
-
 
 server_token = access_token['server-token'][RS]
 if type(server_token) == TUPLE:
@@ -120,7 +119,7 @@ token = access_token['token']
 if type(token) == TUPLE:
 	token = token[0]
 
-s = token.split("/")
+s = token.split(":")
 
 assert len(s)	== 3
 assert s[0]	== 'auth.iudx.org.in'
@@ -165,7 +164,7 @@ token = access_token['token']
 if type(token) == TUPLE:
 	token = token[0]
 
-s = token.split("/")
+s = token.split(":")
 
 assert len(s)	== 3
 assert s[0]	== 'auth.iudx.org.in'
