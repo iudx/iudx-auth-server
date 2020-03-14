@@ -24,8 +24,6 @@ This will install the Auth server at `/home/iudx-auth-server/`.
 The system will reboot after the setup; after which, the Auth server should be
 ready at <https://localhost>.
 
-Please read the API documentation at http://auth.iudx.org.in
-
 ### 2.3 Setup telegram (as root) 
 You may edit the files:
 
