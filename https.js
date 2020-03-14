@@ -1024,12 +1024,12 @@ app.post("/auth/v1/token", function (req, res) {
 		const email_domain		= split[0].toLowerCase();
 		const sha1_id			= split[1].toLowerCase();
 
-		const provider_id_in_db		= email_domain + "/" + sha1_id;
+		const provider_id_hash		= email_domain + "/" + sha1_id;
 
 		const resource_server		= split[2].toLowerCase();
 		const resource_name		= split.slice(3).join("/");
 
-		providers			[provider_id_in_db]	= true;
+		providers			[provider_id_hash]	= true;
 
 		// to be generated later
 		resource_server_token		[resource_server]	= true;
@@ -1042,7 +1042,7 @@ app.post("/auth/v1/token", function (req, res) {
 			"SELECT policy,policy_in_json FROM policy " +
 			"WHERE id = $1::text LIMIT 1",
 			[
-				provider_id_in_db,	// 1
+				provider_id_hash,	// 1
 			]
 		);
 
@@ -1077,7 +1077,7 @@ app.post("/auth/v1/token", function (req, res) {
 				"AND consumer = $2::text "	+
 				"AND valid_till > NOW()",
 				[
-					provider_id_in_db,	// 1
+					provider_id_hash,	// 1
 					consumer_id		// 2
 				]
 			);
@@ -1177,10 +1177,10 @@ app.post("/auth/v1/token", function (req, res) {
 
 					total_data_cost_per_second	+= cost_per_second;
 
-					if (! payment_info[provider_id_in_db])
-						payment_info[provider_id_in_db] = 0.0;
+					if (! payment_info[provider_id_hash])
+						payment_info[provider_id_hash] = 0.0;
 
-					payment_info[provider_id_in_db]	+= cost_per_second;
+					payment_info[provider_id_hash]	+= cost_per_second;
 
 					token_time = Math.min (
 						token_time,
@@ -1694,12 +1694,12 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 				const email_domain	= split[0].toLowerCase();
 				const sha1_id		= split[1].toLowerCase();
 
-				const provider_id_in_db	= email_domain + "/" + sha1_id;
+				const provider_id_hash	= email_domain + "/" + sha1_id;
 
 				const resource_server	= split[2].toLowerCase();
 
 				// if provider exists
-				if (providers[provider_id_in_db])
+				if (providers[provider_id_hash])
 				{
 					if (resource_server === resource_server_name_in_cert)
 						request_for_resource_server.push (r);
@@ -1947,7 +1947,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 		const email_domain	= id.split("@")[1];
 		const sha1_id		= sha1(id);
 
-		const provider_id_in_db	= email_domain + "/" + sha1_id;
+		const provider_id_hash	= email_domain + "/" + sha1_id;
 
 		for (const token_hash of token_hashes)
 		{
@@ -1978,7 +1978,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				"AND expiry > NOW() LIMIT 1",
 				[
 					token_hash,		// 1
-					provider_id_in_db	// 2
+					provider_id_hash	// 2
 				]
 			);
 
@@ -1994,7 +1994,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			}
 
 			const provider_false = {};
-				provider_false[provider_id_in_db] = false;
+				provider_false[provider_id_hash] = false;
 
 			pg.querySync (
 
@@ -2007,7 +2007,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				[
 					JSON.stringify(provider_false),	// 1
 					token_hash,			// 2
-					provider_id_in_db		// 3
+					provider_id_hash		// 3
 				]
 			);
 
@@ -2046,7 +2046,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	const email_domain	= id.split("@")[1];
 	const sha1_id		= sha1(id);
 
-	const provider_id_in_db	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_id;
 
 	pool.query (
 
@@ -2077,7 +2077,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 			};
 
 			const provider_false = {};
-			provider_false[provider_id_in_db] = false;
+			provider_false[provider_id_hash] = false;
 
 			pool.query (
 
@@ -2093,7 +2093,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 					JSON.stringify(provider_false),	// 1
 					serial,				// 2
 					fingerprint,			// 3
-					provider_id_in_db		// 4
+					provider_id_hash		// 4
 				],
 
 				(error_1, results_1) =>
@@ -2134,7 +2134,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_id		= sha1(provider_id);
 
-	const provider_id_in_db	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_id;
 
 	const base64policy	= base64(policy);
 	const rules		= policy.split(";");
@@ -2155,7 +2155,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 
 		"SELECT 1 FROM policy WHERE id = $1::text LIMIT 1",
 		[
-			provider_id_in_db,	// 1
+			provider_id_hash,	// 1
 		],
 
 	(error, results) =>
@@ -2175,7 +2175,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 			parameters = [
 				base64policy,			// 1
 				JSON.stringify(policy_in_json),	// 2
-				provider_id_in_db		// 3
+				provider_id_hash		// 3
 			];
 
 			pool.query (query, parameters, (error_1, results_1) =>
@@ -2196,7 +2196,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 				"policy VALUES ($1::text, $2::text, $3::jsonb)";
 
 			parameters = [
-				provider_id_in_db,		// 1
+				provider_id_hash,		// 1
 				base64policy,			// 2
 				JSON.stringify(policy_in_json)	// 3
 			];
@@ -2234,7 +2234,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_id		= sha1(provider_id);
 
-	const provider_id_in_db	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_id;
 
 	const rules		= policy.split(";");
 
@@ -2254,7 +2254,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 
 		"SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
 		[
-			provider_id_in_db	// 1
+			provider_id_hash	// 1
 		],
 
 	(error, results) =>
@@ -2297,7 +2297,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 			parameters = [
 				base64policy,			// 1
 				JSON.stringify(policy_in_json),	// 2
-				provider_id_in_db		// 3
+				provider_id_hash		// 3
 			];
 
 			pool.query (query, parameters, (error_1, results_1) =>
@@ -2324,7 +2324,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 				"VALUES ($1::text, $2::text, $3::jsonb)";
 
 			parameters = [
-				provider_id_in_db,		// 1
+				provider_id_hash,		// 1
 				base64policy,			// 2
 				JSON.stringify(policy_in_json)	// 3
 			];
@@ -2353,13 +2353,13 @@ app.post("/auth/v1/acl", function (req, res) {
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_id		= sha1(provider_id);
 
-	const provider_id_in_db	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_id;
 
 	pool.query (
 
 		"SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
 		[
-			provider_id_in_db	// 1
+			provider_id_hash	// 1
 		],
 
 	(error, results) =>
@@ -2434,7 +2434,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		const email_domain	= id.split("@")[1];
 		const sha1_id		= sha1(id);
 
-		const provider_id_in_db	= email_domain + "/" + sha1_id;
+		const provider_id_hash	= email_domain + "/" + sha1_id;
 
 		pool.query (
 
@@ -2450,7 +2450,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			"AND issued_at >= (NOW() - $2::interval) "	+
 			"ORDER BY issued_at DESC",
 			[
-				provider_id_in_db,	// 1
+				provider_id_hash,	// 1
 				hours + " hours"	// 2
 			],
 
@@ -2529,7 +2529,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_id		= sha1(provider_id);
 
-	const provider_id_in_db	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_id;
 
 	pool.query (
 
@@ -2537,7 +2537,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 		"VALUES ($1::text, $2::text, $3::text,"	+
 		"NOW() + $4::interval)",
 		[
-			provider_id_in_db,	// 1
+			provider_id_hash,	// 1
 			consumer_id,		// 2
 			group_name,		// 3
 			valid_till + " hours"	// 4
@@ -2570,7 +2570,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_id		= sha1(provider_id);
 
-	const provider_id_in_db	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_id;
 
 	const response = [];
 
@@ -2583,7 +2583,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 			"AND group_name = $2::text "			+
 			"AND valid_till > NOW()",
 			[
-				provider_id_in_db,	// 1
+				provider_id_hash,	// 1
 				group_name		// 2
 			],
 
@@ -2616,7 +2616,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 			"WHERE id = $1::text "				+
 			"AND valid_till > NOW()",
 			[
-				provider_id_in_db	// 1
+				provider_id_hash	// 1
 			],
 
 		(error, results) =>
@@ -2669,7 +2669,7 @@ app.post("/auth/v1/group/delete", function (req, res) {
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_id		= sha1(provider_id);
 
-	const provider_id_in_db	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_id;
 
 	let query =	"UPDATE groups SET "				+
 			"valid_till = (NOW() - interval '1 seconds') "	+
@@ -2678,7 +2678,7 @@ app.post("/auth/v1/group/delete", function (req, res) {
 			"AND valid_till > NOW()";
 
 	const parameters = [
-			provider_id_in_db,	// 1
+			provider_id_hash,	// 1
 			group_name		// 2
 	];
 

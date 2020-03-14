@@ -25,7 +25,7 @@ entity token {
 }
 
 entity groups {
-	id			varchar		NOT NULL		// email of the provider in lower case
+	id			varchar		NOT NULL		// The id of the provider in the format : domain-of-email/hex-of-sha1-of-email-id in lower case
 	consumer		varchar		NOT NULL		// the consumer's email in lower case
 	group_name	varchar		NOT NULL		// the name of the group in lower case
 	valid_till		timestamp		NOT NULL		// indicates how long a consumer is to be in the group
