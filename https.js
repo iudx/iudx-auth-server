@@ -1229,7 +1229,7 @@ app.post("/auth/v1/token", function (req, res) {
 	{
 		if (
 			(! is_string_safe(existing_token))	||
-			(! existing_token.startsWith(SERVER_NAME + ":"))
+			(! existing_token.startsWith(SERVER_NAME + "/"))
 		)
 		{
 			return END_ERROR (
@@ -1237,14 +1237,14 @@ app.post("/auth/v1/token", function (req, res) {
 			);
 		}
 
-		if ((existing_token.match(/:/g) || []).length !== 2)
+		if ((existing_token.match(/\//g) || []).length !== 2)
 		{
 			return END_ERROR (
 				res, 400, "Invalid 'existing-token' field"
 			);
 		}
 
-		const split		= existing_token.split(":");
+		const split		= existing_token.split("/");
 
 		const issued_by		= split[0];
 		const issued_to		= split[1];
@@ -1299,9 +1299,9 @@ app.post("/auth/v1/token", function (req, res) {
 					.randomBytes(TOKEN_LEN)
 					.toString("hex");
 
-		/* Token format = issued-by : issued-to : random-hex-string */
+		/* Token format: issued-by / issued-to / random-hex-string */
 
-		token = SERVER_NAME + ":" + consumer_id + ":" + random_hex;
+		token = SERVER_NAME + "/" + consumer_id + "/" + random_hex;
 	}
 
 	const response = {
@@ -1338,9 +1338,9 @@ app.post("/auth/v1/token", function (req, res) {
 	{
 		for (const key in resource_server_token)
 		{
-			/* Server token format = issued-to : random-hex-string */
+			/* Server token format: issued-to / random-hex-string */
 
-			resource_server_token[key] = key + ":" +
+			resource_server_token[key] = key + "/" +
 							crypto
 							.randomBytes(TOKEN_LEN)
 							.toString("hex");
@@ -1500,10 +1500,10 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 	const token = body.token;
 
-	if ((! is_string_safe(token)) || (! token.startsWith(SERVER_NAME + ":")))
+	if ((! is_string_safe(token)) || (! token.startsWith(SERVER_NAME + "/")))
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
-	if ((token.match(/:/g) || []).length !== 2)
+	if ((token.match(/\//g) || []).length !== 2)
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
 	let server_token = body["server-token"] || true;
@@ -1517,10 +1517,10 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 		if (! is_string_safe(server_token))
 			return END_ERROR (res, 400, "Invalid 'server-token'");
 
-		if ((server_token.match(/:/g) || []).length !== 1)
+		if ((server_token.match(/\//g) || []).length !== 1)
 			return END_ERROR (res, 400, "Invalid 'server-token'");
 
-		const split		= server_token.split(":");
+		const split		= server_token.split("/");
 
 		const issued_to		= split[0];
 		const random_hex	= split[1];
@@ -1545,7 +1545,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 		}
 	}
 
-	const split		= token.split(":");
+	const split		= token.split("/");
 
 	const issued_by		= split[0];
 	const issued_to		= split[1];
@@ -1854,7 +1854,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 		{
 			if (
 				(! is_string_safe(token))		||
-				(! token.startsWith(SERVER_NAME + ":"))
+				(! token.startsWith(SERVER_NAME + "/"))
 			)
 			{
 				return END_ERROR (
@@ -1867,14 +1867,14 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				);
 			}
 
-			if ((token.match(/:/g) || []).length !== 2)
+			if ((token.match(/\//g) || []).length !== 2)
 			{
 				return END_ERROR (
 					res, 400, "Invalid token: " + token
 				);
 			}
 
-			const split		= token.split(":");
+			const split		= token.split("/");
 
 			const issued_by		= split[0];
 			const issued_to		= split[1];
