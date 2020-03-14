@@ -1021,8 +1021,8 @@ app.post("/auth/v1/token", function (req, res) {
 
 		const split			= resource.split("/");
 
-		const sha1_id			= split[0].toLowerCase();
-		const email_domain		= split[1].toLowerCase();
+		const email_domain		= split[0].toLowerCase();
+		const sha1_id			= split[1].toLowerCase();
 
 		const provider_id_in_db		= email_domain + "/" + sha1_id;
 
@@ -1049,7 +1049,7 @@ app.post("/auth/v1/token", function (req, res) {
 		if (rows.length === 0)
 		{
 			return END_ERROR (res, 400,
-				"Invalid resource id (no policy found)': " +
+				"Invalid resource id; no policy found for : " +
 					resource
 			);
 		}
@@ -1691,10 +1691,11 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 			{
 				const split		= r.id.split("/");
 
-				const sha1_id		= split[1].toLowerCase();
 				const email_domain	= split[0].toLowerCase();
+				const sha1_id		= split[1].toLowerCase();
 
 				const provider_id_in_db	= email_domain + "/" + sha1_id;
+
 				const resource_server	= split[2].toLowerCase();
 
 				// if provider exists
@@ -1943,8 +1944,8 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			);
 		}
 
-		const sha1_id		= sha1(id);
 		const email_domain	= id.split("@")[1];
+		const sha1_id		= sha1(id);
 
 		const provider_id_in_db	= email_domain + "/" + sha1_id;
 
@@ -2042,8 +2043,8 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	const serial		= body.serial.toLowerCase();
 	const fingerprint	= body.fingerprint.toLowerCase();
 
+	const email_domain	= id.split("@")[1];
 	const sha1_id		= sha1(id);
-	const email_domain	= id.split("@")[1].toLowerCase();
 
 	const provider_id_in_db	= email_domain + "/" + sha1_id;
 
@@ -2130,8 +2131,8 @@ app.post("/auth/v1/acl/set", function (req, res) {
 	if (typeof policy !== "string")
 		return END_ERROR (res, 400, "Invalid policy");
 
-	const sha1_id		= sha1(provider_id);
 	const email_domain	= provider_id.split("@")[1];
+	const sha1_id		= sha1(provider_id);
 
 	const provider_id_in_db	= email_domain + "/" + sha1_id;
 
@@ -2230,8 +2231,8 @@ app.post("/auth/v1/acl/append", function (req, res) {
 	if (typeof policy !== "string")
 		return END_ERROR (res, 400, "Invalid policy");
 
-	const sha1_id		= sha1(provider_id);
 	const email_domain	= provider_id.split("@")[1];
+	const sha1_id		= sha1(provider_id);
 
 	const provider_id_in_db	= email_domain + "/" + sha1_id;
 
@@ -2353,8 +2354,8 @@ app.post("/auth/v1/acl", function (req, res) {
 
 	const provider_id	= res.locals.email;
 
-	const sha1_id		= sha1(provider_id);
 	const email_domain	= provider_id.split("@")[1];
+	const sha1_id		= sha1(provider_id);
 
 	const provider_id_in_db	= email_domain + "/" + sha1_id;
 
@@ -2434,8 +2435,8 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 			});
 		}
 
-		const sha1_id		= sha1(id);
 		const email_domain	= id.split("@")[1];
+		const sha1_id		= sha1(id);
 
 		const provider_id_in_db	= email_domain + "/" + sha1_id;
 
@@ -2529,8 +2530,8 @@ app.post("/auth/v1/group/add", function (req, res) {
 		return END_ERROR (res, 400, "Invalid 'valid-till' field");
 	}
 
-	const sha1_id		= sha1(provider_id);
 	const email_domain	= provider_id.split("@")[1];
+	const sha1_id		= sha1(provider_id);
 
 	const provider_id_in_db	= email_domain + "/" + sha1_id;
 
@@ -2570,8 +2571,8 @@ app.post("/auth/v1/group/list", function (req, res) {
 			return END_ERROR (res, 400, "Invalid 'group' field");
 	}
 
-	const sha1_id		= sha1(provider_id);
 	const email_domain	= provider_id.split("@")[1];
+	const sha1_id		= sha1(provider_id);
 
 	const provider_id_in_db	= email_domain + "/" + sha1_id;
 
@@ -2669,8 +2670,8 @@ app.post("/auth/v1/group/delete", function (req, res) {
 	if (! is_string_safe (group_name))
 		return END_ERROR (res, 400, "Invalid 'group' field");
 
-	const sha1_id		= sha1(provider_id);
 	const email_domain	= provider_id.split("@")[1];
+	const sha1_id		= sha1(provider_id);
 
 	const provider_id_in_db	= email_domain + "/" + sha1_id;
 
