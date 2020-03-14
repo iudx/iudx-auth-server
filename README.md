@@ -1,4 +1,5 @@
 # India Urban Data eXchange (IUDX) Authentication, Authorization, and Accounting (AAA) Server
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/fd869ae2db8d4b7e87464ae1d612e455)](https://app.codacy.com/gh/iudx/iudx-auth-server?utm_source=github.com&utm_medium=referral&utm_content=iudx/iudx-auth-server&utm_campaign=Badge_Grade_Settings)
 ![ISC license](https://img.shields.io/badge/license-ISC-blue.svg) [![builds.sr.ht status](https://builds.sr.ht/~iudx-auth.svg)](https://builds.sr.ht/~iudx-auth?)
 
 IUDX-AAA is the Authentication, Authorization, and Accounting server for accessing [IUDX](https://www.iudx.org.in) services.
