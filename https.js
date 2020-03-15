@@ -296,11 +296,29 @@ function is_valid_email (email)
 	if (email.length < 5 || email.length > 64)
 		return false;
 
+	/*
+		Since we use SHA1 (160 bits) for storing email hashes:
+
+			the allowed chars in the login id is -._a-z0-9 
+			which is : 1 + 1 + 1 + 26 + 10 = ~40
+
+			In the worst case of brute force attacks:
+				40**30 < 2**160
+				40**31 > 2**160
+
+			And since:
+				(2**160) - (40**30) > 2**157
+
+			Hence, as a precaution limit the login length to 30
+	*/
+
 	const split = email.split("@");
+
 	if (split.length !== 2)
 		return false;
 
 	const user = split[0]; // the login
+
 	if (user.length === 0 || user.length > 30)
 		return false;
 
