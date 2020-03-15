@@ -293,7 +293,15 @@ function is_valid_email (email)
 	if (! email || typeof email !== "string")
 		return false;
 
-	if (email.length < 5 || email.length > 40)
+	if (email.length < 5 || email.length > 64)
+		return false;
+
+	const split = email.split("@");
+	if (split.length !== 2)
+		return false;
+
+	const user = split[0]; // the login
+	if (user.length === 0 || user.length > 30)
 		return false;
 
 	let num_ats	= 0;
