@@ -296,11 +296,17 @@ function is_valid_email (email)
 	if (email.length < 5 || email.length > 64)
 		return false;
 
+	// reject email ids starting with invalid chars
+	const invalid_start_chars = ".-_@";
+
+	if (invalid_start_chars.indexOf(email[0]) !== -1)
+		return false;
+
 	/*
 		Since we use SHA1 (160 bits) for storing email hashes:
 
 			the allowed chars in the email login is -._a-z0-9
-			which is : 1 + 1 + 1 + 26 + 10 = ~40
+			which is : 1 + 1 + 1 + 26 + 10 = ~40 possible chars
 
 			in the worst case of brute force attacks:
 				40**31 > 2**160
@@ -310,7 +316,7 @@ function is_valid_email (email)
 			and since we have a good margin for 30 chars:
 				(2**160) - (40**30) > 2**157
 
-			hence, as a precaution limit the login length to 30
+			hence, as a precaution, limit the login length to 30.
 
 		SHA1 has other attacks though, maybe we should switch to better
 		hash algorithm in future.
@@ -994,38 +1000,6 @@ app.post("/auth/v1/token", function (req, res) {
 				"Invalid 'apis' for resource id:" +
 				resource
 			);
-		}
-
-		if (row.provider) // the resource id is not in the catalog ?
-		{
-			if (typeof row.provider !== "string")
-			{
-				return END_ERROR (res, 400,
-					"Invalid 'provider': " + row.provider
-				);
-			}
-
-			if (! is_valid_email(row.provider))
-			{
-				return END_ERROR (res, 400,
-					"Invalid provider email: " +
-						row.provider
-				);
-			}
-
-			row.provider = row.provider.toLowerCase();
-
-			const provider_email_domain	= row
-								.provider
-								.split("@")[1];
-
-			const sha1_of_provider_email	= sha1(row.provider);
-
-			resource =	provider_email_domain	+
-						"/"		+
-					sha1_of_provider_email	+
-						"/"		+
-					resource;
 		}
 
 		if ((resource.match(/\//g) || []).length < 3)
@@ -2157,14 +2131,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 	if (typeof policy !== "string")
 		return END_ERROR (res, 400, "Invalid policy");
 
-	const email_domain	= provider_id.split("@")[1];
-	const sha1_of_email	= sha1(provider_id);
-
-	const provider_id_hash	= email_domain + "/" + sha1_of_email;
-
-	const base64policy	= base64(policy);
-	const rules		= policy.split(";");
-
+	const rules = policy.split(";");
 	let policy_in_json;
 
 	try {
@@ -2176,6 +2143,13 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		const err = String(x).replace(/\n/g," ");
 		return END_ERROR (res, 400, "Syntax error in policy: " + err);
 	}
+
+	const email_domain	= provider_id.split("@")[1];
+	const sha1_of_email	= sha1(provider_id);
+
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
+
+	const base64policy	= base64(policy);
 
 	pool.query (
 
@@ -2257,13 +2231,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 	if (typeof policy !== "string")
 		return END_ERROR (res, 400, "Invalid policy");
 
-	const email_domain	= provider_id.split("@")[1];
-	const sha1_of_email	= sha1(provider_id);
-
-	const provider_id_hash	= email_domain + "/" + sha1_of_email;
-
-	const rules		= policy.split(";");
-
+	const rules = policy.split(";");
 	let policy_in_json;
 
 	try {
@@ -2275,6 +2243,11 @@ app.post("/auth/v1/acl/append", function (req, res) {
 		const err = String(x).replace(/\n/g," ");
 		return END_ERROR (res, 400, "Syntax error in policy :" + err);
 	}
+
+	const email_domain	= provider_id.split("@")[1];
+	const sha1_of_email	= sha1(provider_id);
+
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 	pool.query (
 
