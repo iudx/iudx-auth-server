@@ -299,17 +299,21 @@ function is_valid_email (email)
 	/*
 		Since we use SHA1 (160 bits) for storing email hashes:
 
-			the allowed chars in the login id is -._a-z0-9 
+			the allowed chars in the email login is -._a-z0-9
 			which is : 1 + 1 + 1 + 26 + 10 = ~40
 
-			In the worst case of brute force attacks:
-				40**30 < 2**160
+			in the worst case of brute force attacks:
 				40**31 > 2**160
+			but
+				40**30 < 2**160
 
-			And since:
+			and since we have a good margin for 30 chars:
 				(2**160) - (40**30) > 2**157
 
-			Hence, as a precaution limit the login length to 30
+			hence, as a precaution limit the login length to 30
+
+		SHA1 has other attacks though, maybe we should switch to better
+		hash algorithm in future.
 	*/
 
 	const split = email.split("@");
@@ -322,7 +326,6 @@ function is_valid_email (email)
 	if (user.length === 0 || user.length > 30)
 		return false;
 
-	let num_ats	= 0;
 	let num_dots	= 0;
 
 	for (const chr of email)
@@ -341,10 +344,7 @@ function is_valid_email (email)
 			{
 				case "-":
 				case "_":
-					break;
-
 				case "@":
-					++num_ats;
 					break;
 
 				case ".":
@@ -357,7 +357,7 @@ function is_valid_email (email)
 		}
 	}
 
-	if (num_ats !== 1 || num_dots < 1)
+	if (num_dots < 1)
 		return false;
 
 	return true;
@@ -1048,9 +1048,9 @@ app.post("/auth/v1/token", function (req, res) {
 		const split			= resource.split("/");
 
 		const email_domain		= split[0].toLowerCase();
-		const sha1_id			= split[1].toLowerCase();
+		const sha1_of_email		= split[1].toLowerCase();
 
-		const provider_id_hash		= email_domain + "/" + sha1_id;
+		const provider_id_hash		= email_domain + "/" + sha1_of_email;
 
 		const resource_server		= split[2].toLowerCase();
 		const resource_name		= split.slice(3).join("/");
@@ -1718,9 +1718,9 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 				const split		= r.id.split("/");
 
 				const email_domain	= split[0].toLowerCase();
-				const sha1_id		= split[1].toLowerCase();
+				const sha1_of_email	= split[1].toLowerCase();
 
-				const provider_id_hash	= email_domain + "/" + sha1_id;
+				const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 				const resource_server	= split[2].toLowerCase();
 
@@ -1971,9 +1971,9 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 		}
 
 		const email_domain	= id.split("@")[1];
-		const sha1_id		= sha1(id);
+		const sha1_of_email	= sha1(id);
 
-		const provider_id_hash	= email_domain + "/" + sha1_id;
+		const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 		for (const token_hash of token_hashes)
 		{
@@ -2070,9 +2070,9 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	const fingerprint	= body.fingerprint.toLowerCase();
 
 	const email_domain	= id.split("@")[1];
-	const sha1_id		= sha1(id);
+	const sha1_of_email	= sha1(id);
 
-	const provider_id_hash	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 	pool.query (
 
@@ -2158,9 +2158,9 @@ app.post("/auth/v1/acl/set", function (req, res) {
 		return END_ERROR (res, 400, "Invalid policy");
 
 	const email_domain	= provider_id.split("@")[1];
-	const sha1_id		= sha1(provider_id);
+	const sha1_of_email	= sha1(provider_id);
 
-	const provider_id_hash	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 	const base64policy	= base64(policy);
 	const rules		= policy.split(";");
@@ -2258,9 +2258,9 @@ app.post("/auth/v1/acl/append", function (req, res) {
 		return END_ERROR (res, 400, "Invalid policy");
 
 	const email_domain	= provider_id.split("@")[1];
-	const sha1_id		= sha1(provider_id);
+	const sha1_of_email	= sha1(provider_id);
 
-	const provider_id_hash	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 	const rules		= policy.split(";");
 
@@ -2377,9 +2377,9 @@ app.post("/auth/v1/acl", function (req, res) {
 	const provider_id	= res.locals.email;
 
 	const email_domain	= provider_id.split("@")[1];
-	const sha1_id		= sha1(provider_id);
+	const sha1_of_email	= sha1(provider_id);
 
-	const provider_id_hash	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 	pool.query (
 
@@ -2458,9 +2458,9 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 		}
 
 		const email_domain	= id.split("@")[1];
-		const sha1_id		= sha1(id);
+		const sha1_of_email	= sha1(id);
 
-		const provider_id_hash	= email_domain + "/" + sha1_id;
+		const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 		pool.query (
 
@@ -2553,9 +2553,9 @@ app.post("/auth/v1/group/add", function (req, res) {
 	}
 
 	const email_domain	= provider_id.split("@")[1];
-	const sha1_id		= sha1(provider_id);
+	const sha1_of_email	= sha1(provider_id);
 
-	const provider_id_hash	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 	pool.query (
 
@@ -2594,9 +2594,9 @@ app.post("/auth/v1/group/list", function (req, res) {
 	}
 
 	const email_domain	= provider_id.split("@")[1];
-	const sha1_id		= sha1(provider_id);
+	const sha1_of_email	= sha1(provider_id);
 
-	const provider_id_hash	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 	const response = [];
 
@@ -2693,9 +2693,9 @@ app.post("/auth/v1/group/delete", function (req, res) {
 		return END_ERROR (res, 400, "Invalid 'group' field");
 
 	const email_domain	= provider_id.split("@")[1];
-	const sha1_id		= sha1(provider_id);
+	const sha1_of_email	= sha1(provider_id);
 
-	const provider_id_hash	= email_domain + "/" + sha1_id;
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 	let query =	"UPDATE groups SET "				+
 			"valid_till = (NOW() - interval '1 seconds') "	+
