@@ -293,7 +293,7 @@ function is_valid_email (email)
 	if (! email || typeof email !== "string")
 		return false;
 
-	if (email.length < 5 || email.length > 64)
+	if (email.length < 5 || email.length > 40)
 		return false;
 
 	let num_ats	= 0;
