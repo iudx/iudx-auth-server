@@ -9,7 +9,7 @@ then
 	exit
 fi
 
-syspatch
+
 
 if [ $1 = "test" ]
 then
@@ -31,7 +31,7 @@ then
 
 	openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in l-server.csr -req -days 365 -sha256 -out l-server.pem 
 
-	cp *.pem /home/build/
+	cp *.pem ~/
 fi
 
 useradd -s /sbin/nologin -d /nonexistent _aaa
@@ -121,7 +121,7 @@ npm install
 npm audit fix --force
 
 echo /sbin/pfctl -t bruteforce -T expire 86400 > /etc/daily.local
-echo syspatch >> /etc/daily.local
+echo  >> /etc/daily.local
 
 rcctl disable sndiod slaacd smtpd xenodm 
 

@@ -23,8 +23,8 @@ assert policy == provider.get_policy()['response']['policy']
 new_policy  = "*@rbccps.org can access resource-yyz-abc for 1 hour"
 assert True == provider.append_policy(new_policy)['success']
 
-x = provider.get_policy()['response']['policy']
-print(x)
+updated_policy = policy + ';' + new_policy
+assert updated_policy == provider.get_policy()['response']['policy']
 
 r = provider.audit_tokens(5)
 assert r['success'] == True
