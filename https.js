@@ -2266,7 +2266,11 @@ app.post("/auth/v1/acl/append", function (req, res) {
 
 		if (results.rows.length === 1)
 		{
-			const old_policy	= results.rows[0].policy;
+			const old_policy        = Buffer.from (                           
+							results.rows[0].policy,           
+							"base64"                          
+						).toString("ascii");
+
 			const new_policy	= old_policy + ";" + policy;
 			const new_rules		= new_policy.split(";");
 
