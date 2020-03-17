@@ -381,37 +381,37 @@ function is_certificate_ok (req, cert, validate_email)
 
 		if ((! cert.issuer) || (! cert.issuer.emailAddress))
 			return "Certificate issuer has no emailAddress field";
-	}
 
-	const issuer_email = cert.issuer.emailAddress.toLowerCase();
+		const issuer_email = cert.issuer.emailAddress.toLowerCase();
 
-	if (! is_valid_email(issuer_email))
-		return "Certificate issuer's emailAddress is invalid";
+		if (! is_valid_email(issuer_email))
+			return "Certificate issuer's emailAddress is invalid";
 
-	if (issuer_email.startsWith("iudx.sub.ca@"))
-	{
-		const issued_to_domain	= cert.subject.emailAddress
-						.toLowerCase()
-						.split("@")[1];
-
-		const issuer_domain	= issuer_email
-						.toLowerCase()
-						.split("@")[1];
-
-		if (issuer_domain !== issued_to_domain)
+		if (issuer_email.startsWith("iudx.sub.ca@"))
 		{
-			// TODO
-			// As this could be a fraud commited by a sub-CA
-			// maybe revoke the sub-CA certificate
+			const issued_to_domain	= cert.subject.emailAddress
+							.toLowerCase()
+							.split("@")[1];
 
-			log ("red",
-				"Invalid certificate: issuer = "+
-					issuer_domain		+
-				" and issued to = "		+
-					cert.subject.emailAddress
-			);
+			const issuer_domain	= issuer_email
+							.toLowerCase()
+							.split("@")[1];
 
-			return "Invalid certificate issuer";
+			if (issuer_domain !== issued_to_domain)
+			{
+				// TODO
+				// As this could be a fraud commited by a sub-CA
+				// maybe revoke the sub-CA certificate
+
+				log ("red",
+					"Invalid certificate: issuer = "+
+						issuer_domain		+
+					" and issued to = "		+
+						cert.subject.emailAddress
+				);
+
+				return "Invalid certificate issuer";
+			}
 		}
 	}
 
