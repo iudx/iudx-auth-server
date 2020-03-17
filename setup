@@ -15,8 +15,8 @@ if [ $1 = "test" ]
 then
 	openssl req -x509 -nodes -days 365 -subj "/CN=localhost/emailAddress=ca@iudx.org.in" -newkey rsa:2048 -keyout ca.key -out ca.iudx.org.in.crt
 
-	openssl req -new -newkey rsa:2048 -nodes -out consumer.csr -keyout consumer.key.pem -subj "/emailAddress=barun@iisc.ac.in/id-qt-unotice=class:2"
-	openssl req -new -newkey rsa:2048 -nodes -out provider.csr -keyout provider.key.pem -subj "/emailAddress=arun.babu@rbccps.org/id-qt-unotice=class:3"
+	openssl req -new -newkey rsa:2048 -nodes -out consumer.csr -keyout consumer.key.pem -subj "/CN=individual/emailAddress=barun@iisc.ac.in/id-qt-unotice=class:2"
+	openssl req -new -newkey rsa:2048 -nodes -out provider.csr -keyout provider.key.pem -subj "/CN=employee/emailAddress=arun.babu@rbccps.org/id-qt-unotice=class:3"
 	openssl req -new -newkey rsa:2048 -nodes -out r-server.csr -keyout r-server.key.pem -subj "/CN=iisc.iudx.org.in/id-qt-unotice=class:1/emailAddress=arun.babu@rbccps.org"
 	openssl req -new -newkey rsa:2048 -nodes -out f-server.csr -keyout f-server.key.pem -subj "/CN=google.com/id-qt-unotice=class:1/emailAddress=arun.babu@rbccps.org"
 	openssl req -new -newkey rsa:2048 -nodes -out l-server.csr -keyout l-server.key.pem -subj "/CN=localhost/id-qt-unotice=class:1/emailAddress=arun.babu@rbccps.org"
