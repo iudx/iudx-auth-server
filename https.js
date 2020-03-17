@@ -62,8 +62,8 @@ const MAX_SAFE_STRING_LEN	= 512;
 const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
 
 	"/auth/v1/token/introspect"		: 1,
+	"/auth/v1/certificate-info"		: 1,
 
-	"/auth/v1/certificate-info"		: 2,
 	"/auth/v1/token"			: 2,
 	"/auth/v1/token/confirm-payment"	: 2,
 	"/auth/v1/credit"			: 2,
