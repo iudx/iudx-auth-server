@@ -19,7 +19,7 @@ then
 
 	# let consumer certificate be of type ECDSA
 	openssl ecparam -genkey -name secp384r1 > consumer.key.pem
-	openssl req -new -key consumer.key.pem -out consumer.pem -sha256 -subj "/CN=individual/emailAddress=barun@iisc.ac.in/id-qt-unotice=class:2"
+	openssl req -new -key consumer.key.pem -out consumer.csr -sha256 -subj "/CN=individual/emailAddress=barun@iisc.ac.in/id-qt-unotice=class:2"
 
 	# let provider certificate be of type RSA 
 	openssl req -new -newkey rsa:2048 -nodes -out provider.csr -keyout provider.key.pem -subj "/CN=employee/emailAddress=arun.babu@rbccps.org/id-qt-unotice=class:3"
