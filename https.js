@@ -378,10 +378,10 @@ function is_certificate_ok (req, cert, validate_email)
 	{
 		if (! is_valid_email(cert.subject.emailAddress))
 			return "Invalid emailAddress field in the certificate";
-	}
 
-	if ((! cert.issuer) || (! cert.issuer.emailAddress))
-		return "Certificate issuer has no emailAddress field";
+		if ((! cert.issuer) || (! cert.issuer.emailAddress))
+			return "Certificate issuer has no emailAddress field";
+	}
 
 	const issuer_email = cert.issuer.emailAddress.toLowerCase();
 
