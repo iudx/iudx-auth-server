@@ -55,7 +55,7 @@ class Auth():
 		#
 	#
 
-	def certficate_info(self):
+	def certificate_info(self):
 		return self.call("certificate-info")
 
 	def get_token(self, request, token_time=None, existing_token=None):
