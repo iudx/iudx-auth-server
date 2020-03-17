@@ -372,7 +372,10 @@ function is_valid_email (email)
 function is_certificate_ok (req, cert, validate_email)
 {
 	if ((! cert) || (! cert.subject))
-		return "Invalid certificate. No subject found";
+		return "No subject found in the certificate";
+
+	if (! cert.subject.CN)
+		return "No CN found in the certificate";
 
 	if (validate_email)
 	{
@@ -453,7 +456,7 @@ function is_secure (req, res, cert, validate_email = true)
 	const error = is_certificate_ok (req,cert,validate_email);
 
 	if (error !== "OK")
-		return "Invalid certificate. " + error;
+		return "Invalid certificate : " + error;
 
 	return "OK";
 }
@@ -715,7 +718,7 @@ function security (req, res, next)
 			);
 		}
 
-		const error = is_secure(req,res,cert);
+		const error = is_secure(req,res,cert,true); // validate emails
 
 		if (error !== "OK")
 			return END_ERROR (res, 403, error);
@@ -781,9 +784,9 @@ function security (req, res, next)
 				);
 			}
 
-			// certificates issued by other CAs
-			// may not have an "emailAddress" field
-			// by default consider it as a class-1 certificate
+			// Certificates issued by other CAs
+			// may not have an "emailAddress" field.
+			// By default consider them as a class-1 certificate
 
 			const error = is_secure(req,res,cert,false);
 
@@ -794,7 +797,7 @@ function security (req, res, next)
 			res.locals.email	= "";
 
 			// but if the certificate has a valid "emailAddress"
-			// field we consider it as a class-2 certificate
+			// field then we consider it as a class-2 certificate
 
 			if (is_valid_email(cert.subject.emailAddress))
 			{
