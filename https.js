@@ -32,6 +32,7 @@ const crypto			= require("crypto");
 const logger			= require("node-color-log");
 const cluster			= require("cluster");
 const express			= require("express");
+const timeout			= require('connect-timeout');
 const aperture			= require("./node-aperture");
 const immutable			= require("immutable");
 const geoip_lite		= require("geoip-lite");
@@ -39,6 +40,7 @@ const bodyParser		= require("body-parser");
 const http_request		= require("request");
 const pgNativeClient		= require("pg-native");
 const pg			= new pgNativeClient();
+
 
 const TOKEN_LEN			= 16;
 const TOKEN_LEN_HEX		= 2 * TOKEN_LEN;
@@ -135,7 +137,11 @@ pg.connectSync (
 /* --- express --- */
 
 const app = express();
-app.use (
+
+app.disable("x-powered-by");
+
+app.use(timeout('5s'));
+app.use(
 	cors ({
 		methods		: ["POST"],
 		credentials	: true,
@@ -148,8 +154,6 @@ app.use (
 
 app.use(bodyParser.raw({type:"*/*"}));
 app.use(security);
-
-app.disable("x-powered-by");
 
 /* --- aperture --- */
 
@@ -660,8 +664,6 @@ function security (req, res, next)
 
 		has_started_serving_apis = true;
 	}
-
-	req.setTimeout(5000);
 
 	const api = url.parse(req.url).pathname;
 
