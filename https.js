@@ -2,7 +2,9 @@
 
 /*
  * Copyright (c) 2020
- * Arun Babu {barun <at> iisc <dot> ac <dot> in}
+ *
+ * Arun Babu	{barun		<at> iisc <dot> ac <dot> in}
+ * Bryan Robert	{bryanrobert	<at> iisc <dot> ac <dot> in}
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -496,7 +498,7 @@ function has_certificate_been_revoked (socket, cert, CRL)
 	// If it was issued by a sub-CA then check the sub-CA's cert too
 	// Assuming depth is <= 3. ca@iudx.org.in -> sub-CA -> user
 
-	if (cert_issuer !== "ca@iudx.org.in")
+	if (cert_issuer.startsWith("iudx.sub.ca@"))
 	{
 		const ISSUERS = [];
 
