@@ -5,7 +5,7 @@ tasks:
     sed -i "s/setup/setup test noreboot/" ftp-script.sh
     sed -i "s/syspatch//" ftp-script.sh
 - build: |
-    doas sh ftp-script.sh 
+    doas sh ftp-script.sh
 - test: |
     doas pkg_add py-requests
     cd /home/iudx-auth-server/test

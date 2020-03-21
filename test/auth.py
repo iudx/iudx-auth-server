@@ -8,13 +8,13 @@ class Auth():
 #{
 	def __init__(self, certificate, key, auth_server="auth.iudx.org.in", version=1):
 	#
-                self.ssl_verify = True
+		self.ssl_verify = True
  
-                if auth_server == "localhost":
-                    self.ssl_verify = False
+		if auth_server == "localhost":
+			self.ssl_verify = False
 
 		self.url		= "https://" + auth_server + "/auth/v" + str(version)
-	        self.credentials	= (certificate, key)
+		self.credentials	= (certificate, key)
 	#
 
 	def call(self, api, body=None):
@@ -75,7 +75,7 @@ class Auth():
 		return self.call("acl")
 
 	def set_policy(self, policy):
-        	body = {'policy': policy}
+		body = {'policy': policy}
 		return self.call("acl/set", body)
 
 	def append_policy(self, policy):
@@ -99,7 +99,7 @@ class Auth():
 		else:
 			body = {'tokens': [tokens]}
 
-        	return self.call("token/revoke", body)
+		return self.call("token/revoke", body)
 	#
 
 	def revoke_token_hashes(self, token_hashes):
@@ -112,10 +112,9 @@ class Auth():
 		return self.call("token/revoke", body)
 	#
 
-        def revoke_all(self, cert_serial, cert_fingerprint):
-                body = {'serial' : cert_serial,
-                        'fingerprint' : cert_fingerprint}
-                return self.call("token/revoke-all", body)
+	def revoke_all(self, cert_serial, cert_fingerprint):
+		body = {'serial' : cert_serial, 'fingerprint' : cert_fingerprint}
+		return self.call("token/revoke-all", body)
 
 	def audit_tokens(self, hours):
 		body = {'hours': hours}

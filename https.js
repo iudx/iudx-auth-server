@@ -3,8 +3,8 @@
 /*
  * Copyright (c) 2020
  *
- * Arun Babu	{barun		<at> iisc <dot> ac <dot> in}
- * Bryan Robert	{bryanrobert	<at> iisc <dot> ac <dot> in}
+ * Arun Babu    {barun       <at> iisc <dot> ac <dot> in}
+ * Bryan Robert {bryanrobert <at> iisc <dot> ac <dot> in}
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above

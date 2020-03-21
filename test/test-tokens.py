@@ -1,8 +1,9 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 import os
 
-from auth import *
-from init import *
+from init import consumer 
+from init import provider 
+from init import resource_server
 
 import hashlib
 
@@ -27,7 +28,7 @@ updated_policy = policy + ';' + new_policy
 assert updated_policy == provider.get_policy()['response']['policy']
 
 r = provider.audit_tokens(5)
-assert r['success'] == True
+assert r['success'] is True
 audit_report        = r['response']
 as_provider         = audit_report["as-provider"]
 
@@ -48,7 +49,7 @@ body = [
 r = consumer.get_token(body)
 access_token = r['response']
 
-assert r['success']     == True
+assert r['success']     is True
 assert None             != access_token
 assert 7200             == access_token['expires-in']
 
@@ -71,7 +72,7 @@ assert False == resource_server.introspect_token (token,'invalid-token-012345678
 assert False == resource_server.introspect_token (token)['success']
 
 r = provider.audit_tokens(5)
-assert r["success"] == True
+assert r["success"] is True
 audit_report = r['response']
 as_provider = audit_report["as-provider"]
 num_tokens_after = len(as_provider)
@@ -87,16 +88,16 @@ found = None
 for a in as_provider:
 	if a['token-hash'] == token_hash:
 		token_hash_found = True
-                found = a
+		found = a
 		break
 
-assert token_hash_found	== True
-assert found['revoked'] == False
+assert token_hash_found	is True
+assert found['revoked'] is False
 assert True == provider.revoke_token_hashes(token_hash)['success']
 
 # check if token was revoked
 r = provider.audit_tokens(5)
-assert r["success"] == True
+assert r["success"] is True
 audit_report = r['response']
 as_provider = audit_report["as-provider"]
 
@@ -105,18 +106,18 @@ found = None
 for a in as_provider:
 	if a['token-hash'] == token_hash:
 		token_hash_found = True
-                found = a
+		found = a
 		break
 
 
-assert token_hash_found	== True
-assert found['revoked'] == True
+assert token_hash_found	is True
+assert found['revoked'] is True
 
 # test revoke-all (as provider)
 r = provider.get_token(body)
 access_token = r['response']
 
-assert r['success']     == True
+assert r['success']     is True
 assert None             != access_token
 assert 7200             == access_token['expires-in']
 
@@ -131,14 +132,14 @@ assert len(s)	== 3
 assert s[0]	== 'auth.iudx.org.in'
 
 r = provider.audit_tokens(100)
-assert r["success"] == True
+assert r["success"] is True
 audit_report        = r['response']
 as_provider         = audit_report["as-provider"]
 num_tokens          = len(as_provider)
 assert num_tokens   >= 1
 
 for a in as_provider:
-        if a["revoked"] == False and a['expired'] == False:
+        if a["revoked"] is False and a['expired'] is False:
                 cert_serial         = a["certificate-serial-number"]
                 cert_fingerprint    = a["certificate-fingerprint"]
                 break
@@ -148,20 +149,20 @@ assert True == r["success"]
 assert r["response"]["num-tokens-revoked"] >= 1
 
 r = provider.audit_tokens(100)
-assert r["success"] == True
+assert r["success"] is True
 audit_report        = r['response']
 as_provider         = audit_report["as-provider"]
 
 for a in as_provider:
 	if a['certificate-serial-number'] == cert_serial and a['certificate-fingerprint'] == cert_fingerprint:
-                if a['expired'] == False:
-                        assert a['revoked'] == True
+                if a['expired'] is False:
+                        assert a['revoked'] is True
 
 # test revoke API
 r = provider.get_token(body)
 access_token = r['response']
 
-assert r['success']     == True
+assert r['success']     is True
 assert None             != access_token
 assert 7200             == access_token['expires-in']
 
@@ -176,25 +177,25 @@ assert len(s)	== 3
 assert s[0]	== 'auth.iudx.org.in'
 
 r = provider.audit_tokens(5)
-assert r["success"] == True
+assert r["success"] is True
 audit_report        = r['response']
 as_consumer         = audit_report["as-consumer"]
 num_revoked_before  = 0
 
 for a in as_consumer:
-        if a['revoked'] == True:
+        if a['revoked'] is True:
                 num_revoked_before = num_revoked_before + 1
 
 assert True == provider.revoke_tokens(token)["success"]
 
 r = provider.audit_tokens(5)
-assert r["success"] == True
+assert r["success"] is True
 audit_report        = r['response']
 as_consumer         = audit_report["as-consumer"]
 num_revoked_after   = 0
 
 for a in as_consumer:
-        if a['revoked'] == True:
+        if a['revoked'] is True:
                 num_revoked_after = num_revoked_after + 1
 
 assert num_revoked_before < num_revoked_after
