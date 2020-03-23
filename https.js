@@ -1751,6 +1751,9 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 					if (! r1.apis)
 						r1.apis = ["/*"];
 
+					if (! r1.body)
+						r1.body = null;
+
 					const keys1 = Object
 							.keys(request);
 
@@ -2137,12 +2140,12 @@ app.post("/auth/v1/acl/set", function (req, res) {
 	if (! body.policy)
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
-	const policy = body.policy;
-
-	if (typeof policy !== "string")
+	if (typeof body.policy !== "string")
 		return END_ERROR (res, 400, "Invalid policy");
 
-	const rules = policy.split(";");
+	const policy	= body.policy;
+	const rules	= policy.split(";");
+
 	let policy_in_json;
 
 	try {
@@ -2239,12 +2242,12 @@ app.post("/auth/v1/acl/append", function (req, res) {
 	if (! body.policy)
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
-	const policy = body.policy;
-
-	if (typeof policy !== "string")
+	if (typeof body.policy !== "string")
 		return END_ERROR (res, 400, "Invalid policy");
 
-	const rules = policy.split(";");
+	const policy	= body.policy;
+	const rules	= policy.split(";");
+
 	let policy_in_json;
 
 	try {
@@ -2279,9 +2282,9 @@ app.post("/auth/v1/acl/append", function (req, res) {
 
 		if (results.rows.length === 1)
 		{
-			const old_policy        = Buffer.from (
-							results.rows[0].policy,           
-							"base64"                          
+			const old_policy	= Buffer.from (
+							results.rows[0].policy,
+							"base64"
 						).toString("ascii");
 
 			const new_policy	= old_policy + ";" + policy;
@@ -2519,18 +2522,18 @@ app.post("/auth/v1/group/add", function (req, res) {
 	if (! body.consumer)
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
-	const consumer_id = body.consumer.toLowerCase();
-
-	if (! is_string_safe (consumer_id))
+	if (! is_string_safe (body.consumer))
 		return END_ERROR (res, 400, "Invalid 'consumer' field");
+
+	const consumer_id = body.consumer.toLowerCase();
 
 	if (! body.group)
 		return END_ERROR (res, 400, "No 'group' found in the body");
 
-	const group_name = body.group.toLowerCase();
-
-	if (! is_string_safe (group_name))
+	if (! is_string_safe (body.group))
 		return END_ERROR (res, 400, "Invalid 'group' field");
+
+	const group_name = body.group.toLowerCase();
 
 	if (! body["valid-till"])
 		return END_ERROR (res, 400, "Invalid 'valid-till' field");
@@ -2577,10 +2580,10 @@ app.post("/auth/v1/group/list", function (req, res) {
 
 	if (group_name)
 	{
-		group_name = group_name.toLowerCase();
-
 		if (! is_string_safe (group_name))
 			return END_ERROR (res, 400, "Invalid 'group' field");
+
+		group_name = group_name.toLowerCase();
 	}
 
 	const email_domain	= provider_id.split("@")[1];
@@ -2666,21 +2669,23 @@ app.post("/auth/v1/group/delete", function (req, res) {
 	if (! body.consumer)
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
-	const consumer_id = body.consumer.toLowerCase();
+	let consumer_id = body.consumer;
 
 	if (consumer_id !== "*")
 	{
 		if (! is_string_safe (consumer_id))
 			return END_ERROR (res, 400, "Invalid 'consumer' field");
+
+		consumer_id = consumer_id.toLowerCase();
 	}
 
 	if (! body.group)
 		return END_ERROR (res, 400, "No 'group' found in the body");
 
-	const group_name = body.group.toLowerCase();
-
-	if (! is_string_safe (group_name))
+	if (! is_string_safe (body.group))
 		return END_ERROR (res, 400, "Invalid 'group' field");
+
+	const group_name	= body.group.toLowerCase();
 
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_of_email	= sha1(provider_id);
