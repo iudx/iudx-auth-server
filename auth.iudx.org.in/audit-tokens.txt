@@ -77,7 +77,7 @@ CURL example:
 	"as-provider": [
 	{
 	    "consumer"			: "user@domain.com",
-	    "token-hash"		: "a415ab5cc17c8c093c015ccdb7e552aee7911aa4",
+	    "token-hash"		: "8be0e684cdf5f9f802704f580d7d39a11f6acec4b157afa1d20afd7497595105",
 	    "token-issued-at"		: "2019-08-08T03:29:50.779Z",
 	    "introspected"		: true,
 	    "revoked"			: false,
@@ -100,3 +100,9 @@ CURL example:
 	...
 	]
       }
+
+	Where:
+		1. 'certificate-fingerprint' is the sha1 fingerprint of the
+		consumer certificate.
+
+		2. 'token-hash' is the sha256 hash of the token.

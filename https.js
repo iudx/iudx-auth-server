@@ -63,7 +63,7 @@ const MAX_TOKEN_HASH_LEN	= 64;
 
 const MAX_SAFE_STRING_LEN	= 512;
 
-const MIN_CERTIFICATE_CLASS_REQUIRED = immutable.Map({
+const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 
 	"/auth/v1/token/introspect"		: 1,
 	"/auth/v1/certificate-info"		: 1,
@@ -543,15 +543,15 @@ function has_certificate_been_revoked (socket, cert, CRL)
 				{
 					if (c.issuer === "ca@iudx.org.in")
 					{
-						const crl_serial = c.serial
-									.toLowerCase()
-									.replace(/^0+/,"");
+						const serial = c.serial
+								.toLowerCase()
+								.replace(/^0+/,"");
 
-						const crl_fingerprint = c.fingerprint
+						const fingerprint = c.fingerprint
 									.replace(/:/g,"")
 									.toLowerCase();
 
-						if (crl_serial === issuer.serial && crl_fingerprint === issuer.fingerprint)
+						if (serial === issuer.serial && fingerprint === issuer.fingerprint)
 							return true;
 					}
 				}
@@ -674,7 +674,7 @@ function security (req, res, next)
 		return next();
 
 	const cert			= req.socket.getPeerCertificate(true);
-	const min_class_required	= MIN_CERTIFICATE_CLASS_REQUIRED.get(api);
+	const min_class_required	= MIN_CERT_CLASS_REQUIRED.get(api);
 
 	if (! min_class_required)
 	{
@@ -1306,7 +1306,7 @@ app.post("/auth/v1/token", function (req, res) {
 					.randomBytes(TOKEN_LEN)
 					.toString("hex");
 
-		/* Token format: issued-by / issued-to / random-hex-string */
+		/* Token format = issued-by / issued-to / random-hex-string */
 
 		token = SERVER_NAME + "/" + consumer_id + "/" + random_hex;
 	}
@@ -1351,7 +1351,7 @@ app.post("/auth/v1/token", function (req, res) {
 	{
 		for (const key in resource_server_token)
 		{
-			/* Server token format: issued-to / random-hex-string */
+			/* server-token format = issued-to / random-hex-string */
 
 			resource_server_token[key] = key + "/" +
 							crypto
@@ -1811,9 +1811,9 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 					sha256_of_token,		// 1
 				],
 
-				(error_1, results_1) =>
+				(error_1, unused_var_results) =>
 				{
-					if (error_1 || results_1.rowCount === 0)
+					if (error_1)
 					{
 						return END_ERROR (
 							res, 500,

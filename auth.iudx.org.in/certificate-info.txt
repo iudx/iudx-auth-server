@@ -12,7 +12,7 @@ Description:
 	This API is used to get the user's certificate details. 
 
 Called by:
-	A data provider or a data consumer with a valid class-2 or above certificate.
+	A data provider or a data consumer with a valid class-1 or above certificate.
 
 HTTP response code:
 
