@@ -970,7 +970,7 @@ app.post("/auth/v1/token", function (req, res) {
 
 	for (const row of request_array)
 	{
-		let resource = row.id;
+		const resource = row.id;
 
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
@@ -2533,7 +2533,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 	if (! is_string_safe (body.group))
 		return END_ERROR (res, 400, "Invalid 'group' field");
 
-	const group_name = body.group.toLowerCase();
+	const group = body.group.toLowerCase();
 
 	if (! body["valid-till"])
 		return END_ERROR (res, 400, "Invalid 'valid-till' field");
@@ -2558,7 +2558,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 		[
 			provider_id_hash,		// 1
 			consumer_id,			// 2
-			group_name,			// 3
+			group,				// 3
 			valid_till + " hours"		// 4
 		],
 
@@ -2576,15 +2576,13 @@ app.post("/auth/v1/group/list", function (req, res) {
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
 
-	let group_name = body.group;
-
-	if (group_name)
+	if (body.group)
 	{
-		if (! is_string_safe (group_name))
+		if (! is_string_safe (body.group))
 			return END_ERROR (res, 400, "Invalid 'group' field");
-
-		group_name = group_name.toLowerCase();
 	}
+
+	const group		= body.group ? body.group.toLowerCase() : null;
 
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_of_email	= sha1(provider_id);
@@ -2593,7 +2591,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 
 	const response = [];
 
-	if (group_name)
+	if (group)
 	{
 		pool.query (
 
@@ -2603,7 +2601,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 			"AND valid_till > NOW()",
 			[
 				provider_id_hash,			// 1
-				group_name				// 2
+				group					// 2
 			],
 
 		(error, results) =>
@@ -2669,15 +2667,13 @@ app.post("/auth/v1/group/delete", function (req, res) {
 	if (! body.consumer)
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
-	let consumer_id = body.consumer;
-
-	if (consumer_id !== "*")
+	if (body.consumer !== "*")
 	{
-		if (! is_string_safe (consumer_id))
+		if (! is_string_safe (body.consumer))
 			return END_ERROR (res, 400, "Invalid 'consumer' field");
-
-		consumer_id = consumer_id.toLowerCase();
 	}
+
+	const consumer_id = body.consumer ? body.consumer.toLowerCase() : null;
 
 	if (! body.group)
 		return END_ERROR (res, 400, "No 'group' found in the body");
@@ -2685,7 +2681,7 @@ app.post("/auth/v1/group/delete", function (req, res) {
 	if (! is_string_safe (body.group))
 		return END_ERROR (res, 400, "Invalid 'group' field");
 
-	const group_name	= body.group.toLowerCase();
+	const group		= body.group.toLowerCase();
 
 	const email_domain	= provider_id.split("@")[1];
 	const sha1_of_email	= sha1(provider_id);
@@ -2700,7 +2696,7 @@ app.post("/auth/v1/group/delete", function (req, res) {
 
 	const parameters = [
 			provider_id_hash,	// 1
-			group_name		// 2
+			group			// 2
 	];
 
 	if (consumer_id !== "*")
