@@ -1508,15 +1508,14 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 	if (! body.token)
 		return END_ERROR (res, 400, "No 'token' found in the body");
 
-	const token = body.token;
-
-	if ((! is_string_safe(token)) || (! token.startsWith(SERVER_NAME + "/")))
+	if ((! is_string_safe(body.token)) || (! body.token.startsWith(SERVER_NAME + "/")))
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
-	if ((token.match(/\//g) || []).length !== 2)
+	if ((body.token.match(/\//g) || []).length !== 2)
 		return END_ERROR (res, 400, "Invalid 'token' field");
 
-	let server_token = body["server-token"] || true;
+	const token		= body.token.toLowerCase();
+	let server_token	= body["server-token"] || true;
 
 	if (server_token === true || server_token === "true")
 	{
@@ -2043,6 +2042,8 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	if (! is_string_safe(body.serial))
 		return END_ERROR (res, 400, "invalid 'serial' field");
 
+	const serial = body.serial.toLowerCase();
+
 	if (! body.fingerprint)
 	{
 		return END_ERROR (
@@ -2054,7 +2055,6 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	if (! is_string_safe(body.fingerprint,":")) // fingerprint contains ':'
 		return END_ERROR (res, 400, "invalid 'fingerprint' field");
 
-	const serial		= body.serial.toLowerCase();
 	const fingerprint	= body.fingerprint.toLowerCase();
 
 	const email_domain	= id.split("@")[1];
