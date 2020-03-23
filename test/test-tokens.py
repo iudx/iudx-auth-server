@@ -68,6 +68,9 @@ if type(server_token) == TUPLE:
 	server_token = server_token[0]
 
 assert True  == resource_server.introspect_token (token,server_token)['success']
+# introspect once more
+assert True  == resource_server.introspect_token (token,server_token)['success']
+
 assert False == resource_server.introspect_token (token,'invalid-token-012345678901234567')['success']
 assert False == resource_server.introspect_token (token)['success']
 
