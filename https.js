@@ -1804,16 +1804,15 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 
 				"UPDATE token SET introspected = true "	+
 				"WHERE token = $1::text "		+
-				"AND introspected = false "		+
 				"AND revoked = false "			+
 				"AND expiry > NOW()",
 				[
 					sha256_of_token,		// 1
 				],
 
-				(error_1, unused_var_results) =>
+				(error_1, results_1) =>
 				{
-					if (error_1)
+					if (error_1 || results_1.rowCount === 0)
 					{
 						return END_ERROR (
 							res, 500,
