@@ -859,12 +859,12 @@ app.post("/auth/v1/token", function (req, res) {
 	const body				= res.locals.body;
 	const consumer_id			= res.locals.email;
 
-	const response_array			= [];
 	const resource_id_dict			= {};
 	const resource_server_token		= {};
 	const sha256_of_resource_server_token	= {};
 
 	const request_array			= object_to_array(body.request);
+	const processed_request_array		= [];
 
 	if ((! request_array) || (request_array.length < 1))
 	{
@@ -1000,6 +1000,9 @@ app.post("/auth/v1/token", function (req, res) {
 
 		if (! row.apis)
 			row.apis = ["/*"];
+
+		if (! row.body)
+			row.body = null;
 
 		if ( ! (row.apis instanceof Array))
 		{
@@ -1212,14 +1215,12 @@ app.post("/auth/v1/token", function (req, res) {
 		if (requested_token_time)
 			token_time = Math.min(requested_token_time,token_time);
 
-		const response = {
+		processed_request_array.push ({
 			"id"		: resource,
 			"methods"	: row.methods,
 			"apis"		: row.apis,
-			"body"		: row.body ? row.body : null,
-		};
-
-		response_array.push (response);
+			"body"		: row.body,
+		});
 
 		resource_id_dict[resource] = true;
 
@@ -1321,7 +1322,6 @@ app.post("/auth/v1/token", function (req, res) {
 			"amount"	: 0.0,
 			"currency"	: "INR",
 		},
-
 	};
 
 	const total_payment_amount	= total_data_cost_per_second * token_time;
@@ -1375,7 +1375,7 @@ app.post("/auth/v1/token", function (req, res) {
 		// merge both existing values
 
 		const old_request	= existing_row[0].request;
-		const new_request	= old_request.concat(request_array);
+		const new_request	= old_request.concat(processed_request_array);
 
 		const new_resource_ids_dict = Object.assign(
 			{}, existing_row[0].resource_ids, resource_id_dict
@@ -1417,8 +1417,6 @@ app.post("/auth/v1/token", function (req, res) {
 	}
 	else
 	{
-		const request = response_array;
-
 		query = "INSERT INTO token VALUES("			+
 				"$1::text,"				+
 				"$2::text,"				+
@@ -1439,7 +1437,7 @@ app.post("/auth/v1/token", function (req, res) {
 			consumer_id,					// 1
 			sha256_of_token,				// 2
 			token_time + " seconds",			// 3
-			JSON.stringify(request),			// 4
+			JSON.stringify(processed_request_array),	// 4
 			cert.serialNumber,				// 5
 			cert.fingerprint,				// 6
 			JSON.stringify(resource_id_dict),		// 7
@@ -1463,7 +1461,6 @@ app.post("/auth/v1/token", function (req, res) {
 			);
 		});
 	}
-
 });
 
 app.post("/auth/v1/token/confirm-payment", function (req, res) {
