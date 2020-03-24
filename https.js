@@ -29,6 +29,7 @@ const cors			= require("cors");
 const ocsp			= require("ocsp");
 const Pool			= require("pg").Pool;
 const https			= require("https");
+const assert			= require('assert').strict;
 const chroot			= require("chroot");
 const crypto			= require("crypto");
 const logger			= require("node-color-log");
@@ -68,17 +69,21 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/certificate-info"		: 1,
 
 	"/auth/v1/token"			: 2,
-	"/auth/v1/token/confirm-payment"	: 2,
-	"/auth/v1/credit"			: 2,
-	"/auth/v1/credit/topup"			: 2,
-	"/auth/v1/audit/credits"		: 2,
+
+	"/marketplace/v1/credit-info"		: 2,
+	"/marketplace/v1/credit/topup"		: 2,
+	"/marketplace/v1/audit/credit"		: 2,
+	"/marketplace/v1/confirm-payment"	: 2,
 
 	"/auth/v1/audit/tokens"			: 3,
+
 	"/auth/v1/token/revoke"			: 3,
 	"/auth/v1/token/revoke-all"		: 3,
+
 	"/auth/v1/acl"				: 3,
 	"/auth/v1/acl/set"			: 3,
 	"/auth/v1/acl/append"			: 3,
+
 	"/auth/v1/group/add"			: 3,
 	"/auth/v1/group/delete"			: 3,
 	"/auth/v1/group/list"			: 3,
@@ -2825,6 +2830,8 @@ function drop_worker_privileges()
 
 	if (is_openbsd)
 		pledge.init ("error stdio tty prot_exec inet rpath dns recvfd");
+
+	assert (has_started_serving_apis === false);
 }
 
 if (cluster.isMaster)
