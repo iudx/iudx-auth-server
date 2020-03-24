@@ -43,7 +43,6 @@ const http_request		= require("request");
 const pgNativeClient		= require("pg-native");
 const pg			= new pgNativeClient();
 
-
 const TOKEN_LEN			= 16;
 const TOKEN_LEN_HEX		= 2 * TOKEN_LEN;
 
@@ -314,12 +313,13 @@ function is_valid_email (email)
 			the allowed chars in the email login is -._a-z0-9
 			which is : 1 + 1 + 1 + 26 + 10 = ~40 possible chars
 
-			in the worst case of brute force attacks:
+			in the worst case of brute force attacks with 31 chars is
 				40**31 > 2**160
-			but
+
+			but for 30 chars it is
 				40**30 < 2**160
 
-			and since we have a good margin for 30 chars:
+			and since we have a good margin for 30 chars
 				(2**160) - (40**30) > 2**157
 
 			hence, as a precaution, limit the login length to 30.
@@ -450,13 +450,13 @@ function is_secure (req, res, cert, validate_email = true)
 		if (! origin_domain.endsWith(".iudx.org.in"))
 			return "Invalid 'origin' field in the header";
 
-		res.header("X-XSS-Protection", "1; mode=block");
-		res.header("X-Frame-Options", "deny");
-		res.header("X-Content-Type-Options","nosniff");
-		res.header("Referrer-Policy","no-referrer-when-downgrade");
+		res.header("Referrer-Policy",			"no-referrer-when-downgrade");
+		res.header("X-Frame-Options",			"deny");
+		res.header("X-XSS-Protection",			"1; mode=block");
+		res.header("X-Content-Type-Options",		"nosniff");
 
-		res.header("Access-Control-Allow-Origin", req.headers.origin);
-		res.header("Access-Control-Allow-Methods", "POST");
+		res.header("Access-Control-Allow-Origin",	req.headers.origin);
+		res.header("Access-Control-Allow-Methods",	"POST");
 	}
 
 	const error = is_certificate_ok (req,cert,validate_email);
