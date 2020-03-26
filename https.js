@@ -1872,7 +1872,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			)
 			{
 				const error_response = {
-					"invalid-token"		: token,
+					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -1919,14 +1919,14 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			if (rows.length === 0)
 			{
 				const error_response = {
-					"invalid-token"		: token,
+					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
 				return END_ERROR (res, 400, error_response);
 			}
 
-			pg.querySync (
+			const update_rows = pg.querySync (
 
 				"UPDATE token SET revoked = true "	+
 				"WHERE id = $1::text "			+
@@ -1939,7 +1939,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				]
 			);
 
-			++num_tokens_revoked;
+			num_tokens_revoked += update_rows.length;
 		}
 	}
 	else
@@ -1971,7 +1971,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			)
 			{
 				const error_response = {
-					"invalid-token-hash"	: token_hash,
+					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -1994,7 +1994,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			if (rows.length === 0)
 			{
 				const error_response = {
-					"invalid-token-hash"	: token_hash,
+					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -2004,7 +2004,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 			const provider_false = {};
 				provider_false[provider_id_hash] = false;
 
-			pg.querySync (
+			const update_rows = pg.querySync (
 
 				"UPDATE token "				+
 				"SET providers = "			+
@@ -2019,11 +2019,15 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				]
 			);
 
-			++num_tokens_revoked;
+			num_tokens_revoked += update_rows.length;
 		}
 	}
 
-	return END_SUCCESS (res);
+	const response = {
+		"num-tokens-revoked" : num_tokens_revoked
+	};
+
+	return END_SUCCESS (res, response);
 });
 
 app.post("/auth/v1/token/revoke-all", function (req, res) {
