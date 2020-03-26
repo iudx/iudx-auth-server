@@ -294,7 +294,12 @@ function END_ERROR (res, http_status, msg, exception = null)
 	res.setHeader("Content-Type", "application/json");
 	res.setHeader("Connection", "close");
 
-	res.status(http_status).end('{"error":"' + msg + '"}\n');
+	const response = {
+		success	: false,
+		error	: msg,
+	}
+
+	res.status(http_status).end(JSON.stringify(response) + "\n");
 
 	res.socket.end();
 	res.socket.destroy();
@@ -677,7 +682,7 @@ function security (req, res, next)
 	const api = url.parse(req.url).pathname;
 
 	// Not an API !
-	if (! api.startsWith("/auth/v1/") || ! api.startsWith("/marketplace/v1/"))
+	if (! api.startsWith("/auth/v1/") && ! api.startsWith("/marketplace/v1/"))
 		return next();
 
 	const cert			= req.socket.getPeerCertificate(true);
@@ -2722,12 +2727,12 @@ app.post("/auth/v1/group/delete", function (req, res) {
 
 app.post("/auth/v1/certificate-info", function (req, res) {
 
-	const cert	= res.local.cert;
+	const cert	= res.locals.cert;
 
 	const response	= {
 		'id'			: res.locals.email,
 		'certificate-class'	: res.locals.cert_class,
-		'serial'		: cert.serial.toLowerCase(),
+		'serial'		: cert.serialNumber.toLowerCase(),
 		'fingerprint'		: cert.fingerprint.toLowerCase(),
 	};
 
