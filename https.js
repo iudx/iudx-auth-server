@@ -35,7 +35,7 @@ const crypto			= require("crypto");
 const logger			= require("node-color-log");
 const cluster			= require("cluster");
 const express			= require("express");
-const timeout			= require('connect-timeout');
+const timeout			= require("connect-timeout");
 const aperture			= require("./node-aperture");
 const immutable			= require("immutable");
 const geoip_lite		= require("geoip-lite");
@@ -148,12 +148,11 @@ app.disable("x-powered-by");
 app.use(timeout("5s"));
 app.use(
 	cors ({
-		methods		: ["POST"],
-		credentials	: true,
-		origin		: function (origin, callback)
-				{
-					callback(null, origin ? true : false);
-				}
+		credentials	:	true,
+		methods		:	["POST"],
+		origin		:	(origin, callback) => {
+						callback(null, origin ? true : false);
+					}
 	})
 );
 
@@ -248,21 +247,10 @@ function base64 (string)
 		.toString("base64");
 }
 
-function log(color, msg)
-{
-	const message = new Date() + " | " + msg;
-
-	if (color === "red") {
-		send_telegram(message);
-	}
-
-	logger.color(color).log(message);
-}
-
 function send_telegram (message)
 {
 	http_request ( telegram_url + "[ AUTH ] : " + message,
-		function (error, response, body)
+		(error, response, body) =>
 		{
 			if (error)
 			{
@@ -275,6 +263,17 @@ function send_telegram (message)
 			}
 		}
 	);
+}
+
+function log(color, msg)
+{
+	const message = new Date() + " | " + msg;
+
+	if (color === "red") {
+		send_telegram(message);
+	}
+
+	logger.color(color).log(message);
 }
 
 function END_SUCCESS (res, response = {})
@@ -686,7 +685,7 @@ function security (req, res, next)
 	{
 		return END_ERROR (
 			res, 404,
-				"No such API. Please visit: "	+
+				"No such API. Please visit : "	+
 				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
@@ -775,8 +774,9 @@ function security (req, res, next)
 	}
 	else
 	{
-		ocsp.check({cert:cert.raw, issuer:cert.issuerCertificate.raw},
-		function (err, ocsp_response)
+		ocsp.check(
+			{cert:cert.raw, issuer:cert.issuerCertificate.raw},
+		(err, ocsp_response) =>
 		{
 			if (err)
 			{
@@ -985,7 +985,7 @@ app.post("/auth/v1/token", (req, res) => {
 			return END_ERROR (
 				res, 400,
 				"Invalid resource id "		+
-				"(contains unsafe chars)' : "	+ resource
+				"(contains unsafe chars) : "	+ resource
 			);
 		}
 
@@ -998,7 +998,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if ( ! (row.methods instanceof Array))
 		{
 			return END_ERROR (res, 400,
-				"Invalid 'methods' for resource id:" +
+				"Invalid 'methods' for resource id : " +
 				resource
 			);
 		}
@@ -1015,7 +1015,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if ( ! (row.apis instanceof Array))
 		{
 			return END_ERROR (res, 400,
-				"Invalid 'apis' for resource id:" +
+				"Invalid 'apis' for resource id : " +
 				resource
 			);
 		}
@@ -1147,7 +1147,7 @@ app.post("/auth/v1/token", (req, res) => {
 			if (typeof api !== "string")
 			{
 				return END_ERROR (
-					res, 400, "Invalid 'api' :" + api
+					res, 400, "Invalid 'api' : " + api
 				);
 			}
 
@@ -1158,7 +1158,7 @@ app.post("/auth/v1/token", (req, res) => {
 				if (typeof method !== "string")
 				{
 					return END_ERROR (res, 400,
-						"Invalid 'method' :" + method
+						"Invalid 'method' : " + method
 					);
 				}
 
@@ -1850,7 +1850,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			if ((token.match(/\//g) || []).length !== 2)
 			{
 				return END_ERROR (
-					res, 400, "Invalid token: " + token
+					res, 400, "Invalid token : " + token
 				);
 			}
 
@@ -1866,7 +1866,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 				(random_hex.length	!== TOKEN_LEN_HEX)
 			) {
 				return END_ERROR (
-					res, 403, "Invalid token: " + token
+					res, 403, "Invalid token : " + token
 				);
 			}
 
@@ -2113,13 +2113,15 @@ app.post("/auth/v1/acl/set", (req, res) => {
 	let policy_in_json;
 
 	try {
-		policy_in_json = rules.map(function (t) {
-			return (parser.parse(t));
-		});
+		policy_in_json = rules.map (
+			(r) => {
+				return (parser.parse(r));
+			}
+		);
 	}
 	catch (x) {
 		const err = String(x).replace(/\n/g," ");
-		return END_ERROR (res, 400, "Syntax error in policy: " + err);
+		return END_ERROR (res, 400, "Syntax error in policy : " + err);
 	}
 
 	const email_domain	= provider_id.split("@")[1];
@@ -2215,13 +2217,15 @@ app.post("/auth/v1/acl/append", (req, res) => {
 	let policy_in_json;
 
 	try {
-		policy_in_json = rules.map(function (t) {
-			return (parser.parse(t));
-		});
+		policy_in_json = rules.map (
+			(r) => {
+				return (parser.parse(r));
+			}
+		);
 	}
 	catch (x) {
 		const err = String(x).replace(/\n/g," ");
-		return END_ERROR (res, 400, "Syntax error in policy :" + err);
+		return END_ERROR (res, 400, "Syntax error in policy : " + err);
 	}
 
 	const email_domain	= provider_id.split("@")[1];
@@ -2255,9 +2259,11 @@ app.post("/auth/v1/acl/append", (req, res) => {
 			const new_rules		= new_policy.split(";");
 
 			try {
-				policy_in_json = new_rules.map(function (t) {
-					return (parser.parse(t));
-				});
+				policy_in_json = new_rules.map (
+					(r) => {
+						return (parser.parse(r));
+					}
+				);
 			}
 			catch (x)
 			{
@@ -2265,7 +2271,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 
 				return END_ERROR (
 					res, 400,
-					"Syntax error in policy: " + err
+					"Syntax error in policy : " + err
 				);
 			}
 
@@ -2718,10 +2724,10 @@ app.post("/auth/v1/certificate-info", (req, res) => {
 	const cert	= res.locals.cert;
 
 	const response	= {
-		'id'			: res.locals.email,
-		'certificate-class'	: res.locals.cert_class,
-		'serial'		: cert.serialNumber.toLowerCase(),
-		'fingerprint'		: cert.fingerprint.toLowerCase(),
+		"id"			: res.locals.email,
+		"certificate-class"	: res.locals.cert_class,
+		"serial"		: cert.serialNumber.toLowerCase(),
+		"fingerprint"		: cert.fingerprint.toLowerCase(),
 	};
 
 	return END_SUCCESS (res,response);
@@ -2739,7 +2745,7 @@ app.all("/*", (req, res) => {
 
 		return END_ERROR (
 			res, 404,
-				"No such API. Please visit: "	+
+				"No such API. Please visit : "	+
 				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
@@ -2747,7 +2753,7 @@ app.all("/*", (req, res) => {
 	{
 		return END_ERROR (
 			res, 405,
-				"Method must be POST. Please visit: "	+
+				"Method must be POST. Please visit : "	+
 				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
@@ -2763,9 +2769,11 @@ if (! is_openbsd)
 {
 	// ======================== START preload code for chroot =============
 
-	const _tmp = ["x can x x"].map(function (t) {
-		return (parser.parse(t));
-	});
+	const _tmp = ["x can x x"].map (
+		(r) => {
+			return (parser.parse(r));
+		}
+	);
 
 	evaluator.evaluate(_tmp, {});
 
