@@ -52,7 +52,6 @@ const is_openbsd		= os.type() === "OpenBSD";
 const pledge			= is_openbsd ? require("node-pledge")	: null;
 const unveil			= is_openbsd ? require("openbsd-unveil"): null;
 
-const SUCCESS			= '{"success":true}';
 const NUM_CPUS			= os.cpus().length;
 const SERVER_NAME		= "auth.iudx.org.in";
 
@@ -278,10 +277,13 @@ function send_telegram (message)
 	);
 }
 
-function END_SUCCESS (res, http_status, msg)
+function END_SUCCESS (res, response = {})
 {
+	response.success = true;
+
 	res.setHeader("Content-Type", "application/json");
-	res.status(http_status).end(msg + "\n");
+
+	res.status(200).end(JSON.stringify(response) + "\n");
 }
 
 function END_ERROR (res, http_status, msg, exception = null)
@@ -675,7 +677,7 @@ function security (req, res, next)
 	const api = url.parse(req.url).pathname;
 
 	// Not an API !
-	if ((! api.startsWith("/auth/v1/")))
+	if (! api.startsWith("/auth/v1/") || ! api.startsWith("/marketplace/v1/"))
 		return next();
 
 	const cert			= req.socket.getPeerCertificate(true);
@@ -1415,9 +1417,7 @@ app.post("/auth/v1/token", function (req, res) {
 				);
 			}
 
-			return END_SUCCESS (
-				res, 200, JSON.stringify(response)
-			);
+			return END_SUCCESS (res,response);
 		});
 	}
 	else
@@ -1461,9 +1461,7 @@ app.post("/auth/v1/token", function (req, res) {
 				);
 			}
 
-			return END_SUCCESS (
-				res, 200, JSON.stringify(response)
-			);
+			return END_SUCCESS (res,response);
 		});
 	}
 });
@@ -1825,10 +1823,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 						);
 					}
 
-					return END_SUCCESS (
-						res, 200,
-							JSON.stringify(response)
-					);
+					return END_SUCCESS (res,response);
 				}
 			);
 		});
@@ -2033,7 +2028,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 		}
 	}
 
-	return END_SUCCESS (res, 200, SUCCESS);
+	return END_SUCCESS (res);
 });
 
 app.post("/auth/v1/token/revoke-all", function (req, res) {
@@ -2091,7 +2086,6 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 			}
 
 			const response = {
-				success			: true,
 				"num-tokens-revoked"	: results.rowCount
 			};
 
@@ -2127,10 +2121,8 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 					}
 
 					response["num-tokens-revoked"] += results_1.rowCount;
-					return END_SUCCESS (
-						res, 200,
-							JSON.stringify(response)
-					);
+
+					return END_SUCCESS (res,response);
 				}
 			);
 		}
@@ -2208,7 +2200,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 					);
 				}
 
-				return END_SUCCESS (res, 200, SUCCESS);
+				return END_SUCCESS (res);
 			});
 		}
 		else
@@ -2233,7 +2225,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 					);
 				}
 
-				return END_SUCCESS (res, 200, SUCCESS);
+				return END_SUCCESS (res);
 			});
 		}
 	});
@@ -2335,7 +2327,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 					);
 				}
 
-				return END_SUCCESS (res, 200, SUCCESS);
+				return END_SUCCESS (res);
 			});
 		}
 		else
@@ -2364,7 +2356,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 					);
 				}
 
-				return END_SUCCESS (res, 200, SUCCESS);
+				return END_SUCCESS (res);
 			});
 		}
 	});
@@ -2400,7 +2392,7 @@ app.post("/auth/v1/acl", function (req, res) {
 					.toString("ascii")
 		};
 
-		return END_SUCCESS (res, 200, JSON.stringify(response));
+		return END_SUCCESS (res,response);
 	});
 });
 
@@ -2512,9 +2504,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 				"as-provider"	: as_provider,
 			};
 
-			return END_SUCCESS (
-				res, 200, JSON.stringify(response)
-			);
+			return END_SUCCESS (res,response);
 		});
 	});
 });
@@ -2572,7 +2562,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 		if (error || results.rowCount === 0)
 			return END_ERROR (res, 500, "Internal error!", error);
 
-		return END_SUCCESS (res, 200, SUCCESS);
+		return END_SUCCESS (res);
 	});
 });
 
@@ -2626,7 +2616,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 				});
 			}
 
-			return END_SUCCESS (res, 200, JSON.stringify(response));
+			return END_SUCCESS (res,response);
 		});
 	}
 	else
@@ -2659,7 +2649,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 				});
 			}
 
-			return END_SUCCESS (res, 200, JSON.stringify(response));
+			return END_SUCCESS (res,response);
 		});
 	}
 });
@@ -2723,24 +2713,25 @@ app.post("/auth/v1/group/delete", function (req, res) {
 		}
 
 		const response = {
-			success			: true,
 			"num-consumers-deleted"	: results.rowCount
 		};
 
-		return END_SUCCESS (res, 200, JSON.stringify(response));
+		return END_SUCCESS (res,response);
 	});
 });
 
 app.post("/auth/v1/certificate-info", function (req, res) {
 
-	const response = {
+	const cert	= res.local.cert;
+
+	const response	= {
 		'id'			: res.locals.email,
 		'certificate-class'	: res.locals.cert_class
+		'serial'		: cert.serial.toLowerCase(),
+		'fingerprint'		: cert.fingerprint.toLowerCase(),
 	};
 
-	return END_SUCCESS (
-		res, 200, JSON.stringify(response)
-	);
+	return END_SUCCESS (res,response);
 });
 
 app.all("/*", function (req, res) {
