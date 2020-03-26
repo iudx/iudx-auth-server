@@ -71,12 +71,12 @@ Below is the list of tables used. There are no join queries in the project.
 |   |-- input
 |   |-- run.sh
 |   `-- to-prove
-|-- https.js			// the main Auth server code
+|-- main.js			// the main Auth server code
 |-- install			// the install script for the Auth server	
 |-- pf.conf			// the firewall rules to be copied to /etc
 |-- schema.sql			// the database schema
 |-- rc.local			// the code to be run at every startup (dest = /etc)
-|-- run				// the nodejs https.js shell script
+|-- run				// the nodejs main.js shell script
 |-- run.crl			// the nodejs crl.js shell script 
 |-- run.crl.tmux		// run the 'run.crl' file in tmux
 |-- run.tmux			// run the 'run' file in tmux

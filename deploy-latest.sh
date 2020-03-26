@@ -1,7 +1,7 @@
 #!/bin/sh
 
 CRL_JS="https://raw.githubusercontent.com/iudx/iudx-auth-server/master/crl.js"
-HTTPS_JS="https://raw.githubusercontent.com/iudx/iudx-auth-server/master/https.js"
+MAIN_JS="https://raw.githubusercontent.com/iudx/iudx-auth-server/master/main.js"
 
 if ! ftp -o - $CRL_JS > crl.js
 then
@@ -9,9 +9,9 @@ then
 	exit
 fi
 
-if ! ftp -o - $HTTPS_JS > https.js
+if ! ftp -o - $MAIN_JS > main.js
 then
-	echo "Failed to deploy https.js!"
+	echo "Failed to deploy main.js!"
 	exit
 fi
 

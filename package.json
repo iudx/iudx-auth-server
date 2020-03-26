@@ -2,7 +2,7 @@
   "name": "auth.iudx.org.in",
   "description": "DO NOT MAKE THIS repo PUBLIC !",
   "version": "1.0.0",
-  "main": "https.js",
+  "main": "main.js",
   "dependencies": {
     "assert-plus": "^1.0.0",
     "chroot": "^1.0.10",
@@ -28,8 +28,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Test-Mode\" && nodejs https.js test",
-    "start": "echo \"Starting Server...\" && nodejs https.js"
+    "test": "echo \"Test-Mode\" && nodejs main.js test",
+    "start": "echo \"Starting Server...\" && nodejs main.js"
   },
   "repository": {
     "type": "git",
