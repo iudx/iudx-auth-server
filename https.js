@@ -29,7 +29,7 @@ const cors			= require("cors");
 const ocsp			= require("ocsp");
 const Pool			= require("pg").Pool;
 const https			= require("https");
-const assert			= require('assert').strict;
+const assert			= require("assert").strict;
 const chroot			= require("chroot");
 const crypto			= require("crypto");
 const logger			= require("node-color-log");
@@ -145,7 +145,7 @@ const app = express();
 
 app.disable("x-powered-by");
 
-app.use(timeout('5s'));
+app.use(timeout("5s"));
 app.use(
 	cors ({
 		methods		: ["POST"],
@@ -860,7 +860,7 @@ function object_to_array (o)
 
 /* --- Auth APIs --- */
 
-app.post("/auth/v1/token", function (req, res) {
+app.post("/auth/v1/token", (req, res) => {
 
 	const cert				= res.locals.cert;
 	const cert_class			= res.locals.cert_class;
@@ -1467,7 +1467,7 @@ app.post("/auth/v1/token", function (req, res) {
 	}
 });
 
-app.post("/auth/v1/token/introspect", function (req, res) {
+app.post("/auth/v1/token/introspect", (req, res) => {
 
 	const cert	= res.locals.cert;
 	const body	= res.locals.body;
@@ -1799,7 +1799,7 @@ app.post("/auth/v1/token/introspect", function (req, res) {
 	});
 });
 
-app.post("/auth/v1/token/revoke", function (req, res) {
+app.post("/auth/v1/token/revoke", (req, res) => {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
@@ -1998,7 +1998,7 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 	return END_SUCCESS (res, response);
 });
 
-app.post("/auth/v1/token/revoke-all", function (req, res) {
+app.post("/auth/v1/token/revoke-all", (req, res) => {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
@@ -2096,7 +2096,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 	);
 });
 
-app.post("/auth/v1/acl/set", function (req, res) {
+app.post("/auth/v1/acl/set", (req, res) => {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2198,7 +2198,7 @@ app.post("/auth/v1/acl/set", function (req, res) {
 	});
 });
 
-app.post("/auth/v1/acl/append", function (req, res) {
+app.post("/auth/v1/acl/append", (req, res) => {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2329,7 +2329,7 @@ app.post("/auth/v1/acl/append", function (req, res) {
 	});
 });
 
-app.post("/auth/v1/acl", function (req, res) {
+app.post("/auth/v1/acl", (req, res) => {
 
 	const provider_id	= res.locals.email;
 
@@ -2363,7 +2363,7 @@ app.post("/auth/v1/acl", function (req, res) {
 	});
 });
 
-app.post("/auth/v1/audit/tokens", function (req, res) {
+app.post("/auth/v1/audit/tokens", (req, res) => {
 
 	const body		= res.locals.body;
 	const id		= res.locals.email;
@@ -2476,7 +2476,7 @@ app.post("/auth/v1/audit/tokens", function (req, res) {
 	});
 });
 
-app.post("/auth/v1/group/add", function (req, res) {
+app.post("/auth/v1/group/add", (req, res) => {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2533,7 +2533,7 @@ app.post("/auth/v1/group/add", function (req, res) {
 	});
 });
 
-app.post("/auth/v1/group/list", function (req, res) {
+app.post("/auth/v1/group/list", (req, res) => {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2621,7 +2621,7 @@ app.post("/auth/v1/group/list", function (req, res) {
 	}
 });
 
-app.post("/auth/v1/group/delete", function (req, res) {
+app.post("/auth/v1/group/delete", (req, res) => {
 
 	const body		= res.locals.body;
 	const provider_id	= res.locals.email;
@@ -2689,11 +2689,11 @@ app.post("/auth/v1/group/delete", function (req, res) {
 
 /* --- Marketplace APIs --- */
 
-app.post("/marketplace/v1/payment/confirm", function (req, res) {
+app.post("/marketplace/v1/payment/confirm", (req, res) => {
 	// TODO
 });
 
-app.post("/marketplace/v1/credit/info", function (req, res) {
+app.post("/marketplace/v1/credit/info", (req, res) => {
 
 	// TODO
 
@@ -2703,7 +2703,7 @@ app.post("/marketplace/v1/credit/info", function (req, res) {
 	// select amount from credits table
 });
 
-app.post("/marketplace/v1/credit/topup", function (req, res) {
+app.post("/marketplace/v1/credit/topup", (req, res) => {
 
 	// TODO
 
@@ -2713,7 +2713,7 @@ app.post("/marketplace/v1/credit/topup", function (req, res) {
 	// insert or update amount in credit table
 });
 
-app.post("/auth/v1/certificate-info", function (req, res) {
+app.post("/auth/v1/certificate-info", (req, res) => {
 
 	const cert	= res.locals.cert;
 
@@ -2729,7 +2729,7 @@ app.post("/auth/v1/certificate-info", function (req, res) {
 
 /* --- Invalid requests --- */
 
-app.all("/*", function (req, res) {
+app.all("/*", (req, res) => {
 
 	const pathname = url.parse(req.url).pathname;
 
@@ -2753,8 +2753,8 @@ app.all("/*", function (req, res) {
 	}
 });
 
-app.on("error", function(e) {
-	console.error(e);
+app.on("error", (error) => {
+	console.error(error);
 });
 
 /* --- The main application --- */
