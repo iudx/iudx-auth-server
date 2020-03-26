@@ -40,7 +40,7 @@ const unveil		= is_openbsd ? require("openbsd-unveil"): null;
 
 pg.connectSync (
 	"postgresql://update_crl:"+ db_password+ "@127.0.0.1:5432/postgres",
-	function(err) {
+	(err) => {
 		if(err)
 			throw err;
 	}
@@ -96,15 +96,16 @@ function update_crl (body)
 		}
 	}
 
-	if (updated)
+	if (updated === true)
 	{
 		const results = pg.querySync (
 			"UPDATE crl SET crl = $1::json",
 				[JSON.stringify(new_crl)]
 		);
 
-		if (results.rowCount === 0)
+		if (results.rowCount === 0) {
 			log("red","CRL update failed!");
+		}
 		else
 		{
 			crl = new_crl;

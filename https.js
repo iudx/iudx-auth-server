@@ -131,7 +131,7 @@ pool.connect();
 // sync postgres connection
 pg.connectSync (
 	"postgresql://auth:"+ password.DB + "@" + DB_SERVER + ":5432/postgres",
-		function(err)
+		(err) =>
 		{
 			if(err) {
 				throw err;
@@ -2737,12 +2737,8 @@ app.post("/auth/v1/certificate-info", (req, res) => {
 
 app.all("/*", (req, res) => {
 
-	const pathname = url.parse(req.url).pathname;
-
 	if (req.method === "POST")
 	{
-		console.log("=>>> Invalid API : ",pathname);
-
 		return END_ERROR (
 			res, 404,
 				"No such API. Please visit : "	+
@@ -2759,8 +2755,8 @@ app.all("/*", (req, res) => {
 	}
 });
 
-app.on("error", (error) => {
-	console.error(error);
+app.on("error", (unused_var_error) => {
+
 });
 
 /* --- The main application --- */
