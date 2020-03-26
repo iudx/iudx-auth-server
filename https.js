@@ -297,7 +297,7 @@ function END_ERROR (res, http_status, msg, exception = null)
 	const response = {
 		success	: false,
 		error	: msg,
-	}
+	};
 
 	res.status(http_status).end(JSON.stringify(response) + "\n");
 
@@ -1871,14 +1871,12 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				(! token.startsWith(SERVER_NAME + "/"))
 			)
 			{
-				return END_ERROR (
-					res, 400,
-					"Invalid token: "		+
-						token			+
-					". "				+
-					String(num_tokens_revoked)	+
-					" tokens revoked."
-				);
+				const error_response = {
+					"invalid-token"		: token,
+					"num-tokens-revoked"	: num_tokens_revoked
+				};
+
+				return END_ERROR (res, 400, error_response);
 			}
 
 			if ((token.match(/\//g) || []).length !== 2)
@@ -1920,14 +1918,12 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 			if (rows.length === 0)
 			{
-				return END_ERROR (
-					res, 400,
-					"Invalid token: "		+
-						token			+
-					". "				+
-					String(num_tokens_revoked)	+
-					" tokens revoked"
-				);
+				const error_response = {
+					"invalid-token"		: token,
+					"num-tokens-revoked"	: num_tokens_revoked
+				};
+
+				return END_ERROR (res, 400, error_response);
 			}
 
 			pg.querySync (
@@ -1974,13 +1970,12 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 				(token_hash.length > MAX_TOKEN_HASH_LEN)
 			)
 			{
-				return END_ERROR (
-					res, 400,
-					"Invalid token-hash: "		+
-						token_hash + ". "	+
-					String(num_tokens_revoked)	+
-					" tokens revoked."
-				);
+				const error_response = {
+					"invalid-token-hash"	: token_hash,
+					"num-tokens-revoked"	: num_tokens_revoked
+				};
+
+				return END_ERROR (res, 400, error_response);
 			}
 
 			const rows = pg.querySync (
@@ -1998,13 +1993,12 @@ app.post("/auth/v1/token/revoke", function (req, res) {
 
 			if (rows.length === 0)
 			{
-				return END_ERROR (
-					res, 400,
-					"Invalid token-hash: "		+
-						token_hash + ". "	+
-					String(num_tokens_revoked)	+
-					" tokens revoked"
-				);
+				const error_response = {
+					"invalid-token-hash"	: token_hash,
+					"num-tokens-revoked"	: num_tokens_revoked
+				};
+
+				return END_ERROR (res, 400, error_response);
 			}
 
 			const provider_false = {};
@@ -2087,7 +2081,7 @@ app.post("/auth/v1/token/revoke-all", function (req, res) {
 			}
 
 			const response = {
-				"num-tokens-revoked"	: results.rowCount
+				"num-tokens-revoked" : results.rowCount
 			};
 
 			const provider_false = {};
