@@ -4,6 +4,8 @@ echo "============ Tests started ===========\n" | tee report
 
 error_code=0
 
+start_time=$(date +%s)
+
 for f in `ls test*.py`
 do
 	echo "-----> $f" | tee -a report
@@ -22,5 +24,11 @@ do
 	echo | tee -a report
 done
 
+end_time=$(date +%s)
+diff_time=$(( $end_time - $start_time))
+
 echo "============ Tests ended =============" | tee -a report
+
+echo "Took $diff_time seconds" | tee -a report
+
 exit $error_code

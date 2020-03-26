@@ -291,8 +291,8 @@ function END_ERROR (res, http_status, msg, exception = null)
 	if (exception)
 		log("red", String(exception).replace(/\n/g," "));
 
-	res.setHeader("Content-Type", "application/json");
-	res.setHeader("Connection", "close");
+	res.setHeader("Content-Type",	"application/json");
+	res.setHeader("Connection",	"close");
 
 	const response = {
 		success	: false,
@@ -858,7 +858,7 @@ function object_to_array (o)
 	return null;
 }
 
-/* --- APIs --- */
+/* --- Auth APIs --- */
 
 app.post("/auth/v1/token", function (req, res) {
 
@@ -1465,38 +1465,6 @@ app.post("/auth/v1/token", function (req, res) {
 			return END_SUCCESS (res,response);
 		});
 	}
-});
-
-app.post("/auth/v1/token/confirm-payment", function (req, res) {
-	// TODO
-});
-
-app.post("/auth/v1/credit", function (req, res) {
-
-	// TODO
-
-	// if class 2 - only related to this certificate's public key
-	// if class 3 or above - for all ids with this emailAddress
-
-	// select amount from credits table
-});
-
-app.post("/auth/v1/credit/topup", function (req, res) {
-
-	// TODO
-
-	// if class 2 - only related to this certificate's public key
-	// if class 3 or above - for all ids with this emailAddress
-
-	// insert or update amount in credit table
-});
-
-app.post("/auth/v1/audit/credits", function (req, res) {
-
-	// TODO
-
-	// if class 2 - only related to this certificate's public key
-	// if class 3 or above - for all ids with this emailAddress
 });
 
 app.post("/auth/v1/token/introspect", function (req, res) {
@@ -2719,6 +2687,32 @@ app.post("/auth/v1/group/delete", function (req, res) {
 	});
 });
 
+/* --- Marketplace APIs --- */
+
+app.post("/marketplace/v1/payment/confirm", function (req, res) {
+	// TODO
+});
+
+app.post("/marketplace/v1/credit/info", function (req, res) {
+
+	// TODO
+
+	// if class 2 - only related to this certificate's public key
+	// if class 3 or above - for all ids with this emailAddress
+
+	// select amount from credits table
+});
+
+app.post("/marketplace/v1/credit/topup", function (req, res) {
+
+	// TODO
+
+	// if class 2 - only related to this certificate's public key
+	// if class 3 or above - for all ids with this emailAddress
+
+	// insert or update amount in credit table
+});
+
 app.post("/auth/v1/certificate-info", function (req, res) {
 
 	const cert	= res.locals.cert;
@@ -2732,6 +2726,8 @@ app.post("/auth/v1/certificate-info", function (req, res) {
 
 	return END_SUCCESS (res,response);
 });
+
+/* --- Invalid requests --- */
 
 app.all("/*", function (req, res) {
 
@@ -2761,7 +2757,7 @@ app.on("error", function(e) {
 	console.error(e);
 });
 
-/* --- run --- */
+/* --- The main application --- */
 
 if (! is_openbsd)
 {
