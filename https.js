@@ -679,13 +679,7 @@ function security (req, res, next)
 		has_started_serving_apis = true;
 	}
 
-	const api = url.parse(req.url).pathname;
-
-	// Not an API !
-	if (! api.startsWith("/auth/v1/") && ! api.startsWith("/marketplace/v1/"))
-		return next();
-
-	const cert			= req.socket.getPeerCertificate(true);
+	const api			= url.parse(req.url).pathname;
 	const min_class_required	= MIN_CERT_CLASS_REQUIRED.get(api);
 
 	if (! min_class_required)
@@ -696,6 +690,8 @@ function security (req, res, next)
 				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
+
+	const cert		= req.socket.getPeerCertificate(true);
 
 	cert.serialNumber	= cert.serialNumber.toLowerCase();
 	cert.fingerprint	= cert.fingerprint.toLowerCase();
