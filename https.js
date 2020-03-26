@@ -2726,7 +2726,7 @@ app.post("/auth/v1/certificate-info", function (req, res) {
 
 	const response	= {
 		'id'			: res.locals.email,
-		'certificate-class'	: res.locals.cert_class
+		'certificate-class'	: res.locals.cert_class,
 		'serial'		: cert.serial.toLowerCase(),
 		'fingerprint'		: cert.fingerprint.toLowerCase(),
 	};
