@@ -280,7 +280,7 @@ function END_SUCCESS (res, response = {})
 {
 	// if response is a object, indicate success
 
-	if (! response instanceof Array)
+	if (! (response instanceof Array))
 		response.success = true;
 
 	res.setHeader("Content-Type", "application/json");
