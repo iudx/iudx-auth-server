@@ -3,24 +3,30 @@ Append access control policy
 ----------------------------
 
 Endpoint:
+
 	https://<auth-server>/auth/v1/acl/append
 
-Methods:
-	POST
-
 Description:
+
 	This API is used to append access control rules to existing rules.
 
 Called by:
-	A resource-owner with a valid class-3 or above certificate.
+
+	A a data provider with a valid class-3 or above certificate.
+
+Methods:
+
+	POST
 
 Headers:
 
 	content-type: "application/json"
 
-Body:
+Body in JSON format:
 
-	policy:	"acl policy (a string) in aperture policy language"
+	{
+		"policy" : "acl policy (a string) in aperture policy language"	// required
+	}
 
 HTTP response code:
 
@@ -40,26 +46,43 @@ Using pyIUDX SDK:
 
 CURL example:
 
-	Request:
+	Request (pretty version):
 
 		curl -XPOST https://auth.iudx.org.in/auth/v1/acl/append		\
-
+										\
 			--cert certificate.pem --key private-key.pem		\
-
+										\
 			-H 'content-type: application/json'			\
-
-			-d '{"policy":"*@gov.in can access rs1.com/my-resource"}'
+										\
+			-d '{"policy":"*@gov.in can access rs1.com/resource"}'
 
 	Response:
 
 		200 OK
+		content-type : "application/json"
+
+		{
+			"success" : true
+		}
+
+Known limitations:
+
+	If the access control rules contain regex on "id"s, then 
+	an authorized consumer can get a token for "id"s which may not exist.
+
+	This is by design. Having regex makes writing rules easier.
+	Also, the provider doesn't have to remember all valid "id"s.
+
+	This issue is expected to be handled by the resource server,
+	by rejecting any queries to invalid "id"s. 
 
 See also:
+
 	acl API:
-		https://auth.iudx.org.in/auth/v1/acl/help
+		http://auth.iudx.org.in/acl.txt
 
 	acl/set API:
-		https://auth.iudx.org.in/auth/v1/acl/set/help
+		http://auth.iudx.org.in/acl-set.txt
 
 	node-aperture at github.com:
 		https://github.com/rbccps-iisc/node-aperture

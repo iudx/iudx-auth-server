@@ -3,24 +3,30 @@ Set access control policy
 -------------------------
 
 Endpoint:
+
 	https://<auth-server>/auth/v1/acl/set
 
-Methods:
-	POST
-
 Description:
+
 	This API is used to set access control policies.
 
 Called by:
-	A resource-owner with a valid class-3 or above certificate.
+
+	A data provider with a valid class-3 or above certificate.
+
+Methods:
+
+	POST
 
 Headers:
 
 	content-type: "application/json"
 
-Body:
+Body in JSON format:
 
-	policy:	"acl policy (a string) in aperture policy language"
+	{
+		"policy" : "acl policy (a string) in aperture policy language"	// required
+	}
 
 HTTP response code:
 
@@ -111,37 +117,82 @@ Variables in policy language:
 	| cert.issuer.st    | string | 		"							   |
 	+-------------------+------------------------------------------------------------------------------+
 
+Resource "id"s in policies:
+
+	The 'id' is the id of the resource (a data-set) the provider is intrested in sharing with consumers.
+
+	Data consumers get these "id"s from a catalogue server.
+
+	An example catalog server is: https://varanasi.iudx.org.in
+
+	And an example query to get ids is:
+		https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem&attribute-filter=(id)
+
+	The resource 'id' consists of at least 4 parts seperated by a '/' indicating:
+
+		1. The email domain of the data provider.
+
+		2. SHA-1 hash of the data provider's email-id (to mask the provider's email).
+
+		3. The hostname (FQDN) of the resource server where the resource is hosted.
+
+		4. The name of the resource (which may contain additional '/'s).
+
+	For example: example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/resource-name
+
+	However, while writing rules the first 2 fields should be skipped:
+		for example, in the above id, "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c" can be skipped.
+
+	the rule may look like this:
+		"consumer@domain.com can access resource-server.com/resource-name"
+
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	iudx_auth.set_policy("*@gov.in can access rs1.com/my-resource")
 
 CURL example:
 
-	Request:
+	Request (pretty version):
 
 		curl -XPOST https://auth.iudx.org.in/auth/v1/acl/set		\
-
+										\
 			--cert certificate.pem --key private-key.pem		\
-
+										\
 			-H 'content-type: application/json'			\
-
+										\
 			-d '{"policy":"*@gov.in can access rs1.com/my-resource"}'
 
 	Response:
 
 		200 OK
+		content-type : "application/json"
+
+		{
+			"success" : true
+		}
+
+Known limitations:
+
+	If the access control rules contain regex on "id"s, then
+	an authorized consumer can get a token for "id"s which may not exist.
+
+	This is by design. Having regex makes writing rules easier.
+	Also, the provider doesn't have to remember all valid "id"s.
+
+	This issue is expected to be handled by the resource server,
+	by rejecting any queries to invalid "id"s.
 
 See also:
 
 	acl API:
-		https://auth.iudx.org.in/auth/v1/acl/help
+		http://auth.iudx.org.in/acl.txt
 
 	acl/append API:
-		https://auth.iudx.org.in/auth/v1/acl/append/help
+		http://auth.iudx.org.in/acl-append.txt
 
 	node-aperture at github.com:
 		https://github.com/rbccps-iisc/node-aperture

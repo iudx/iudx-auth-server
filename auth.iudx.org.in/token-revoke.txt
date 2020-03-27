@@ -6,10 +6,6 @@ Endpoint:
 
 	https://<auth-server>/auth/v1/token/revoke
 
-Methods:
-
-	POST
-
 Description:
 
 	This API is used to revoke a valid access token.
@@ -18,15 +14,22 @@ Called by:
 
 	A user with a valid class-3 or above certificate.
 
+Methods:
+
+	POST
+
 Headers:
+
 	content-type : "application/json"
 
-Body:
+Body in JSON format:
 
-	tokens		: <list of tokens to be revoked>	(to be used by a consumer)		// optional
-	token-hashes	: <list of token-hashes to be revoked>	(to be used by a resource-owner)	// optional
+	{
+		"tokens"	: <list of tokens to be revoked>	(to be sent by a data consumer)		// optional
+		"token-hashes"	: <list of token-hashes to be revoked>	(to be sent by a data provider)		// optional
+	}
 
-	Note: a resource-owner may can token-hashes by using the "audit/tokens" API.
+	Note: a data provider can get the "token-hashes" using the "audit/tokens" API.
 
 HTTP response codes:
 
@@ -55,21 +58,31 @@ Using pyIUDX SDK:
 
 CURL example:
 
-	Request:
+	Request (pretty version):
 
-		curl -XPOST https://auth.iudx.org.in/auth/v1/token/revoke		\
-
-		--cert consumer-certificate.pem --key private-key.pem			\
-
+		curl -XPOST https://auth.iudx.org.in/auth/v1/token/revoke	\
+										\
+		--cert consumer-certificate.pem --key private-key.pem		\
+										\
 		-H 'content-type: application/json'				\
-
+										\
 		-d '{tokens:["auth.iudx.org.in/email-id@domain.com/2204adcbc990ffff234689aaabcdef90"]}'
 
 
 	Response:
 
 		200 OK
+		content-type : "application/json"
+
+		{
+			"success"		: true,
+			"num-tokens-revoked"	: 1
+		}
 
 See also:
-	audit tokens API:
-		https://auth.iudx.org.in/auth/v1/audit/tokens/help
+
+	audit/tokens API:
+		http://auth.iudx.org.in/audit-tokens.txt
+
+	token/revoke-all API:
+		http://auth.iudx.org.in/token-revoke-all.txt

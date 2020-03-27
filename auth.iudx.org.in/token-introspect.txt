@@ -3,33 +3,41 @@ Token introspection
 -------------------
 
 Endpoint:
+
 	https://<auth-server>/auth/v1/token/introspect
 
-Methods:
-	POST
-
 Description:
+
 	This API is used to validate an access token provided by a consumer.
 
 Called by:
+
 	A "resource-server" with a valid class-1 certificate.
 
-	Note-1:
+	[ Note 1 ]:
 	The "CN" of the resource-server certificate should be valid hostname
 	(FQDN) or IP address. And it must be ensured that the IP address of the
 	"CN" matches with the machine that makes the introspect call.
 
-	Note-2:
+	[ Note 2 ]:
 	This API must be only called by the resource-server after ensuring that
-	the resource "id"s requested by consumer is valid. This reduces the number
-	of API calls to the Auth server.
+	the resource "id"s requested by consumer is valid. This reduces the
+	number of API calls to the Auth server.
+
+Methods:
+
+	POST
 
 Headers:
+
 	content-type	: "application/json"
 
-Body:
-	token		: <token presented by the consumer>
-	server-token	: <server token presented by the consumer> // optional
+Body in JSON format:
+
+	{
+		"token"		: <token presented by the consumer>		// required
+		"server-token"	: <server token presented by the consumer>	// optional
+	}
 
 Checks before making the API call:
 
@@ -40,13 +48,13 @@ Checks before making the API call:
 		3. Random string 
 
 	For example:
-		auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee 
+	    auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee 
 
-	[NOTE] : It is important for a resource-server to check if the token was
-	issued by a trusted Auth server before making the introspect call.
+	[NOTE] : It is important for a resource-server to check if the token
+	was issued by a trusted Auth server before making the introspect call.
 
-	That is - Do NOT create the Auth server URL based on the token provided by
-	the consumer.
+	That is - *DO NOT* create the Auth server URL based on the token
+	provided by the consumer.
 
 HTTP response code:
 
@@ -72,13 +80,17 @@ Using pyIUDX SDK:
 
 		from pyIUDX.auth import auth
 
-		iudx_auth = auth.Auth("resource-server-certificate.pem","private-key.pem")
+		iudx_auth = auth.Auth(
+			"resource-server-certificate.pem","private-key.pem"
+		)
 
-		iudx_auth.introspect_token("auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90")
+		iudx_auth.introspect_token(
+			"auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90"
+		)
 
 	Example 2:
 
-		# dealing with untrusted auth servers
+		# dealing with multiple auth servers
 
 		from pyIUDX.auth import auth
 
@@ -103,21 +115,23 @@ Using pyIUDX SDK:
 
 CURL example:
 
-	Request:
+	Request (pretty version):
 
-		curl -XPOST https://auth.iudx.org.in/auth/v1/token/introspect				\
-
-			--cert resource-server-certificate.pem --key private-key.pem			\
-
-			-H 'content-type: application/json'						\
-
+		curl -XPOST https://auth.iudx.org.in/auth/v1/token/introspect					\
+														\
+			--cert resource-server-certificate.pem --key private-key.pem				\
+														\
+			-H 'content-type: application/json'							\
+														\
 			-d '{"token": "auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90"}'
 
 	Response:
 
 		200 OK
+		content-type : "application/json"
 
 		{
+			"success"			: true,
 			"consumer"			: "arun.babu@rbccps.org",
 			"consumer-certificate-class"	: 3
 
@@ -125,9 +139,10 @@ CURL example:
 
 			"request" : [
 					{
-					  "id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r3",
-					  "apis": ["/*"],
-					  "methods": ["*"]
+					  "id"		: "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r3",
+					  "apis"	: ["/*"],
+					  "methods"	: ["*"],
+					  "body"	: null 
 					}
 			],
 		}
@@ -149,5 +164,6 @@ CURL example:
 			the token is valid.
 
 See also:
+
 	token API:
-		https://auth.iudx.org.in/auth/v1/token/help
+		http://auth.iudx.org.in/token.txt

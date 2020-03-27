@@ -3,17 +3,21 @@ Get an access token
 -------------------
 
 Endpoint:
+
 	https://<auth-server>/auth/v1/token
 
-Methods:
-	POST
-
 Description:
+
 	This API is used to request an access token from the Auth server.
-	This token can be used to get data from a resource server.
+	The "token" can then be used to get data from a resource server.
 
 Called by:
+
 	A data consumer with a valid class-2 or above certificate.
+
+Methods:
+
+	POST
 
 Headers:
 
@@ -21,18 +25,18 @@ Headers:
 
 	Please note that "text/plain" can also be used to avoid CORS issues.
 
-Body:
+Body in JSON format:
 
 	{
-		"request" : {
-			"id"	: <a resource id for which access is requested>,			// required
+		"request" : {											// required
+			"id"		: <a resource id for which access is requested>,			// required
 			"apis"		: <a list of APIs a consumer wishes to access on the resource id>	// optional
 			"methods"	: <a list of methods a consumer wishes to call on the APIs>		// optional
 			"body"		: <a dictionary of body variables to be called with the API>		// optional
 		},
 
 		"token-time"		: <the time in seconds, till which the token should be valid>		// optional
-		"existing-token"	: <a valid token a consumer already has>				// optional
+		"existing-token"	: <a valid token a data consumer already has>				// optional
 	}
 
 	The 'request' field may also be an array of objects.
@@ -45,16 +49,25 @@ Body:
 
 	1. id:
 
-		The 'id' is the id of the resource (a data-set) a consumer is intrested in accessing.
-		The 'id' consists of at least 4 parts seperated by a '/' indicating:
+		The 'id' is the id of the resource (a data-set) the consumer is intrested in accessing.
 
-			1. The email domain of the resource-owner.
+		Data consumers are not expected to create these "ids" themselves;
+		but are expected to get these "id"s from a catalogue server.
 
-			2. SHA1 hash of the resource-owner's email-id.
+		An example catalog server is: https://varanasi.iudx.org.in
+
+		And an example query to get ids is:
+			https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem&attribute-filter=(id)
+
+		The resource 'id' consists of at least 4 parts seperated by a '/' indicating:
+
+			1. The email domain of the data provider.
+
+			2. SHA-1 hash of the data provider's email-id (to mask the provider's email).
 
 			3. The hostname (FQDN) of the resource server where the resource is hosted.
 
-			4. The name of the resource (the resource name may also contain '/'s).
+			4. The name of the resource (which may contain additional '/'s).
 
 		For example: example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/resource-name
 
@@ -64,7 +77,7 @@ Body:
 		Instead of 'apis', just 'api' (a string) could also be used.
 
 		For example: ["/latest", "/query"]
-		As the field is optional, the default value of 'apis' is: ["*"]
+		As the field is optional, the default value of 'apis' is: ["/*"]
 
 	3. methods:
 
@@ -72,7 +85,7 @@ Body:
 		Instead of 'methods', just 'method' (a string) could also be used.
 
 		For example: ["GET", "POST"]
-		As the field is optional, the default value of 'apis' is: ["/*"]
+		As the field is optional, the default value of 'apis' is: ["*"]
 
 	4. body:
 
@@ -95,9 +108,9 @@ HTTP response code:
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	request = [
 		{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/r1"},
@@ -110,27 +123,28 @@ CURL examples:
 
 	1. Requesting token for data from a single resource server
 
-		Request:
+		Request (pretty version):
 
-			curl -XPOST https://auth.iudx.org.in/auth/v1/token	\
-
-			--cert certificate.pem --key private-key.pem		\
-
-			-H 'content-type: application/json'			\
-
-			-d '{
-				"request" : [												\
-					{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/r1"}, \
+			curl -XPOST https://auth.iudx.org.in/auth/v1/token							\
+																\
+			--cert certificate.pem --key private-key.pem								\
+																\
+			-H 'content-type: application/json'									\
+																\
+			-d '{													\
+				"request" : [											\
+					{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/r1"},	\
 					{"id": "example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/resource-server.com/r2"}	\
-				]
+				]												\
 			}'
 
 		Response:
 
 			200 OK
-			content-type	: "application/json"
+			content-type : "application/json"
 
 			{
+				"success"	: true,
 				"token"		: "auth.iudx.org.in/user@domain.com/2204adcbc990ffff234689aaabcdef90",
 				"token-type"	: "IUDX",
 				"expires-in"	: 3600
@@ -146,7 +160,7 @@ CURL examples:
 
 				1. Who has issued the token (The Auth server)
 				2. To whom the token has been issued (The consumer)
-				3. Random string 
+				3. Random string
 
 			In the example above:
 				"auth.iudx.org.in/user@domain.com/2204adcbc990ffff234689aaabcdef90"
@@ -156,26 +170,27 @@ CURL examples:
 
 	2. Requesting token for data from multiple resource servers
 
-		Request:
+		Request (pretty version):
 
-			curl -XPOST https://auth.iudx.org.in/auth/v1/token		\
-
-				--cert certificate.pem --key private-key.pem		\
-
-				-H 'content-type: application/json'			\
-
-				-d '{
-					"request" : [											\
+			curl -XPOST https://auth.iudx.org.in/auth/v1/token							\
+																\
+				--cert certificate.pem --key private-key.pem							\
+																\
+				-H 'content-type: application/json'								\
+																\
+				-d '{												\
+					"request" : [										\
 						{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r1"},	\
 						{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2.com/r2"}	\
-					]
+					]											\
 				}'
 		Response:
 
 			200 OK
-			content-type	: "application/json"
+			content-type : "application/json"
 
 			{
+				"success"	: true,
 				"token"		: "auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee",
 				"token-type"	: "IUDX",
 				"expires-in"	: 3600,
@@ -198,12 +213,18 @@ CURL examples:
 				along with the consumer's 'token'
 				(in the above example: auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee).
 
-				The "server-token" ensures that only a genuine resource server can access its token. 
+				The "server-token" ensures that only a genuine resource server can access its token.
 
-				[NOTE] The "server-token"s may change if "existing-token" is used with 
-				multiple resource servers. Hence, the consumer should update their "server-token"s in such cases. 
+				[NOTE] The "server-token"s may change if "existing-token" is used with
+				multiple resource servers. Hence, the consumer should update their "server-token"s in such cases.
 
 See also:
 
-	introspect API:
-		https://auth.iudx.org.in/auth/v1/introspect/help
+	token/introspect API:
+		http://auth.iudx.org.in/token-introspect.txt
+
+	token/revoke API:
+		http://auth.iudx.org.in/token-revoke.txt
+
+	token/revoke-all API:
+		http://auth.iudx.org.in/token-revoke-all.txt

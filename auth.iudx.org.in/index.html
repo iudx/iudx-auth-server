@@ -38,7 +38,25 @@ body {
 <b>3. Data access flow</b>
 <p><img src="consumer.svg" alt="[Data access flow]"></p>
 
-<b id=apis>4. List of APIs</b>
+<b id=apis>4. APIs</b>
+
+	The Auth APIs expect the METHOD to be POST.  
+
+	Inputs/outputs if any, are expected to be in JSON.
+
+	And returns:
+
+		1. 200 on success
+		2. 400 on bad request
+		3. 403 on unauthorized request
+
+	On exceptions:
+
+		4. 402 on payment required (due to insufficient credits)
+		5. 429 on too many requests
+		6. 500 on internal error
+
+	Below are the list of Auth APIs.
 
 	 1. Get an access token (to be called by data consumers):
 		<a href="token.txt">/auth/v1/token</a>
@@ -108,7 +126,7 @@ body {
 		class-2: Can be used by a data consumer to request access to <b>protected</b> data.
 			 They can <b>only</b> be used to call the <a href="token.txt">/auth/v1/token</a> API.
 
-		class-3: Can be used by a <b>data consumer</b> to request access to <b>protected</b> data. 
+		class-3: Can be used by a <b>data consumer</b> to request access to <b>protected</b> data.
 			 Can be used by a <b>data provider</b> to set access control policies <b>and</b> create/manage catalog entries.
 
 		class-4: Can be used by a data consumer to request access to <b>private</b> data.
@@ -126,7 +144,7 @@ body {
 <b>9. For technical and security issues, please contact : Arun Babu</b>
 
 	<img src=bugs.png alt="[ barun AT iisc DOT ac DOT in ]"/>
-	
+
 </pre>
 
 </body>

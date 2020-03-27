@@ -3,12 +3,11 @@ Add a consumer to a group
 -------------------------
 
 Endpoint:
+
 	https://<auth-server>/auth/v1/group/add
 
-Methods:
-	POST
-
 Description:
+
 	This API is used to add a consumer to a group.
 
 	Groups are useful in setting access control polcies where access to
@@ -18,15 +17,23 @@ Description:
 	the aperture policy when using the "/acl/set" API.
 
 Called by:
-	A resource-owner with a valid class-3 or above certificate.
+
+	A data provider with a valid class-3 or above certificate.
+
+Methods:
+
+	POST
 
 Headers:
 
 	content-type	: "application/json"
 
-Body:
-	group		: <a valid group name created by the user>
-	valid-till	: <how long (in seconds) the consumer will be in the group>
+Body in JSON format:
+
+	{
+		"group"		: <a valid group name created by the user>			// required
+		"valid-till"	: <how long (in seconds) the consumer will be in the group>	// required
+	}
 
 	Note: If the "group" doesn't exist, it will be created automatically.
 
@@ -41,24 +48,33 @@ Using pyIUDX SDK:
 
 CURL example:
 
-	Request:
+	Request (pretty version):
 
-		curl -XPOST https://auth.iudx.org.in/auth/v1/group/add		\
-
-			--cert certificate.pem --key private-key.pem		\
-
-			-H 'content-type: application/json'			\
-
+		curl -XPOST https://auth.iudx.org.in/auth/v1/group/add						\
+														\
+			--cert certificate.pem --key private-key.pem						\
+														\
+			-H 'content-type: application/json'							\
+														\
 			-d '{"group" : "confidential","consumer" : "user@domain.com", "valid-till" : 3600}'
 
 	Response:
 
 		200 OK
+		content-type : "application/json"
+
+		{
+			"success" : true
+		}
+
 
 See also:
 
 	acl/set API:
-		https://auth.iudx.org.in/auth/v1/acl/set/help
+		http://auth.iudx.org.in/acl-set.txt	
 
 	group/delete API:
-		https://auth.iudx.org.in/auth/v1/group/delete/help
+		http://auth.iudx.org.in/group-delete.txt	
+
+	group/list API:
+		http://auth.iudx.org.in/group-list.txt
