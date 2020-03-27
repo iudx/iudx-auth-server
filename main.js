@@ -278,7 +278,10 @@ function log(color, msg)
 
 function END_SUCCESS (res, response = {})
 {
-	response.success = true;
+	// if response is a object, indicate success
+
+	if (! response instanceof Array)
+		response.success = true;
 
 	res.setHeader("Content-Type", "application/json");
 
@@ -2765,7 +2768,7 @@ if (! is_openbsd)
 {
 	// ======================== START preload code for chroot =============
 
-	const _tmp = ["x can x x"].map (
+	const _tmp = ["x can y z"].map (
 		(r) => {
 			return (parser.parse(r));
 		}
