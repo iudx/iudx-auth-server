@@ -57,7 +57,6 @@ CURL example:
 		content-type : "application/json"
 
 		{
-			"success"		: true,
 			"num-consumers-deleted" : 5
 		}
 

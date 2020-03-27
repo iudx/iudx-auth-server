@@ -48,7 +48,6 @@ CURL example:
 		content-type : "application/json"
 
 		{
-			"success"	: true,
 			"policy"	: "*@iisc.ac.in can access rs1.com/my-resource-name"
 		}
 

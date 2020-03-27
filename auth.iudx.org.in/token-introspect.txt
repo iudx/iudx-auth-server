@@ -131,7 +131,6 @@ CURL example:
 		content-type : "application/json"
 
 		{
-			"success"			: true,
 			"consumer"			: "arun.babu@rbccps.org",
 			"consumer-certificate-class"	: 3
 

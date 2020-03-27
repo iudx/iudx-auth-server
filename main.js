@@ -280,7 +280,7 @@ function END_SUCCESS (res, response = {})
 {
 	// if response is a object, indicate success
 
-	if (! (response instanceof Array))
+	if (response === {})
 		response.success = true;
 
 	res.setHeader("Content-Type", "application/json");
@@ -297,8 +297,7 @@ function END_ERROR (res, http_status, msg, exception = null)
 	res.setHeader("Connection",	"close");
 
 	const response = {
-		success	: false,
-		error	: msg,
+		error : msg,
 	};
 
 	res.status(http_status).end(JSON.stringify(response) + "\n");

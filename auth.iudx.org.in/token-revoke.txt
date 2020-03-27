@@ -75,8 +75,7 @@ CURL example:
 		content-type : "application/json"
 
 		{
-			"success"		: true,
-			"num-tokens-revoked"	: 1
+			"num-tokens-revoked" : 1
 		}
 
 See also:

@@ -144,7 +144,6 @@ CURL examples:
 			content-type : "application/json"
 
 			{
-				"success"	: true,
 				"token"		: "auth.iudx.org.in/user@domain.com/2204adcbc990ffff234689aaabcdef90",
 				"token-type"	: "IUDX",
 				"expires-in"	: 3600
@@ -190,7 +189,6 @@ CURL examples:
 			content-type : "application/json"
 
 			{
-				"success"	: true,
 				"token"		: "auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee",
 				"token-type"	: "IUDX",
 				"expires-in"	: 3600,

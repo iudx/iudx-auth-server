@@ -48,7 +48,6 @@ CURL example:
 		content-type : "application/json"
 
 		{
-			"success"		: true,
 			"id"			: "user@example.com",
 			"certificate-class"	: 2
 			"serial"		: "5badd8f2b7d2c8cb0413883c7d023624543e6802",
