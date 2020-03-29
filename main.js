@@ -276,12 +276,12 @@ function log(color, msg)
 	logger.color(color).log(message);
 }
 
-function END_SUCCESS (res, response = {})
+function END_SUCCESS (res, response = null)
 {
-	// if response is a object, indicate success
+	// if response is an empty object, indicate success
 
-	if (response === {})
-		response.success = true;
+	if (! response)
+		response = {"success":true};
 
 	res.setHeader("Content-Type", "application/json");
 
