@@ -207,11 +207,15 @@ const evaluator	= aperture.createEvaluator	(apertureOpts);
 
 /* --- https --- */
 
+const system_trusted_certs = is_openbsd ?
+				"/etc/ssl/cert.pem" :
+				"/etc/ssl/certs/ca-certificates.crt";
+
 const trusted_CAs = [
 	fs.readFileSync("ca.iudx.org.in.crt"),
-	fs.readFileSync("/etc/ssl/cert.pem"),
 	fs.readFileSync("CCAIndia2015.cer"),
 	fs.readFileSync("CCAIndia2014.cer"),
+	system_trusted_certs
 ];
 
 const https_options = {
@@ -278,7 +282,7 @@ function log(color, msg)
 
 function END_SUCCESS (res, response = null)
 {
-	// if response is an empty object, indicate success
+	// if no response is given, just send success
 
 	if (! response)
 		response = {"success":true};
