@@ -33,6 +33,7 @@ const assert			= require("assert").strict;
 const chroot			= require("chroot");
 const crypto			= require("crypto");
 const logger			= require("node-color-log");
+const lodash			= require("lodash");
 const cluster			= require("cluster");
 const express			= require("express");
 const timeout			= require("connect-timeout");
@@ -1743,36 +1744,20 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					if (! r1.body)
 						r1.body = null;
 
-					const keys1 = Object
-							.keys(r1);
-
 					let resource_found = false;
 
 					for (const r2 of request_for_resource_server)
 					{
 						if (r1.id === r2.id)
 						{
-							const keys2 = Object
-								.keys(r2);
-
-							const total_keys = new Set (
-								keys1.concat(keys2)
-							);
-
-							for (const k of total_keys)
+							if (! lodash.isEqual(r1,r2))
 							{
-								if (JSON.stringify(r1[k]) !== JSON.stringify(r2[k]))
-								{
-									const error_response = {
-										"message"	: "unauthorized",
-										"invalid-input"	: {
-											"id"	: r1.id,
-											"key"	: k
-										}
-									};
+								const error_response = {
+									"message"	: "unauthorized",
+									"invalid-input"	: r1
+								};
 
-									return END_ERROR (res, 403, error_response);
-								}
+								return END_ERROR (res, 403, error_response);
 							}
 
 							resource_found = true;
