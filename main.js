@@ -1991,7 +1991,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			if (rows.length === 0)
 			{
 				const error_response = {
-					"messge"		: "invalid token hash",
+					"message"		: "invalid token hash",
 					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
