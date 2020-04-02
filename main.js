@@ -1744,7 +1744,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 						r1.body = null;
 
 					const keys1 = Object
-							.keys(request);
+							.keys(r1);
 
 					let resource_found = false;
 
@@ -1753,7 +1753,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 						if (r1.id === r2.id)
 						{
 							const keys2 = Object
-								.keys(request_for_resource_server);
+								.keys(r2);
 
 							const total_keys = new Set (
 								keys1.concat(keys2)
