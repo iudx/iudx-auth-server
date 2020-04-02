@@ -82,12 +82,18 @@ class Auth():
 		body = {'policy': policy}
 		return self.call("acl/append", body)
 
-	def introspect_token(self, token, server_token=None):
+	def introspect_token(self, token, server_token=None, request=None):
 	#
 		body = {'token': token}
 
 		if server_token:
 			body['server-token'] = server_token
+
+                if request:
+                        if type(request) is type([]):
+                                body['request'] = request
+                        else:
+                                body['request'] = [request]
 
 		return self.call("token/introspect", body)
 	#
