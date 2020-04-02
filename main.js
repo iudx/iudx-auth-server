@@ -988,11 +988,12 @@ app.post("/auth/v1/token", (req, res) => {
 
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
-			return END_ERROR (
-				res, 400,
-				"Invalid resource id "		+
-				"(contains unsafe chars) : "	+ resource
-			);
+			const error_response = {
+				"message"	: "id contains unsafe characters",
+				"invalid-input"	: resource,
+			};
+
+			return END_ERROR (res, 400, error_response);
 		}
 
 		if (typeof row.method === "string")
@@ -1186,15 +1187,16 @@ app.post("/auth/v1/token", (req, res) => {
 
 					if ((! token_time_in_policy) || token_time_in_policy < 0 || payment_amount < 0)
 					{
-						return END_ERROR (res, 403,
-							"Unauthorized to access id :'"	+
-								resource		+
-							"' for api :'"			+
-								api			+
-							"' and for method :'"		+
-								method			+
-							"'"
-						);
+						const error_response = {
+							"message"	: "unauthorized",
+							"invalid-input"	: {
+								"id"		: resource,
+								"api"		: api,
+								"method"	: method
+							}
+						};
+
+						return END_ERROR (res, 403, error_response);
 					}
 
 					const cost_per_second		= payment_amount / token_time_in_policy;
@@ -1213,15 +1215,16 @@ app.post("/auth/v1/token", (req, res) => {
 				}
 				catch (x)
 				{
-					return END_ERROR (res, 403,
-						"Unauthorized to access :'"	+
-							resource		+
-						"' for api :'"			+
-							api			+
-						"' and for method :'"		+
-							method			+
-						"'"
-					);
+					const error_response = {
+						"message"	: "unauthorized",
+						"invalid-input"	: {
+							"id"		: resource,
+							"api"		: api,
+							"method"	: method
+						}
+					};
+
+					return END_ERROR (res, 403, error_response);
 				}
 			}
 		}
@@ -1718,7 +1721,16 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 				for (const r1 of consumer_request)
 				{
 					if (! (r1 instanceof Object))
-						return END_ERROR (res, 400, "Invalid request : " + r1);
+					{
+						const error_response = {
+							"message"	: "invalid request",
+							"invalid-input"	: r1,
+						};
+
+						return END_ERROR (res, 400,
+							error_response
+						);
+					}
 
 					// default values
 
@@ -1750,7 +1762,17 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 							for (const k of total_keys)
 							{
 								if (JSON.stringify(r1[k]) !== JSON.stringify(r2[k]))
-									return END_ERROR (res, 403, "Unauthorized to access : " + r1.id + " for key : " + k);
+								{
+									const error_response = {
+										"message"	: "unauthorized",
+										"invalid-input"	: {
+											"id"	: r1.id,
+											"key"	: k
+										}
+									};
+
+									return END_ERROR (res, 403, error_response);
+								}
 							}
 
 							resource_found = true;
@@ -1760,12 +1782,12 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 
 					if (! resource_found)
 					{
-						return END_ERROR (
-							res, 403,
-							"Unauthorized "	+
-							"to access "	+
-							JSON.stringify(r1)
-						);
+						const error_response = {
+							"message"	: "unauthorized",
+							"invalid-input"	: r1,
+						};
+
+						return END_ERROR (res, 403, error_response);
 					}
 				}
 			}
@@ -1842,22 +1864,17 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 		{
 			if (
 				(! is_string_safe(token))		||
-				(! token.startsWith(SERVER_NAME + "/"))
+				(! token.startsWith(SERVER_NAME + "/"))	||
+				((token.match(/\//g) || []).length !== 2)
 			)
 			{
 				const error_response = {
+					"message"		: "invalid token",
 					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
 				return END_ERROR (res, 400, error_response);
-			}
-
-			if ((token.match(/\//g) || []).length !== 2)
-			{
-				return END_ERROR (
-					res, 400, "Invalid token : " + token
-				);
 			}
 
 			const split		= token.split("/");
@@ -1871,9 +1888,13 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 				(issued_to		!== id)		||
 				(random_hex.length	!== TOKEN_LEN_HEX)
 			) {
-				return END_ERROR (
-					res, 403, "Invalid token : " + token
-				);
+				const error_response = {
+					"message"		: "invalid token",
+					"invalid-input"		: token,
+					"num-tokens-revoked"	: num_tokens_revoked
+				};
+
+				return END_ERROR (res, 400, error_response);
 			}
 
 			const sha256_of_token = sha256(token);
@@ -1893,6 +1914,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			if (rows.length === 0)
 			{
 				const error_response = {
+					"message"		: "invalid token",
 					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -1945,6 +1967,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			)
 			{
 				const error_response = {
+					"message"		: "invalid token-hash",
 					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -1968,6 +1991,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			if (rows.length === 0)
 			{
 				const error_response = {
+					"messge"		: "invalid token hash",
 					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
