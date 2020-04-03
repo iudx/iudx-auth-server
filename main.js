@@ -2788,12 +2788,12 @@ if (! is_openbsd)
 
 	evaluator.evaluate(_tmp, {});
 
-	dns.lookup("google.com", {all:true}, (error, address) => {
-		if (error)
-			log("red","DNS to google.com failed ");
-		else
-			log("green","google.com = " + JSON.stringify(address));
-	});
+	dns.lookup("google.com", {all:true},
+		(error, unused_var_address) => {
+			if (error)
+				log("red","DNS to google.com failed ");
+		}
+	);
 
 	// ======================== END preload code for chroot ===============
 }
@@ -2855,7 +2855,7 @@ if (cluster.isMaster)
 		);
 	}
 
-	log("yellow","Master started with pid : " + process.pid);
+	log("yellow","Master started with pid " + process.pid);
 
 	for (let i = 0; i < NUM_CPUS; i++) {
 		cluster.fork();
