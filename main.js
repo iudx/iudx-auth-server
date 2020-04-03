@@ -41,6 +41,7 @@ const aperture			= require("./node-aperture");
 const immutable			= require("immutable");
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
+const compression		= require("compression");
 const http_request		= require("request");
 const pgNativeClient		= require("pg-native");
 const pg			= new pgNativeClient();
@@ -88,6 +89,9 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/delete"			: 3,
 	"/auth/v1/group/list"			: 3,
 });
+
+// pre load compression
+const compression_function = compression();
 
 let has_started_serving_apis = false;
 
@@ -157,6 +161,7 @@ app.use(
 	})
 );
 
+app.use(compression_function);
 app.use(bodyParser.raw({type:"*/*"}));
 app.use(security);
 
