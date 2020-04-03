@@ -90,9 +90,6 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/list"			: 3,
 });
 
-// pre load compression
-const compression_function = compression();
-
 let has_started_serving_apis = false;
 
 /* --- dns --- */
@@ -161,7 +158,7 @@ app.use(
 	})
 );
 
-app.use(compression_function);
+//app.use(compression());
 app.use(bodyParser.raw({type:"*/*"}));
 app.use(security);
 
