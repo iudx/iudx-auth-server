@@ -71,6 +71,28 @@ assert True  == resource_server.introspect_token (token,server_token)['success']
 # introspect once more
 assert True  == resource_server.introspect_token (token,server_token)['success']
 
+# introspect with request
+request = [
+            {
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/" + RS + "/resource-xyz-yzz",
+		"apis"		: ["/latest"],
+		"methods"	: ["GET"],
+		"body"		: {"key":"some-key"}
+	    }   
+]
+
+bad_request = [
+            {
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/" + RS + "/resource-xyz-yzz",
+		"apis"		: ["/latest-now"],
+		"methods"	: ["POST"],
+		"body"		: {"key":"some-key"}
+	    }   
+]
+
+assert True  == resource_server.introspect_token (token,server_token,request)['success']
+assert False == resource_server.introspect_token (token,server_token,bad_request)['success']
+
 assert False == resource_server.introspect_token (token,'invalid-token-012345678901234567')['success']
 assert False == resource_server.introspect_token (token)['success']
 
