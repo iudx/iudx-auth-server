@@ -46,8 +46,6 @@ const http_request		= require("request");
 const pgNativeClient		= require("pg-native");
 const pg			= new pgNativeClient();
 
-const encoding			= require("negotiator/lib/encoding");
-
 const TOKEN_LEN			= 16;
 const TOKEN_LEN_HEX		= 2 * TOKEN_LEN;
 
@@ -160,7 +158,7 @@ app.use(
 	})
 );
 
-app.use(compression());
+//app.use(compression());
 app.use(bodyParser.raw({type:"*/*"}));
 app.use(security);
 
