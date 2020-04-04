@@ -295,7 +295,7 @@ function END_SUCCESS (res, response = null)
 	res.status(200).end(JSON.stringify(response) + "\n");
 }
 
-function END_ERROR (res, http_status, msg, exception = null)
+function END_ERROR (res, http_status, error_message, exception = null)
 {
 	if (exception)
 		log("red", String(exception).replace(/\n/g," "));
@@ -303,9 +303,12 @@ function END_ERROR (res, http_status, msg, exception = null)
 	res.setHeader("Content-Type",	"application/json");
 	res.setHeader("Connection",	"close");
 
-	const response = {
-		error : msg,
-	};
+	const response = {};
+
+	if (typeof error_message === "string")
+		response.error = {"message" : error_message};
+	else
+		response.error = error_message; // is already a json
 
 	res.status(http_status).end(JSON.stringify(response) + "\n");
 
@@ -1156,9 +1159,12 @@ app.post("/auth/v1/token", (req, res) => {
 		{
 			if (typeof api !== "string")
 			{
-				return END_ERROR (
-					res, 400, "Invalid 'api' : " + api
-				);
+				const error_response = {
+					"message"	: "Invalid api",
+					"invalid-input"	: api
+				};
+
+				return END_ERROR (res, 400, error_response);
 			}
 
 			CTX.conditions.api = api;
@@ -1167,9 +1173,12 @@ app.post("/auth/v1/token", (req, res) => {
 			{
 				if (typeof method !== "string")
 				{
-					return END_ERROR (res, 400,
-						"Invalid 'method' : " + method
-					);
+					const error_response = {
+						"message"	: "Invalid method",
+						"invalid-input"	: method
+					};
+
+					return END_ERROR (res, 400, error_response);
 				}
 
 				CTX.conditions.method = method;
@@ -1191,7 +1200,7 @@ app.post("/auth/v1/token", (req, res) => {
 					if ((! token_time_in_policy) || token_time_in_policy < 0 || payment_amount < 0)
 					{
 						const error_response = {
-							"message"	: "unauthorized",
+							"message"	: "Unauthorized",
 							"invalid-input"	: {
 								"id"		: resource,
 								"api"		: api,
@@ -1219,7 +1228,7 @@ app.post("/auth/v1/token", (req, res) => {
 				catch (x)
 				{
 					const error_response = {
-						"message"	: "unauthorized",
+						"message"	: "Unauthorized",
 						"invalid-input"	: {
 							"id"		: resource,
 							"api"		: api,
@@ -1726,7 +1735,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					if (! (r1 instanceof Object))
 					{
 						const error_response = {
-							"message"	: "invalid request",
+							"message"	: "Invalid request",
 							"invalid-input"	: r1,
 						};
 
@@ -1755,7 +1764,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 							if (! lodash.isEqual(r1,r2))
 							{
 								const error_response = {
-									"message"	: "unauthorized",
+									"message"	: "Unauthorized",
 									"invalid-input"	: r1
 								};
 
@@ -1770,7 +1779,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					if (! resource_found)
 					{
 						const error_response = {
-							"message"	: "unauthorized",
+							"message"	: "Unauthorized",
 							"invalid-input"	: r1,
 						};
 
@@ -1856,7 +1865,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			)
 			{
 				const error_response = {
-					"message"		: "invalid token",
+					"message"		: "Invalid token",
 					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -1876,7 +1885,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 				(random_hex.length	!== TOKEN_LEN_HEX)
 			) {
 				const error_response = {
-					"message"		: "invalid token",
+					"message"		: "Invalid token",
 					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -1901,7 +1910,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			if (rows.length === 0)
 			{
 				const error_response = {
-					"message"		: "invalid token",
+					"message"		: "Invalid token",
 					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -1954,7 +1963,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			)
 			{
 				const error_response = {
-					"message"		: "invalid token-hash",
+					"message"		: "Invalid token-hash",
 					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -1978,7 +1987,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			if (rows.length === 0)
 			{
 				const error_response = {
-					"message"		: "invalid token hash",
+					"message"		: "Invalid token hash",
 					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -2024,7 +2033,7 @@ app.post("/auth/v1/token/revoke-all", (req, res) => {
 		return END_ERROR (res, 400, "No 'serial' found in the body");
 
 	if (! is_string_safe(body.serial))
-		return END_ERROR (res, 400, "invalid 'serial' field");
+		return END_ERROR (res, 400, "Invalid 'serial' field");
 
 	const serial = body.serial.toLowerCase();
 
@@ -2037,7 +2046,7 @@ app.post("/auth/v1/token/revoke-all", (req, res) => {
 	}
 
 	if (! is_string_safe(body.fingerprint,":")) // fingerprint contains ':'
-		return END_ERROR (res, 400, "invalid 'fingerprint' field");
+		return END_ERROR (res, 400, "Invalid 'fingerprint' field");
 
 	const fingerprint	= body.fingerprint.toLowerCase();
 
