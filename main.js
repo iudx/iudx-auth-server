@@ -2162,8 +2162,8 @@ app.post("/auth/v1/acl/set", (req, res) => {
 		);
 	}
 	catch (x) {
-		const err = String(x).replace(/\n/g," ");
-		return END_ERROR (res, 400, "Syntax error in policy : " + err);
+		const err = String(x);
+		return END_ERROR (res, 400, "Syntax error in policy. " + err);
 	}
 
 	const email_domain	= provider_id.split("@")[1];
@@ -2266,8 +2266,8 @@ app.post("/auth/v1/acl/append", (req, res) => {
 		);
 	}
 	catch (x) {
-		const err = String(x).replace(/\n/g," ");
-		return END_ERROR (res, 400, "Syntax error in policy : " + err);
+		const err = String(x);
+		return END_ERROR (res, 400, "Syntax error in policy. " + err);
 	}
 
 	const email_domain	= provider_id.split("@")[1];
@@ -2309,11 +2309,11 @@ app.post("/auth/v1/acl/append", (req, res) => {
 			}
 			catch (x)
 			{
-				const err = String(x).replace(/\n/g," ");
+				const err = String(x);
 
 				return END_ERROR (
 					res, 400,
-					"Syntax error in policy : " + err
+					"Syntax error in policy. " + err
 				);
 			}
 
