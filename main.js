@@ -409,10 +409,10 @@ function is_certificate_ok (req, cert, validate_email)
 	if (validate_email)
 	{
 		if (! is_valid_email(cert.subject.emailAddress))
-			return "Invalid emailAddress field in the certificate";
+			return "Invalid 'emailAddress' field in the certificate";
 
 		if ((! cert.issuer) || (! cert.issuer.emailAddress))
-			return "Certificate issuer has no emailAddress field";
+			return "Certificate issuer has no 'emailAddress' field";
 
 		const issuer_email = cert.issuer.emailAddress.toLowerCase();
 
@@ -974,7 +974,7 @@ app.post("/auth/v1/token", (req, res) => {
 		{
 			return END_ERROR (
 				res, 400,
-				"'token-time' field should be > 0 and < " +
+				"'token-time' should be > 0 and < " +
 				MAX_TOKEN_TIME
 			);
 		}
@@ -1010,10 +1010,15 @@ app.post("/auth/v1/token", (req, res) => {
 
 		if ( ! (row.methods instanceof Array))
 		{
-			return END_ERROR (res, 400,
-				"Invalid 'methods' for resource id : " +
-				resource
-			);
+			const error_response = {
+				"message"	: "Invalid 'methods'",
+				"invalid-input"	: {
+					'id'		: resource,
+					'methods' 	: row.methods
+				}
+			};
+
+			return END_ERROR (res, 400, error_response);
 		}
 
 		if (row.api && typeof row.api === "string")
@@ -1027,27 +1032,39 @@ app.post("/auth/v1/token", (req, res) => {
 
 		if ( ! (row.apis instanceof Array))
 		{
-			return END_ERROR (res, 400,
-				"Invalid 'apis' for resource id : " +
-				resource
-			);
+			const error_response = {
+				"message"	: "Invalid 'apis'",
+				"invalid-input"	: {
+					'id'	: resource,
+					'apis' 	: row.apis
+				}
+			};
+
+			return END_ERROR (res, 400, error_response);
 		}
 
 		if ((resource.match(/\//g) || []).length < 3)
 		{
-			return END_ERROR (res, 400,
-				"Invalid resource id "		+
-				"(it must have at least 3 '/' chars): "	+
-					resource
-			);
+			const error_response = {
+				"message"	: "Invalid 'id'; must have at least 3 '/' characters.",
+				"invalid-input"	: resource
+			};
+
+			return END_ERROR (res, 400, error_response);
 		}
 
 		// if body is given but is not a valid object
 		if (row.body && (! (row.body instanceof Object)))
 		{
-			return END_ERROR (res, 400,
-				"Invalid body for id :" + resource
-			);
+			const error_response = {
+				"message"	: "Invalid 'body'; not a valid JSON object",
+				"invalid-input"	: {
+					"id"	: resource,
+					"body"	: row.body
+				}
+			};
+
+			return END_ERROR (res, 400, error_response);
 		}
 
 		const split			= resource.split("/");
@@ -1079,10 +1096,12 @@ app.post("/auth/v1/token", (req, res) => {
 
 		if (rows.length === 0)
 		{
-			return END_ERROR (res, 400,
-				"Invalid resource id; no policy found for : " +
-					resource
-			);
+			const error_response = {
+				"message"	: "Invalid 'id'; no policy found.",
+				"invalid-input"	: resource
+			};
+
+			return END_ERROR (res, 400, error_response);
 		}
 
 		const policy_in_text = Buffer.from (
@@ -1160,8 +1179,11 @@ app.post("/auth/v1/token", (req, res) => {
 			if (typeof api !== "string")
 			{
 				const error_response = {
-					"message"	: "Invalid api",
-					"invalid-input"	: api
+					"message"	: "Invalid 'api'",
+					"invalid-input"	: {
+						"id"	: resource,
+						"api"	: api
+					}
 				};
 
 				return END_ERROR (res, 400, error_response);
@@ -1174,8 +1196,11 @@ app.post("/auth/v1/token", (req, res) => {
 				if (typeof method !== "string")
 				{
 					const error_response = {
-						"message"	: "Invalid method",
-						"invalid-input"	: method
+						"message"	: "Invalid 'method'",
+						"invalid-input"	: {
+							"id"		: resource,
+							"method"	: method
+						}
 					};
 
 					return END_ERROR (res, 400, error_response);
@@ -1270,14 +1295,14 @@ app.post("/auth/v1/token", (req, res) => {
 		)
 		{
 			return END_ERROR (
-				res, 400, "Invalid 'existing-token' field"
+				res, 400, "Invalid 'existing-token'"
 			);
 		}
 
 		if ((existing_token.match(/\//g) || []).length !== 2)
 		{
 			return END_ERROR (
-				res, 400, "Invalid 'existing-token' field"
+				res, 400, "Invalid 'existing-token'"
 			);
 		}
 
@@ -1292,7 +1317,7 @@ app.post("/auth/v1/token", (req, res) => {
 			(issued_to		!== consumer_id)	||
 			(random_hex.length	!== TOKEN_LEN_HEX)
 		) {
-			return END_ERROR (res, 403, "Invalid existing-token");
+			return END_ERROR (res, 403, "Invalid 'existing-token'");
 		}
 
 		const sha256_of_existing_token	= sha256(existing_token);
@@ -1314,11 +1339,7 @@ app.post("/auth/v1/token", (req, res) => {
 		);
 
 		if (existing_row.length === 0)
-		{
-			return END_ERROR (res, 403,
-				"Invalid 'existing-token' field"
-			);
-		}
+			return END_ERROR (res, 403,"Invalid 'existing-token'");
 
 		token_time = Math.min (
 			token_time,
@@ -1494,7 +1515,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	const body	= res.locals.body;
 
 	if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
-		return END_ERROR (res, 400, "Invalid CN in the certificate");
+		return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
 
 	const resource_server_name_in_cert = cert.subject.CN.toLowerCase();
 
@@ -1502,10 +1523,10 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 		return END_ERROR (res, 400, "No 'token' found in the body");
 
 	if ((! is_string_safe(body.token)) || (! body.token.startsWith(SERVER_NAME + "/")))
-		return END_ERROR (res, 400, "Invalid 'token' field");
+		return END_ERROR (res, 400, "Invalid 'token'");
 
 	if ((body.token.match(/\//g) || []).length !== 2)
-		return END_ERROR (res, 400, "Invalid 'token' field");
+		return END_ERROR (res, 400, "Invalid 'token'");
 
 	const token		= body.token.toLowerCase();
 	let server_token	= body["server-token"] || true;
@@ -1558,7 +1579,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 		(random_hex.length	!== TOKEN_LEN_HEX)	||
 		(! is_valid_email(issued_to))
 	) {
-		return END_ERROR (res, 400, "Invalid token");
+		return END_ERROR (res, 400, "Invalid 'token'");
 	}
 
 	const	ip		= req.connection.remoteAddress;
@@ -1571,7 +1592,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 		{
 			return END_ERROR (
 				res, 400,
-				"Invalid hostname : " +
+				"Invalid 'hostname' : " +
 					resource_server_name_in_cert
 			);
 		}
@@ -1621,7 +1642,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 			}
 
 			if (results.rows.length === 0)
-				return END_ERROR (res, 403, "Invalid token");
+				return END_ERROR (res, 403, "Invalid 'token'");
 
 			const expected_server_token = results
 							.rows[0]
@@ -1629,7 +1650,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 
 			// if token doesn't belong to this server
 			if (! expected_server_token)
-				return END_ERROR (res, 403, "Invalid token");
+				return END_ERROR (res, 403, "Invalid 'token'");
 
 			const num_resource_servers = Object.keys (
 				results.rows[0].server_token
@@ -1641,7 +1662,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 				{
 					return END_ERROR (
 						res, 403,
-						"Invalid 'server-token' field "
+						"Invalid 'server-token'"
 					);
 				}
 
@@ -1651,7 +1672,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 				{
 					return END_ERROR (
 						res, 403,
-						"Invalid 'server-token' field in the body"
+						"Invalid 'server-token'"
 					);
 				}
 			}
@@ -1671,7 +1692,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					{
 						return END_ERROR (
 							res, 403,
-							"Invalid 'server-token' field in the body"
+							"Invalid 'server-token'"
 						);
 					}
 				}
@@ -1854,7 +1875,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 		// user is a consumer
 
 		if (! (tokens instanceof Array))
-			return END_ERROR (res, 400, "Invalid 'tokens' field");
+			return END_ERROR (res, 400, "Invalid 'tokens'");
 
 		for (const token of tokens)
 		{
@@ -1939,12 +1960,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 		// user is a provider
 
 		if (! (token_hashes instanceof Array))
-		{
-			return END_ERROR (
-				res, 400,
-					"Invalid 'token-hashes' field"
-			);
-		}
+			return END_ERROR (res, 400, "Invalid 'token-hashes'");
 
 		const email_domain	= id.split("@")[1];
 		const sha1_of_email	= sha1(id);
@@ -2033,7 +2049,7 @@ app.post("/auth/v1/token/revoke-all", (req, res) => {
 		return END_ERROR (res, 400, "No 'serial' found in the body");
 
 	if (! is_string_safe(body.serial))
-		return END_ERROR (res, 400, "Invalid 'serial' field");
+		return END_ERROR (res, 400, "Invalid 'serial'");
 
 	const serial = body.serial.toLowerCase();
 
@@ -2046,7 +2062,7 @@ app.post("/auth/v1/token/revoke-all", (req, res) => {
 	}
 
 	if (! is_string_safe(body.fingerprint,":")) // fingerprint contains ':'
-		return END_ERROR (res, 400, "Invalid 'fingerprint' field");
+		return END_ERROR (res, 400, "Invalid 'fingerprint'");
 
 	const fingerprint	= body.fingerprint.toLowerCase();
 
@@ -2407,7 +2423,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 
 	// 5 yrs max
 	if (isNaN(hours) || hours < 0 || hours > 43800) {
-		return END_ERROR (res, 400, "Invalid 'hours' field");
+		return END_ERROR (res, 400, "Invalid 'hours'");
 	}
 
 	const as_consumer = [];
@@ -2517,7 +2533,7 @@ app.post("/auth/v1/group/add", (req, res) => {
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
 	if (! is_string_safe (body.consumer))
-		return END_ERROR (res, 400, "Invalid 'consumer' field");
+		return END_ERROR (res, 400, "Invalid 'consumer'");
 
 	const consumer_id = body.consumer.toLowerCase();
 
@@ -2525,18 +2541,18 @@ app.post("/auth/v1/group/add", (req, res) => {
 		return END_ERROR (res, 400, "No 'group' found in the body");
 
 	if (! is_string_safe (body.group))
-		return END_ERROR (res, 400, "Invalid 'group' field");
+		return END_ERROR (res, 400, "Invalid 'group'");
 
 	const group = body.group.toLowerCase();
 
 	if (! body["valid-till"])
-		return END_ERROR (res, 400, "Invalid 'valid-till' field");
+		return END_ERROR (res, 400, "Invalid 'valid-till'");
 
 	const valid_till = parseInt(body["valid-till"],10);
 
 	// 1 year max
 	if (isNaN(valid_till) || valid_till < 0 || valid_till > 8760) {
-		return END_ERROR (res, 400, "Invalid 'valid-till' field");
+		return END_ERROR (res, 400, "Invalid 'valid-till'");
 	}
 
 	const email_domain	= provider_id.split("@")[1];
@@ -2573,7 +2589,7 @@ app.post("/auth/v1/group/list", (req, res) => {
 	if (body.group)
 	{
 		if (! is_string_safe (body.group))
-			return END_ERROR (res, 400, "Invalid 'group' field");
+			return END_ERROR (res, 400, "Invalid 'group'");
 	}
 
 	const group		= body.group ? body.group.toLowerCase() : null;
@@ -2664,7 +2680,7 @@ app.post("/auth/v1/group/delete", (req, res) => {
 	if (body.consumer !== "*")
 	{
 		if (! is_string_safe (body.consumer))
-			return END_ERROR (res, 400, "Invalid 'consumer' field");
+			return END_ERROR (res, 400, "Invalid 'consumer'");
 	}
 
 	const consumer_id = body.consumer ? body.consumer.toLowerCase() : null;
@@ -2673,7 +2689,7 @@ app.post("/auth/v1/group/delete", (req, res) => {
 		return END_ERROR (res, 400, "No 'group' found in the body");
 
 	if (! is_string_safe (body.group))
-		return END_ERROR (res, 400, "Invalid 'group' field");
+		return END_ERROR (res, 400, "Invalid 'group'");
 
 	const group		= body.group.toLowerCase();
 
