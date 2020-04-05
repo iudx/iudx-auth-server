@@ -1,4 +1,5 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
+
 import os
 
 from init import consumer 
@@ -22,7 +23,7 @@ provider.set_policy(policy)
 assert policy == provider.get_policy()['response']['policy']
 
 new_policy  = "*@rbccps.org can access resource-yyz-abc for 1 hour"
-assert True == provider.append_policy(new_policy)['success']
+assert provider.append_policy(new_policy)['success'] is True
 
 updated_policy = policy + ';' + new_policy
 assert updated_policy == provider.get_policy()['response']['policy']
@@ -67,9 +68,9 @@ server_token = access_token['server-token'][RS]
 if type(server_token) == TUPLE:
 	server_token = server_token[0]
 
-assert True  == resource_server.introspect_token (token,server_token)['success']
+assert resource_server.introspect_token (token,server_token)['success'] is True
 # introspect once more
-assert True  == resource_server.introspect_token (token,server_token)['success']
+assert resource_server.introspect_token (token,server_token)['success'] is True
 
 # introspect with request
 request = [
@@ -90,11 +91,11 @@ bad_request = [
 	    }   
 ]
 
-assert True  == resource_server.introspect_token (token,server_token,request)['success']
-assert False == resource_server.introspect_token (token,server_token,bad_request)['success']
+assert resource_server.introspect_token (token,server_token,request)['success']			is True
+assert resource_server.introspect_token (token,server_token,bad_request)['success']		is False
 
-assert False == resource_server.introspect_token (token,'invalid-token-012345678901234567')['success']
-assert False == resource_server.introspect_token (token)['success']
+assert resource_server.introspect_token (token,'invalid-token-012345678901234567')['success']	is False
+assert resource_server.introspect_token (token)['success']					is False
 
 r = provider.audit_tokens(5)
 assert r["success"] is True
@@ -118,7 +119,7 @@ for a in as_provider:
 
 assert token_hash_found	is True
 assert found['revoked'] is False
-assert True == provider.revoke_token_hashes(token_hash)['success']
+assert provider.revoke_token_hashes(token_hash)['success'] is True
 
 # check if token was revoked
 r = provider.audit_tokens(5)
@@ -170,7 +171,7 @@ for a in as_provider:
                 break
 
 r = provider.revoke_all(cert_serial, cert_fingerprint)
-assert True == r["success"]
+assert r["success"] is True
 assert r["response"]["num-tokens-revoked"] >= 1
 
 r = provider.audit_tokens(100)
@@ -211,7 +212,7 @@ for a in as_consumer:
         if a['revoked'] is True:
                 num_revoked_before = num_revoked_before + 1
 
-assert True == provider.revoke_tokens(token)["success"]
+assert provider.revoke_tokens(token)["success"] is True
 
 r = provider.audit_tokens(5)
 assert r["success"] is True

@@ -60,6 +60,6 @@ r       		= provider.list_group("confidential")
 assert r["success"]     is True
 assert 1		== len(r["response"])
 
-assert True     == consumer.get_token(body)["success"]
-assert True     == provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")["success"]
-assert False    == consumer.get_token(body)["success"]
+assert consumer.get_token(body)["success"] 							is True
+assert provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")["success"]	is True
+assert consumer.get_token(body)["success"]							is False

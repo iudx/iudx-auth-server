@@ -89,11 +89,11 @@ class Auth():
 		if server_token:
 			body['server-token'] = server_token
 
-                if request:
-                        if type(request) is type([]):
-                                body['request'] = request
-                        else:
-                                body['request'] = [request]
+		if request:
+			if type(request) is type([]):
+				body['request'] = request
+			else:
+				body['request'] = [request]
 
 		return self.call("token/introspect", body)
 	#
