@@ -11,5 +11,5 @@ tasks:
     cd /home/iudx-auth-server/test
     doas chmod 775 .
     export AUTH_SERVER='localhost'
-    doas ./set-local.sh
+    doas /home/iudx-auth-server/test/set-local.sh
     ./run
