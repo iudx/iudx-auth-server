@@ -8,6 +8,7 @@ tasks:
     doas sh ftp-script.sh
 - test: |
     doas pkg_add py-requests
+    echo "127.0.0.1	auth.iudx.org.in" >> /etc/hosts
     cd /home/iudx-auth-server/test
     doas chmod 775 .
     export AUTH_SERVER='localhost'

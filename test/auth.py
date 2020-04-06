@@ -10,7 +10,7 @@ class Auth():
 	#
 		self.ssl_verify = True
  
-		if auth_server == "localhost":
+		if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 			self.ssl_verify = False
 
 		self.url		= "https://" + auth_server + "/auth/v" + str(version)

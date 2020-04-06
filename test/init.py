@@ -10,7 +10,6 @@ if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 #
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    auth_server = "localhost"
     resource_server = Auth(home + "l-server.pem", home + "l-server.key.pem", auth_server)
 #
 else:
