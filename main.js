@@ -457,6 +457,9 @@ function is_certificate_ok (req, cert, validate_email)
 
 function is_secure (req, res, cert, validate_email = true)
 {
+	if (req.headers.host && req.headers.host !== SERVER_NAME)
+		return "Invalid 'host' field in the header";
+
 	if (req.headers.origin)
 	{
 		const origin = req.headers.origin.toLowerCase();
