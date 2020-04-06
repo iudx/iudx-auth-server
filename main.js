@@ -75,6 +75,7 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 	"/marketplace/v1/credit/topup"		: 2,
 	"/marketplace/v1/audit/credit"		: 2,
 	"/marketplace/v1/confirm-payment"	: 2,
+	"/marketplace/v1/credit/topup-success"	: 2,
 
 	"/auth/v1/audit/tokens"			: 3,
 
@@ -1093,7 +1094,8 @@ app.post("/auth/v1/token", (req, res) => {
 
 			"SELECT policy,policy_in_json"	+
 			" FROM policy"			+
-			" WHERE id = $1::text LIMIT 1",
+			" WHERE id = $1::text"		+
+			" LIMIT 1",
 			[
 				provider_id_hash,	// 1
 			]
@@ -1336,7 +1338,8 @@ app.post("/auth/v1/token", (req, res) => {
 			" WHERE id = $1::text"				+
 			" AND token = $2::text"				+
 			" AND revoked = false"				+
-			" AND expiry > NOW() LIMIT 1",
+			" AND expiry > NOW()"				+
+			" LIMIT 1",
 			[
 				consumer_id,				// 1
 				sha256_of_existing_token,		// 2
@@ -1631,7 +1634,8 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 			" WHERE id = $1::text"			+
 			" AND token = $2::text"			+
 			" AND revoked = false"			+
-			" AND expiry > NOW() LIMIT 1",
+			" AND expiry > NOW()"			+
+			" LIMIT 1",
 			[
 				issued_to,			// 1
 				sha256_of_token			// 2
@@ -1926,7 +1930,8 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 				"SELECT 1 FROM token"		+
 				" WHERE id = $1::text "		+
 				" AND token = $2::text "	+
-				" AND expiry > NOW() LIMIT 1",
+				" AND expiry > NOW()"		+
+				" LIMIT 1",
 				[
 					id,			// 1
 					sha256_of_token		// 2
@@ -1997,7 +2002,8 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 				"SELECT 1 FROM token"			+
 				" WHERE token = $1::text"		+
 				" AND providers-> $2::text = 'true'"	+
-				" AND expiry > NOW() LIMIT 1",
+				" AND expiry > NOW()"			+
+				" LIMIT 1",
 				[
 					token_hash,			// 1
 					provider_id_hash		// 2
