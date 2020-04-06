@@ -32,7 +32,8 @@ Body in JSON format:
 
 	{
 		"group"		: <a valid group name created by the user>			// required
-		"valid-till"	: <how long (in seconds) the consumer will be in the group>	// required
+		"consumer"	: <the consumer's email-id, which is to be added to the group>	// required
+		"valid-till"	: <how long (in hours) the consumer will be in the group>	// required
 	}
 
 	Note: If the "group" doesn't exist, it will be created automatically.
@@ -44,7 +45,7 @@ Using pyIUDX SDK:
 	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
 
 	# add user@domain.com to confidential group for 1 hour
-	iudx_auth.add_consumer_to_group("user@domain.com","confidential",3600)
+	iudx_auth.add_consumer_to_group("user@domain.com","confidential",1)
 
 CURL example:
 

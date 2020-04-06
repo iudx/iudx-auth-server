@@ -177,8 +177,8 @@ CURL example:
 
 Known limitations:
 
-	If the access control rules contain regex on "id"s, then
-	an authorized consumer can get a token for "id"s which may not exist.
+	If the access control rules contain regex on "id"s, then an authorized
+	consumer can get a token for "id"s which may not exist.
 
 	This is by design. Having regex makes writing rules easier.
 	Also, the provider doesn't have to remember all valid "id"s.
