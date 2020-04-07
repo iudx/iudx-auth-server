@@ -717,15 +717,42 @@ function security (req, res, next)
 
 	if (is_iudx_certificate(cert))
 	{
+		// id-qt-unotice is in the format "key1:value1;key2:value2;..."
+
+		const id_qt_notice	= cert.subject["id-qt-unotice"] || "";
+		const split		= id_qt_notice.split(";");
+		const user_notice	= {};
+
+		for (const s of split)
+		{
+			const	ss	= s.split(":");	// split of split
+
+			let	key	= ss[0];
+			let	value	= ss[1];
+
+			if (key && value)
+			{
+				key	= key.toLowerCase();
+				value	= value.toLowerCase();
+
+				user_notice[key] = value;
+			}
+		}
+
+		if (user_notice["delegated-by"])
+		{
+			return END_ERROR (
+				res, 403,
+					"Delegated certificates cannot"	+
+					" be used to call auth/marketplace APIs"
+			);
+		}
+
+		const	cert_class		= user_notice["class"];
 		let	integer_cert_class	= 0;
-		const	cert_class		= cert.subject["id-qt-unotice"];
 
 		if (cert_class)
-		{
-			integer_cert_class = parseInt(
-				cert_class.split(":")[1],10
-			) || 0;
-		}
+			integer_cert_class = parseInt(cert_class,10) || 0;
 
 		if (integer_cert_class < 1)
 			return END_ERROR(res, 403, "Invalid certificate class");
