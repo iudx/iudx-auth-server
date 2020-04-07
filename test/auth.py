@@ -45,7 +45,11 @@ class Auth():
 		#
 
 		if response.headers['content-type'] == 'application/json':
-			return {"success":ret, "response" : json.loads(response.text)}
+			return {
+				"success"	: ret,
+				"response"	: json.loads(response.text),
+				"status_code"	: response.status_code
+			}
 		else:
 		#
 			sys.stderr.write (
