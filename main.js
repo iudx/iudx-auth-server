@@ -743,11 +743,15 @@ function security (req, res, next)
 		// class-1 APIs are special, user needs a class-1 certificate
 		if (min_class_required === 1 && integer_cert_class !== 1)
 		{
-			return END_ERROR (
-				res, 403,
+			// except for certificate-info API
+			if (! api.endsWith("/certificate-info"))
+			{
+				return END_ERROR (
+					res, 403,
 					"A class-1 certificate is required " +
 					"to call this API"
-			);
+				);
+			}
 		}
 
 		const error = is_secure(req,res,cert,true); // validate emails
