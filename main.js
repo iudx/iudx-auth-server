@@ -68,14 +68,14 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 
 	"/auth/v1/token/introspect"		: 1,
 	"/auth/v1/certificate-info"		: 1,
+	"/marketplace/v1/credit/topup-success"	: 1,
 
 	"/auth/v1/token"			: 2,
 
-	"/marketplace/v1/credit-info"		: 2,
+	"/marketplace/v1/credit/info"		: 2,
 	"/marketplace/v1/credit/topup"		: 2,
 	"/marketplace/v1/audit/credit"		: 2,
 	"/marketplace/v1/confirm-payment"	: 2,
-	"/marketplace/v1/credit/topup-success"	: 2,
 
 	"/auth/v1/audit/tokens"			: 3,
 
@@ -740,7 +740,8 @@ function security (req, res, next)
 			);
 		}
 
-		if (api.endsWith("/introspect") && integer_cert_class !== 1)
+		// class-1 APIs are special, user needs a class-1 certificate
+		if (min_class_required === 1 && integer_cert_class !== 1)
 		{
 			return END_ERROR (
 				res, 403,
@@ -816,9 +817,11 @@ function security (req, res, next)
 				);
 			}
 
-			// Certificates issued by other CAs
-			// may not have an "emailAddress" field.
-			// By default consider them as a class-1 certificate
+			/*
+				Certificates issued by other CAs
+				may not have an "emailAddress" field.
+				By default consider them as a class-1 certificate
+			*/
 
 			const error = is_secure(req,res,cert,false);
 
@@ -828,8 +831,10 @@ function security (req, res, next)
 			res.locals.cert_class	= 1;
 			res.locals.email	= "";
 
-			// but if the certificate has a valid "emailAddress"
-			// field then we consider it as a class-2 certificate
+			/*
+				But if the certificate has a valid "emailAddress"
+				field then we consider it as a class-2 certificate
+			*/
 
 			if (is_valid_email(cert.subject.emailAddress))
 			{
