@@ -19,4 +19,5 @@ else:
 
 consumer		= Auth(home + "consumer.pem", home + "consumer.key.pem", auth_server)
 provider		= Auth(home + "provider.pem", home + "provider.key.pem", auth_server)
+delegate		= Auth(home + "delegate.pem", home + "delegate.key.pem", auth_server)
 fake_resource_server	= Auth(home + "f-server.pem", home + "f-server.key.pem", auth_server)
