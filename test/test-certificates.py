@@ -2,6 +2,7 @@
 
 from init import consumer 
 from init import provider 
+from init import delegate 
 from init import resource_server
 
 r = resource_server.certificate_info()
@@ -22,3 +23,4 @@ assert r["response"]["id"] == "arun.babu@rbccps.org"
 # delegated certificate cannot call any Auth API
 r = delegate.certificate_info()
 assert r["success"] is False
+assert r['status_code'] == 403 
