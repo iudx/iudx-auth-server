@@ -17,4 +17,8 @@ assert r["response"]["id"] == "barun@iisc.ac.in"
 r = provider.certificate_info()
 assert r["success"] is True
 assert r["response"]["certificate-class"] == 3
-assert r["response"]["id"] == "arun.babu@rbccps.org" 
+assert r["response"]["id"] == "arun.babu@rbccps.org"
+
+# delegated certificate cannot call any Auth API
+r = delegate.certificate_info()
+assert r["success"] is False
