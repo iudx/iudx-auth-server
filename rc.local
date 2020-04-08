@@ -6,4 +6,6 @@ $dir/run.crl.tmux
 telegram_apikey=`cat $dir/telegram.apikey`                                      
 telegram_chat_id=`cat $dir/telegram.chatid`                                     
 
-/usr/local/bin/curl "https://api.telegram.org/bot$telegram_apikey/sendMessage?chat_id=$telegram_chat_id&text=[AUTH]:machine-booting..."
+hostname=`hostname`
+
+/usr/local/bin/curl "https://api.telegram.org/bot$telegram_apikey/sendMessage?chat_id=$telegram_chat_id&text=[ $hostname ] : booting..."

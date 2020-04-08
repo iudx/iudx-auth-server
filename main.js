@@ -699,6 +699,9 @@ function security (req, res, next)
 	}
 
 	const api			= url.parse(req.url).pathname;
+
+	// TODO: convert /v[1-9]/ to /v1/
+
 	const min_class_required	= MIN_CERT_CLASS_REQUIRED.get(api);
 
 	if (! min_class_required)
