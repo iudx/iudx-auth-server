@@ -1,8 +1,10 @@
 /* vim: set ts=8 sw=4 tw=0 noet : */
 
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020, Indian Institute of Science, Bengaluru
  *
+ * Authors:
+ * --------
  * Arun Babu	{barun		<at> iisc <dot> ac <dot> in}
  * Bryan Robert	{bryanrobert	<at> iisc <dot> ac <dot> in}
  *
