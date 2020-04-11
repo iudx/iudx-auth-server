@@ -829,11 +829,11 @@ function security (req, res, next)
 
 			if (user_notice["can-access"])
 			{
-				const can_access = user_notice["can-access"];
+				const can_access_regex = user_notice["can-access"];
 				
-				 /* allow ^ | * characters but not unsafe regex */
+				/* allow ^ | * characters but not unsafe regex */
 
-				if ((! is_string_safe(can_access,"^|*")) || (! safe_regex(can_access)))
+				if ((! is_string_safe(can_access_regex,"^|*")) || (! safe_regex(can_access_regex)))
 				{
 					return END_ERROR (
 						res, 400,
@@ -841,7 +841,7 @@ function security (req, res, next)
 					);
 				}
 
-				res.locals.can_access = user_notice["can-access"];
+				res.locals.can_access_regex = new RegExp(can_access_regex);
 			}
 
 			return next();
@@ -1055,8 +1055,7 @@ app.post("/auth/v1/token", (req, res) => {
 
 	const payment_info		= {};
 
-	const access_whitelist_regex	= res.locals.can_access ?
-						new RegExp(res.locals.can_access) : null;
+	const can_access_regex		= res.locals.can_access_regex;
 
 	for (const row of request_array)
 	{
@@ -1137,9 +1136,9 @@ app.post("/auth/v1/token", (req, res) => {
 			return END_ERROR (res, 400, error_response);
 		}
 
-		if (access_whitelist_regex)
+		if (can_access_regex)
 		{
-			if (! resource.match(access_whitelist_regex))
+			if (! resource.match(can_access_regex))
 			{
 				const error_response = {
 					"message"	: "Your certificate does not allow access to this 'id'",
