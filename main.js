@@ -831,9 +831,12 @@ function security (req, res, next)
 			{
 				const can_access_regex = user_notice["can-access"];
 				
-				/* allow ^ | * characters but not unsafe regex */
+				/*	
+					allow '^' '$' and '*' characters
+					but not unsafe regex
+				*/
 
-				if ((! is_string_safe(can_access_regex,"^|*")) || (! safe_regex(can_access_regex)))
+				if ((! is_string_safe(can_access_regex,"^*$")) || (! safe_regex(can_access_regex)))
 				{
 					return END_ERROR (
 						res, 400,
