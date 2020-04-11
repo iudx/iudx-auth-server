@@ -828,7 +828,7 @@ function security (req, res, next)
 
 			if (user_notice["can-access"])
 			{
-				if (! is_string_safe(user_notice["can-access"],"^")) // allow starting with
+				if (! is_string_safe(user_notice["can-access"],"^*")) // allow ^ and *
 				{
 					return END_ERROR (
 						res, 400,
