@@ -829,35 +829,33 @@ function security (req, res, next)
 
 			if (user_notice["can-access"])
 			{
-				const can_access_regex = user_notice["can-access"];
-				
-				/*	
-					allow '^' '*' and '$' characters
-					but not unsafe RegEx
-				*/
+				res.locals.can_access_regex	= [];
 
-				const regex_array = can_access_regex.split(",");
+				const can_access_regex		= user_notice["can-access"].split(",");
 
-				res.locals.can_access_regex = []; 
-
-				for (let r of regex_array)
+				for (const r of can_access_regex)
 				{
-					r = r.trim();
+					const regex = r.trim();
 
-					if (r === "")
+					if (regex === "")
 						continue;
 
-					if ((! is_string_safe(r,"^*$")) || (! safe_regex(r)))
+					/*
+						allow '^' '*' and '$' characters
+						but not unsafe RegEx
+					*/
+
+					if ((! is_string_safe(regex,"^*$")) || (! safe_regex(regex)))
 					{
 						const error_response = {
 							"message"	: "Unsafe 'can-access' RegEx in certificate",
-							"invalid-input"	: r,
+							"invalid-input"	: regex,
 						};
-			
+
 						return END_ERROR (res, 400, error_response);
 					}
 
-					res.locals.can_access_regex.push(new RegExp(r));
+					res.locals.can_access_regex.push(new RegExp(regex));
 				}
 			}
 
@@ -1157,9 +1155,9 @@ app.post("/auth/v1/token", (req, res) => {
 		{
 			let access_denied = true;
 
-			for (const r of can_access_regex)
+			for (const regex of can_access_regex)
 			{
-				if (resource.match(r))
+				if (resource.match(regex))
 				{
 					access_denied = false;
 					break;
