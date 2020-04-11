@@ -41,6 +41,7 @@ const express			= require("express");
 const timeout			= require("connect-timeout");
 const aperture			= require("./node-aperture");
 const immutable			= require("immutable");
+const safe_regex		= require('safe-regex');
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
 const compression		= require("compression");
@@ -828,17 +829,19 @@ function security (req, res, next)
 
 			if (user_notice["can-access"])
 			{
-				if (! is_string_safe(user_notice["can-access"],"^|*")) // allow ^ | * characters
+				const can_access = user_notice["can-access"];
+				
+				 /* allow ^ | * characters but not unsafe regex */
+
+				if ((! is_string_safe(can_access,"^|*")) || (! safe_regex(can_access)))
 				{
 					return END_ERROR (
 						res, 400,
 						"Invalid 'can-access' field in certificate"
 					);
 				}
-				else
-				{
-					res.locals.can_access = user_notice["can-access"];
-				}
+
+				res.locals.can_access = user_notice["can-access"];
 			}
 
 			return next();
