@@ -826,6 +826,21 @@ function security (req, res, next)
 							.emailAddress
 							.toLowerCase();
 
+			if (user_notice["can-access"])
+			{
+				if (! is_string_safe(user_notice["can-access"],"^")) // allow starting with
+				{
+					return END_ERROR (
+						res, 400,
+						"Invalid 'can-access' field in certificate"
+					);
+				}
+				else
+				{
+					res.locals.can_access = user_notice["can-access"];
+				}
+			}
+
 			return next();
 		});
 	}
@@ -1037,6 +1052,9 @@ app.post("/auth/v1/token", (req, res) => {
 
 	const payment_info		= {};
 
+	const access_whitelist_regex	= res.locals.can_access ?
+						new RegExp(res.locals.can_access) : null;
+
 	for (const row of request_array)
 	{
 		const resource = row.id;
@@ -1114,6 +1132,21 @@ app.post("/auth/v1/token", (req, res) => {
 			};
 
 			return END_ERROR (res, 400, error_response);
+		}
+
+		if (access_whitelist_regex)
+		{
+			if (! resource.match(access_whitelist_regex))
+			{
+				const error_response = {
+					"message"	: "Your certificate does not allow access to this 'id'",
+					"invalid-input"	: {
+						"id"	: resource,
+					}
+				}
+
+				return END_ERROR (res, 400, error_response);
+			}
 		}
 
 		const split			= resource.split("/");
