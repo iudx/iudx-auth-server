@@ -832,19 +832,33 @@ function security (req, res, next)
 				const can_access_regex = user_notice["can-access"];
 				
 				/*	
-					allow '^' '$' and '*' characters
-					but not unsafe regex
+					allow '^' '*' and '$' characters
+					but not unsafe RegEx
 				*/
 
-				if ((! is_string_safe(can_access_regex,"^*$")) || (! safe_regex(can_access_regex)))
-				{
-					return END_ERROR (
-						res, 400,
-						"Invalid 'can-access' field in certificate"
-					);
-				}
+				const regex_array = can_access_regex.split(",");
 
-				res.locals.can_access_regex = new RegExp(can_access_regex);
+				res.locals.can_access_regex = []; 
+
+				for (let r of regex_array)
+				{
+					r = r.trim();
+
+					if (r === "")
+						continue;
+
+					if ((! is_string_safe(r,"^*$")) || (! safe_regex(r)))
+					{
+						const error_response = {
+							"message"	: "Unsafe 'can-access' RegEx in certificate",
+							"invalid-input"	: r,
+						};
+			
+						return END_ERROR (res, 400, error_response);
+					}
+
+					res.locals.can_access_regex.push(new RegExp(r));
+				}
 			}
 
 			return next();
@@ -1141,7 +1155,18 @@ app.post("/auth/v1/token", (req, res) => {
 
 		if (can_access_regex)
 		{
-			if (! resource.match(can_access_regex))
+			let access_denied = true;
+
+			for (const r of can_access_regex)
+			{
+				if (resource.match(r))
+				{
+					access_denied = false;
+					break;
+				}
+			}
+
+			if (access_denied)
 			{
 				const error_response = {
 					"message"	: "Your certificate does not allow access to this 'id'",
