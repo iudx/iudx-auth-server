@@ -1,13 +1,12 @@
 #!/bin/sh
 
-cd /var/postgresql
+cd /home/postgresql
 
-initdb -D /var/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
-pg_ctl -D /var/postgresql/data/ -l logfile start
+initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
+pg_ctl -D /home/postgresql/data/ -l logfile start
 
 export PGPASSWORD=`cat admin.db.password`
 
-#echo "listen_addresses = '127.0.0.1'" >> /var/postgresql/data/postgresql.conf
 
 psql -U postgres < schema.sql >/dev/null
 
