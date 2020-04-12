@@ -6,12 +6,13 @@ export PGPASSWORD=`cat admin.db.password`
 
 mkdir /home/postgresql/data
 
-initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
+echo "listen_addresses = '127.0.0.1'" >> /home/postgresql/data/postgresql.conf 
 
-pg_ctl -D /home/postgresql/data/ -l logfile start
+initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
 
 until pg_isready
 do
+	pg_ctl start -D /home/postgresql/data/
 	sleep 1
 done
 

@@ -68,8 +68,8 @@ cp setup.postgresql.openbsd /home/postgresql/
 chown _postgresql:_postgresql /home/postgresql/setup.postgresql.openbsd
 
 chmod u+x /home/postgresql/setup.postgresql.openbsd
+su -l _postgresql -c /home/postgresql/setup.postgresql.openbsd
 
-su _postgresql -c /home/postgresql/setup.postgresql.openbsd
 su -l _postgresql -c "/usr/local/bin/pg_ctl -D /home/postgresql/data/ -l logfile start"
 # local setup
 
