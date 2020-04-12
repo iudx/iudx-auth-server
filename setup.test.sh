@@ -1,4 +1,4 @@
-openssl req -x509 -nodes -days 365 -subj "/CN=localhost/emailAddress=ca@iudx.org.in" -newkey rsa:2048 -keyout ca.key -out ca.iudx.org.in.crt
+openssl req -x509 -nodes -days 365 -subj "/CN=ca.iudx.org.in/emailAddress=ca@iudx.org.in" -newkey rsa:2048 -keyout ca.key -out ca.iudx.org.in.crt
 
 # let consumer certificate be of type ECDSA
 openssl ecparam -genkey -name secp384r1 > consumer.key.pem
@@ -14,7 +14,7 @@ openssl req -new -newkey rsa:2048 -nodes -out delegated.csr -keyout delegated.ke
 
 openssl req -new -newkey rsa:2048 -nodes -out r-server.csr -keyout r-server.key.pem -subj "/CN=iisc.iudx.org.in/id-qt-unotice=class:1/emailAddress=example@example.com"
 openssl req -new -newkey rsa:2048 -nodes -out f-server.csr -keyout f-server.key.pem -subj "/CN=google.com/id-qt-unotice=class:1/emailAddress=arun.babu@rbccps.org"
-openssl req -new -newkey rsa:2048 -nodes -out l-server.csr -keyout l-server.key.pem -subj "/CN=localhost/id-qt-unotice=class:1/emailAddress=example@example.com"
+openssl req -new -newkey rsa:2048 -nodes -out l-server.csr -keyout l-server.key.pem -subj "/CN=rs.example.com/id-qt-unotice=class:1/emailAddress=example@example.com"
 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in consumer.csr -req -days 365 -sha256 -out consumer.pem 
 

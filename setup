@@ -95,7 +95,7 @@ cp pf.conf /etc/
 touch https-key.pem
 chmod 400 https-key.pem
 
-openssl req -x509 -nodes -days 365 -subj "/CN=localhost" -newkey rsa:2048 -keyout https-key.pem -out https-certificate.pem
+openssl req -x509 -nodes -days 365 -subj "/CN=auth.iudx.org.in" -newkey rsa:2048 -keyout https-key.pem -out https-certificate.pem
 
 git clone --depth=1 https://github.com/rbccps-iisc/node-aperture
 cd node-aperture
