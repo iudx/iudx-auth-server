@@ -9,6 +9,8 @@ then
 	exit
 fi
 
+uname -a
+
 syspatch
 
 if [ $1 = "test" ]
