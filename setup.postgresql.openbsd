@@ -1,16 +1,16 @@
 #!/bin/sh
 
-cd /home/postgresql
+cd /var/postgresql
 
-initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
-pg_ctl -D /home/postgresql/data/ -l logfile start
+initdb -D /var/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
+pg_ctl -D /var/postgresql/data/ -l logfile start
 
 export PGPASSWORD=`cat admin.db.password`
 
-sed -i "s/America/Asia" /home/postgresql/data/postgresql.conf
-sed -i "s/Los_Angeles/Kolkata" /home/postgresql/data/postgresql.conf
+sed -i "s/America/Asia" /var/postgresql/data/postgresql.conf
+sed -i "s/Los_Angeles/Kolkata" /var/postgresql/data/postgresql.conf
 
-sed -i "s/max_connections = 30/max_connections = 100" /home/postgresql/data/postgresql.conf
+sed -i "s/max_connections = 30/max_connections = 100" /var/postgresql/data/postgresql.conf
 
 
 psql -U postgres < schema.sql >/dev/null
