@@ -14,7 +14,6 @@ openssl req -new -newkey rsa:2048 -nodes -out delegated.csr -keyout delegated.ke
 
 openssl req -new -newkey rsa:2048 -nodes -out r-server.csr -keyout r-server.key.pem -subj "/CN=iisc.iudx.org.in/id-qt-unotice=class:1/emailAddress=example@example.com"
 openssl req -new -newkey rsa:2048 -nodes -out f-server.csr -keyout f-server.key.pem -subj "/CN=google.com/id-qt-unotice=class:1/emailAddress=arun.babu@rbccps.org"
-openssl req -new -newkey rsa:2048 -nodes -out l-server.csr -keyout l-server.key.pem -subj "/CN=rs.example.com/id-qt-unotice=class:1/emailAddress=example@example.com"
 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in consumer.csr -req -days 365 -sha256 -out consumer.pem 
 
@@ -27,7 +26,5 @@ openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in delegated.
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in r-server.csr -req -days 365 -sha256 -out r-server.pem 
 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in f-server.csr -req -days 365 -sha256 -out f-server.pem 
-
-openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in l-server.csr -req -days 365 -sha256 -out l-server.pem 
 
 cp *.pem /home/build/

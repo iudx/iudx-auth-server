@@ -7,8 +7,6 @@ from init import provider
 from init import resource_server
 
 RS = "iisc.iudx.org.in"
-if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
-	RS = "localhost"
 
 policy = "x can access *" # dummy policy
 provider.set_policy(policy)

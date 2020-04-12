@@ -11,8 +11,6 @@ from init import restricted_consumer
 import hashlib
 
 RS = "iisc.iudx.org.in"
-if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
-    RS = "localhost"
 
 TUPLE = type(("x",))
 
