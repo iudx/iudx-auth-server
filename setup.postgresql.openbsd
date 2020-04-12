@@ -2,13 +2,18 @@
 
 cd /home/postgresql
 
+export PGPASSWORD=`cat admin.db.password`
+
 mkdir /home/postgresql/data
 
 initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
 
 pg_ctl -D /home/postgresql/data/ -l logfile start
 
-export PGPASSWORD=`cat admin.db.password`
+until pg_isready
+do
+	sleep 1
+done
 
 psql -U postgres < schema.sql
 
