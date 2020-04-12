@@ -1,18 +1,19 @@
 #!/bin/sh
 
-cd /var/postgresql
+cd /home/postgresql
 
-initdb -D /var/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
-pg_ctl -D /var/postgresql/data/ -l logfile start
+initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
+
+pg_ctl -D /home/postgresql/data/ -l logfile start
+
+until pg_isready -h 127.0.0.1
+do
+	sleep 1
+done
 
 export PGPASSWORD=`cat admin.db.password`
 
-sed -i "s/America/Asia" /var/postgresql/data/postgresql.conf
-sed -i "s/Los_Angeles/Kolkata" /var/postgresql/data/postgresql.conf
-
-sed -i "s/max_connections = 30/max_connections = 100" /var/postgresql/data/postgresql.conf
-
-
-psql -U postgres < schema.sql >/dev/null
+psql -U postgres < schema.sql > /dev/null
 
 rm -rf schema.sql
+rm -rf setup.postgresql.openbsd
