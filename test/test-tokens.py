@@ -249,7 +249,7 @@ body = [
 		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1",
 	},
 	{
-		"id"	: "google.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/r2"
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/r2"
 	}
 ]
 
