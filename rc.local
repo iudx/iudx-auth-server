@@ -1,5 +1,13 @@
 /sbin/pfctl -t bruteforce -T expire 86400                                       
 
+su -l _postgresql -c '/usr/local/bin/pg_ctl start -D /home/postgresql/data/'
+
+until /usr/local/bin/pg_isready -h 127.0.0.1
+do
+	echo "Waiting for postgresql to start ..."
+	sleep 1
+done
+
 dir="/home/iudx-auth-server"                                               
 $dir/run.tmux                                                                   
 $dir/run.crl.tmux                                                               
