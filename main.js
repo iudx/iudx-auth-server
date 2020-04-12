@@ -96,6 +96,9 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 
 let has_started_serving_apis = false;
 
+/* --- time zone --- */
+process.env.TZ= 'Asia/Kolkata';
+
 /* --- dns --- */
 
 dns.setServers ([

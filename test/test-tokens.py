@@ -241,7 +241,7 @@ body = [
 r = restricted_consumer.get_token(body)
 access_token = r['response']
 
-assert r['success']     is True
+assert r['success']     is True 
 assert None             != access_token
 
 body = [
@@ -249,7 +249,7 @@ body = [
 		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1",
 	},
 	{
-		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/r2"
+		"id"	: "google.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/r2"
 	}
 ]
 
