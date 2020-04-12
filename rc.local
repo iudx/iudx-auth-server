@@ -1,12 +1,5 @@
 /sbin/pfctl -t bruteforce -T expire 86400                                       
 
-su _postgresql -c /usr/local/bin/pg_ctl -D /home/postgresql/data -l logfile start
-
-until /usr/local/bin/pg_isready -h 127.0.0.1
-do
-	sleep 1
-done
-
 dir="/home/iudx-auth-server"                                               
 $dir/run.tmux                                                                   
 $dir/run.crl.tmux                                                               
