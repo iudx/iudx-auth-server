@@ -11,11 +11,11 @@ fi
 
 uname -a
 
-syspatch
-
 if [ $1 = "test" ]
 then
 	./test/setup.sh
+else
+	syspatch
 fi
 
 useradd -s /sbin/nologin -d /nonexistent _aaa
