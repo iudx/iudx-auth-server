@@ -9,11 +9,11 @@ then
 	exit
 fi
 
-if [ $1 = "test" ]
+syspatch
+
+if [ "$1" == "test" ]
 then
 	./test/setup.sh
-else
-	syspatch
 fi
 
 useradd -s /sbin/nologin -d /nonexistent _aaa
@@ -103,7 +103,7 @@ echo kern.seminfo.semmni=128	>> /etc/sysctl.conf
 echo /usr/bin/pkill tmux >> /etc/rc.shutdown
 echo /usr/sbin/rcctl stop postgresql >> /etc/rc.shutdown
 
-if [ $1 = "noreboot" ] || [ $2 = "noreboot" ]
+if [ "$1" = "noreboot" ] || [ "$2" = "noreboot" ]
 then
 	sysctl kern.seminfo.semmsl=250
 	sysctl kern.seminfo.semmns=5000
