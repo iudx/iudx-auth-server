@@ -226,6 +226,8 @@ for a in as_consumer:
 
 assert num_revoked_before < num_revoked_after
 
+new_policy  = "*@iisc.ac.in can access * for 1 hour"
+assert provider.set_policy(new_policy)['success'] is True
 
 body = [
 	{
