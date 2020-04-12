@@ -11,7 +11,7 @@ fi
 
 syspatch
 
-if [ $1 = "test" ]
+if [ "$1" = "test" ]
 then
 	./test/setup.sh
 fi
@@ -110,7 +110,13 @@ then
 	sysctl kern.seminfo.semopm=100
 	sysctl kern.seminfo.semmni=128
 
-	rcctl start postgresql
+	su _postgresql -c /usr/local/bin/pg_ctl -D /home/postgresql/data -l logfile start
+
+	until pg_isready -h 127.0.0.1
+	do
+		sleep 1
+	done
+
 	./run.tmux
 	./run.crl.tmux
 else
