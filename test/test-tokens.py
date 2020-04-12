@@ -6,6 +6,8 @@ from init import consumer
 from init import provider 
 from init import resource_server
 
+from init import restricted_consumer 
+
 import hashlib
 
 RS = "iisc.iudx.org.in"
@@ -225,3 +227,32 @@ for a in as_consumer:
                 num_revoked_after = num_revoked_after + 1
 
 assert num_revoked_before < num_revoked_after
+
+
+body = [
+	{
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1",
+	},
+	{
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/r1"
+	}
+]
+
+r = restricted_consumer.get_token(body)
+access_token = r['response']
+
+assert r['success']     is True
+assert None             != access_token
+
+body = [
+	{
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1",
+	},
+	{
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/secret"
+	}
+]
+
+r = restricted_consumer.get_token(body)
+assert r['success']	is False 
+assert r['status_code']	== 403 
