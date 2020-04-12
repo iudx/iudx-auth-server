@@ -5,7 +5,7 @@ openssl ecparam -genkey -name secp384r1 > consumer.key.pem
 openssl req -new -key consumer.key.pem -out consumer.csr -sha256 -subj "/CN=individual/emailAddress=barun@iisc.ac.in/id-qt-unotice=class:2"
 
 openssl ecparam -genkey -name secp384r1 > restricted.key.pem
-openssl req -new -key restricted.key.pem -out restricted.csr -sha256 -subj '/CN=individual/emailAddress=barun@iisc.ac.in/id-qt-unotice=class:2;can-access:rbccps.org*'
+openssl req -new -key restricted.key.pem -out restricted.csr -sha256 -subj '/CN=individual/emailAddress=barun@iisc.ac.in/id-qt-unotice=class:2;can-access:rbccps.org\/*\/rs1\/*'
 
 # let provider certificate be of type RSA 
 openssl req -new -newkey rsa:2048 -nodes -out provider.csr -keyout provider.key.pem -subj "/CN=employee/emailAddress=arun.babu@rbccps.org/id-qt-unotice=class:3"
