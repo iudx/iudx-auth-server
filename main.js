@@ -41,7 +41,7 @@ const express			= require("express");
 const timeout			= require("connect-timeout");
 const aperture			= require("./node-aperture");
 const immutable			= require("immutable");
-const safe_regex		= require('safe-regex');
+const safe_regex		= require("safe-regex");
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
 const compression		= require("compression");
@@ -97,7 +97,7 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 let has_started_serving_apis = false;
 
 /* --- time zone --- */
-process.env.TZ= 'Asia/Kolkata';
+process.env.TZ= "Asia/Kolkata";
 
 /* --- dns --- */
 
@@ -1100,8 +1100,8 @@ app.post("/auth/v1/token", (req, res) => {
 			const error_response = {
 				"message"	: "Invalid 'methods'",
 				"invalid-input"	: {
-					'id'		: resource,
-					'methods' 	: row.methods
+					"id"		: resource,
+					"methods" 	: row.methods
 				}
 			};
 
@@ -1122,8 +1122,8 @@ app.post("/auth/v1/token", (req, res) => {
 			const error_response = {
 				"message"	: "Invalid 'apis'",
 				"invalid-input"	: {
-					'id'	: resource,
-					'apis' 	: row.apis
+					"id"	: resource,
+					"apis" 	: row.apis
 				}
 			};
 
@@ -1174,7 +1174,7 @@ app.post("/auth/v1/token", (req, res) => {
 					"invalid-input"	: {
 						"id"	: resource,
 					}
-				}
+				};
 
 				return END_ERROR (res, 401, error_response);
 			}
