@@ -13,7 +13,7 @@ syspatch
 
 if [ $1 = "test" ]
 then
-	./setup.test.sh
+	./test/setup.sh
 fi
 
 useradd -s /sbin/nologin -d /nonexistent _aaa

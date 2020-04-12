@@ -247,10 +247,11 @@ body = [
 		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1",
 	},
 	{
-		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/secret"
+		"id"	: "google.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/secret"
 	}
 ]
 
 r = restricted_consumer.get_token(body)
 assert r['success']	is False 
 assert r['status_code']	== 403 
+assert r['response']['error']['message'].startsWith("Your certificate does not allow access to this 'id'")
