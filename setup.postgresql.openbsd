@@ -12,7 +12,7 @@ done
 
 export PGPASSWORD=`cat admin.db.password`
 
-psql -U postgres < schema.sql >/dev/null
+psql -U postgres < schema.sql
 
 rm -rf schema.sql
 rm -rf setup.postgresql.openbsd
