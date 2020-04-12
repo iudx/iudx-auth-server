@@ -8,4 +8,4 @@ telegram_chat_id=`cat $dir/telegram.chatid`
 
 hostname=`hostname`
 
-/usr/local/bin/curl "https://api.telegram.org/bot$telegram_apikey/sendMessage?chat_id=$telegram_chat_id&text=[ $hostname ] : booting..."
+/usr/local/bin/curl "https://api.telegram.org/bot$telegram_apikey/sendMessage?chat_id=$telegram_chat_id&text=[AUTH] : booting..."
