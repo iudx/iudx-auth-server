@@ -6,6 +6,8 @@ export PGPASSWORD=`cat admin.db.password`
 
 mkdir /home/postgresql/data
 
+echo "listen_addresses = '127.0.0.1'" >> /home/postgresql/data/postgresql.conf 
+
 initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
 
 until pg_isready
