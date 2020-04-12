@@ -110,8 +110,6 @@ then
 	sysctl kern.seminfo.semopm=100
 	sysctl kern.seminfo.semmni=128
 
-	su _postgresql -c /usr/local/bin/pg_ctl -D /home/postgresql/data/ -l logfile start
-
 	until pg_isready -h 127.0.0.1
 	do
 		sleep 1
