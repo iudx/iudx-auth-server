@@ -1173,7 +1173,7 @@ app.post("/auth/v1/token", (req, res) => {
 					}
 				}
 
-				return END_ERROR (res, 403, error_response);
+				return END_ERROR (res, 401, error_response);
 			}
 		}
 

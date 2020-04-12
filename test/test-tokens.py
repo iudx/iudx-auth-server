@@ -253,5 +253,4 @@ body = [
 
 r = restricted_consumer.get_token(body)
 assert r['success']	is False 
-assert r['status_code']	== 403 
-assert r['response']['error']['message'].startsWith("Your certificate does not allow access to this 'id'")
+assert r['status_code']	== 401
