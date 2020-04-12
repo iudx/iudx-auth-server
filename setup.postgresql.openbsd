@@ -5,9 +5,14 @@ cd /home/postgresql
 initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfile=admin.db.password
 pg_ctl -D /home/postgresql/data/ -l logfile start
 
-export PGPASSWORD=`cat admin.db.password`
+until pg_isready
+do
+	sleep 1
+done
 
+export PGPASSWORD=`cat admin.db.password`
 
 psql -U postgres < schema.sql >/dev/null
 
 rm -rf schema.sql
+rm -rf setup.postgresql.openbsd

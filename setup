@@ -82,12 +82,7 @@ chown _postgresql:_postgresql /home/postgresql/setup.postgresql.openbsd
 chmod u+x /home/postgresql/setup.postgresql.openbsd
 su _postgresql -c /home/postgresql/setup.postgresql.openbsd
 
-until su _postgresql -c pg_isready
-do
-	sleep 1
-done
-
-rm -rf /home/postgresql/setup.postgresql.openbsd
+# local setup
 
 cp rc.local /etc/
 cp pf.conf /etc/
