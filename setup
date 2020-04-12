@@ -9,8 +9,6 @@ then
 	exit
 fi
 
-uname -a
-
 if [ $1 = "test" ]
 then
 	./test/setup.sh
@@ -31,20 +29,7 @@ touch passwords/admin.db.password
 
 #------- Passwords for various operations -----------
 
-#touch passwords/select_crl.db.password
 touch passwords/update_crl.db.password
-
-#touch passwords/select_token.db.password
-#touch passwords/insert_token.db.password
-#touch passwords/update_token.db.password
-
-#touch passwords/select_policy.db.password
-#touch passwords/insert_policy.db.password
-#touch passwords/update_policy.db.password
-
-#touch passwords/select_groups.db.password
-#touch passwords/insert_groups.db.password
-#touch passwords/update_groups.db.password
 
 #----------------------------------------------------
 

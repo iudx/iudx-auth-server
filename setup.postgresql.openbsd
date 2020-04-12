@@ -8,13 +8,12 @@ pg_ctl -D /home/postgresql/data/ -l logfile start
 
 until pg_isready -h 127.0.0.1
 do
-	netstat -an | grep LISTEN | grep tcp
 	sleep 1
 done
 
 export PGPASSWORD=`cat admin.db.password`
 
-psql -U postgres < schema.sql
+psql -U postgres < schema.sql > /dev/null
 
 rm -rf schema.sql
 rm -rf setup.postgresql.openbsd
