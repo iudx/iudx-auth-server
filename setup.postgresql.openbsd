@@ -6,7 +6,7 @@ initdb -D /home/postgresql/data/ -U postgres --auth=md5 --encoding=UTF-8 --pwfil
 pg_ctl -D /home/postgresql/data/ -l logfile start
 
 echo "--- start pg_hba.conf"
-cat /home/postgresql/pg_hba.conf | grep -v '#'
+cat /home/postgresql/data/pg_hba.conf | grep -v '#'
 echo "--- end pg_hba.conf"
 
 until pg_isready -h 127.0.0.1
