@@ -85,11 +85,7 @@ Below is the list of tables used. There are no join queries in the project.
 |-- test			// test cases
 |   |-- auth.py			// SDK file from pyIUDX
 |   |-- check			// linter for test cases	
-|   |-- consumer.pem		// certificate of the data consumer
-|   |-- f-server.pem		// certificate of the fake server
 |   |-- init.py			// initialization of testing code 
-|   |-- provider.pem		// certificate of the data provider
-|   |-- r-server.pem		// certificate of a valid resource server
 |   |-- run			// runs the test
 |   |-- test-groups.py		// test cases for group based access control
 |   `-- test-tokens.py		// general test cases
