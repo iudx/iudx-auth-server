@@ -852,8 +852,17 @@ function security (req, res, next)
 
 				for (const r of can_access_regex)
 				{
+
+					/*
+						As we don't support ".", we
+						replace	"."	with	"\."
+						and	"*"	with	".*"
+					*/
+
 					const regex = r
 							.trim();
+							.replace(/./g,"\\.")
+							.replace(/\*/g,".*");
 
 					if (regex === "")
 						continue;
