@@ -862,7 +862,7 @@ function security (req, res, next)
 						but not unsafe RegEx
 					*/
 
-					if ((! is_string_safe(regex,"^*$")) || (! safe_regex(regex)))
+					if (! is_string_safe(regex,"^*$"))
 					{
 						const error_response = {
 							"message"	: "Unsafe 'can-access' RegEx in certificate",
@@ -873,14 +873,24 @@ function security (req, res, next)
 					}
 
 					/*
-						As we don't support ".", we
-						replace	"."	with	"\."
-						and	"*"	with	".*"
+						We don't support ".", replace:
+							"."	with	"\."
+							"*"	with	".*"
 					*/
 
 					const final_regex = regex 
 								.replace(/\./g,"\\.")
 								.replace(/\*/g,".*");
+
+					if (! safe_regex(final_regex))
+					{
+						const error_response = {
+							"message"	: "Unsafe 'can-access' RegEx in certificate",
+							"invalid-input"	: regex,
+						};
+
+						return END_ERROR (res, 400, error_response);
+					}
 
 					res.locals.can_access_regex.push(new RegExp(final_regex));
 				}
