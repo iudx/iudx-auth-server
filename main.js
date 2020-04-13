@@ -852,17 +852,7 @@ function security (req, res, next)
 
 				for (const r of can_access_regex)
 				{
-
-					/*
-						As we don't support ".", we
-						replace	"."	with	"\."
-						and	"*"	with	".*"
-					*/
-
-					const regex = r
-							.trim()
-							.replace(/\./g,"\\.")
-							.replace(/\*/g,".*");
+					const regex = r.trim();
 
 					if (regex === "")
 						continue;
@@ -882,7 +872,17 @@ function security (req, res, next)
 						return END_ERROR (res, 400, error_response);
 					}
 
-					res.locals.can_access_regex.push(new RegExp(regex));
+					/*
+						As we don't support ".", we
+						replace	"."	with	"\."
+						and	"*"	with	".*"
+					*/
+
+					const final_regex = regex 
+								.replace(/\./g,"\\.")
+								.replace(/\*/g,".*");
+
+					res.locals.can_access_regex.push(new RegExp(final_regex));
 				}
 			}
 
