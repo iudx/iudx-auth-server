@@ -861,7 +861,7 @@ function security (req, res, next)
 
 					const regex = r
 							.trim();
-							.replace(/./g,"\\.")
+							.replace(/\./g,"\\.")
 							.replace(/\*/g,".*");
 
 					if (regex === "")
