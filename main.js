@@ -748,6 +748,20 @@ function security (req, res, next)
 			}
 		}
 
+		if (user_notice.untrusted)
+		{
+			res.locals.untrusted = true;
+
+			if (api.startsWith("/marketplace"))
+			{
+				return END_ERROR (
+					res, 401,
+					"Untrusted Apps cannot call "	+
+					"marketplace APIs"
+				);
+			}
+		}
+
 		if (user_notice["delegated-by"])
 		{
 			return END_ERROR (
@@ -834,11 +848,12 @@ function security (req, res, next)
 			{
 				res.locals.can_access_regex	= [];
 
-				const can_access_regex		= user_notice["can-access"].split(",");
+				const can_access_regex		= user_notice["can-access"].split(";");
 
 				for (const r of can_access_regex)
 				{
-					const regex = r.trim();
+					const regex = r
+							.trim();
 
 					if (regex === "")
 						continue;
@@ -1495,6 +1510,14 @@ app.post("/auth/v1/token", (req, res) => {
 
 	if (total_payment_amount > 0)
 	{
+		if (res.locals.untrusted)
+		{
+			return END_ERROR (
+				res, 401,
+				"Untrusted Apps cannot get tokens requiring credits"
+			);
+		}
+
 		if (total_payment_amount > balance_amount_in_credit)
 		{
 			return END_ERROR (

@@ -1,6 +1,6 @@
 {
   "name": "auth.iudx.org.in",
-  "description": "DO NOT MAKE THIS repo PUBLIC !",
+  "description": "This is the Auth server for India Urban Data eXchange (IUDX)",
   "version": "1.0.0",
   "main": "main.js",
   "dependencies": {
@@ -26,7 +26,6 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Test-Mode\" && nodejs main.js test",
     "start": "echo \"Starting Server...\" && nodejs main.js"
   },
   "repository": {
@@ -35,19 +34,18 @@
   },
   "keywords": [
     "iudx",
-    "iudx",
-    "authenticator",
     "auth",
     "indian",
     "urban",
     "data",
     "exchange",
+    "iisc",
     "rbccps"
   ],
-  "author": "Arun Babu P (arun-babu.com), Jishnu Jaykumar P (jishnujayakumar.github.io)",
+  "author": "Arun Babu (arun-babu.com), Bryan Robert (bryanrobert at iisc.ac.in)",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/iudx/iudx-auth-server/issues"
   },
-  "homepage": "https://auth.iudx.org.in"
+  "homepage": "http://auth.iudx.org.in"
 }
