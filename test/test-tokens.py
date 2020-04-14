@@ -20,13 +20,14 @@ provider.set_policy(policy)
 policy = 'all can access * for 2 hours if tokens_per_day < 100'
 provider.set_policy(policy)
 
-assert policy == provider.get_policy()['response']['policy']
+assert policy in provider.get_policy()['response']['policy']
 
 new_policy  = "*@rbccps.org can access resource-yyz-abc for 1 hour"
 assert provider.append_policy(new_policy)['success'] is True
 
-updated_policy = policy + ';' + new_policy
-assert updated_policy == provider.get_policy()['response']['policy']
+x = provider.get_policy()['response']['policy']
+assert new_policy in x
+assert policy in x
 
 r = provider.audit_tokens(5)
 assert r['success'] is True
