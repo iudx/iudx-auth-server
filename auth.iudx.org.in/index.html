@@ -1,6 +1,23 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "https://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
+
+<script type="application/ld+json">
+{
+	"@context"	: "https://schema.org/",
+	"@type"		: "WebAPI",
+	"name"		: "India Urban Data eXchange (IUDX) Authentication, Authorization, and Accounting (AAA) APIs",
+	"description"	: "The India Urban Data eXchange (IUDX) Authentication, Authorization, and Accounting (AAA) APIs are used to access the IUDX services.",
+	"documentation"	: "http://auth.iudx.org.in",
+	"url"		: "https://auth.iudx.org.in",
+	"logo"		: "http://auth.iudx.org.in/iudx.png",
+	"provider"	: {
+		"@type"	: "Organization",
+		"name"	: "India Urban Data eXchange (IUDX)"
+	}
+}
+</script>
+
 <meta https-equiv="content-type" content="text/html; charset=ISO-8859-1">
 <title>India Urban Data eXchange (IUDX) AAA server</title>
 <style type="text/css">
@@ -68,31 +85,32 @@ body {
 		<a href="acl-append.txt">/auth/v1/acl/append</a>
 
 	 4. Get the current access control policies (to be called by data providers):
-		<a href="acl.txt">/auth/v1/acl</a>
+		<a href="acl.txt">/auth/v1/acl</a> <a href="/ui/acl.html" target="_blank"><font color=red>(try online)</font></a>
 
 	 5. Validate an access token (to be called by resource servers):
-		<a href="token-introspect.txt">/auth/v1/token/introspect</a>
+		<a href="token-introspect.txt">/auth/v1/token/introspect</a> <a href="/ui/token-introspect.html" target="_blank"><font color=red>(try online)</font></a>
 
 	 6. Revoke tokens (can be called by both data providers and consumers):
-		<a href="token-revoke.txt">/auth/v1/token/revoke</a>
+		<a href="token-revoke.txt">/auth/v1/token/revoke</a> <a href="/ui/token-revoke.html" target="_blank"><font color=red>(try online)</font></a>
 
 	 7. Revoke all tokens for a given certificate (can be called by both data providers and consumers):
-		<a href="token-revoke-all.txt">/auth/v1/token/revoke-all</a>
+		<a href="token-revoke-all.txt">/auth/v1/token/revoke-all</a> <a href="/ui/token-revoke-all.html" target="_blank"><font color=red>(try online)</font></a>
 
-	 8. Audit tokens (can be called by both data providers and consumers):
-		<a href="audit-tokens.txt">/auth/v1/audit/tokens</a>
+	 8. Audit tokens (can be called by both data providers and consumers):		
+		<a href="audit-tokens.txt">/auth/v1/audit/tokens</a> <a href="/ui/audit-tokens.html" target="_blank"><font color=red>(try online)</font></a>
 
 	 9. Add a consumer to a group (to be called by a data provider):
-		<a href="group-add.txt">/auth/v1/group/add</a>
+		<a href="group-add.txt">/auth/v1/group/add</a> <a href="/ui/group-add.html" target="_blank"><font color=red>(try online)</font></a>
 
 	10. Delete a consumer from a group (to be called by a data provider):
-		<a href="group-delete.txt">/auth/v1/group/delete</a>
+		<a href="group-delete.txt">/auth/v1/group/delete</a> <a href="/ui/group-delete.html" target="_blank"><font color=red>(try online)</font></a>
 
 	11. List current consumers in a group (to be called by a data provider):
-		<a href="group-list.txt">/auth/v1/group/list</a>
+		<a href="group-list.txt">/auth/v1/group/list</a> <a href="/ui/group-list.html" target="_blank"><font color=red>(try online)</font></a>
 
 	12. Get the user's certificate details (can be called by any user):
-		<a href="certificate-info.txt">/auth/v1/certificate-info</a>
+		<a href="certificate-info.txt">/auth/v1/certificate-info</a> <a href="/ui/certificate-info.html" target="_blank"><font color=red>(try online)</font></a>
+
 
 <b>5. Authentication</b>
 

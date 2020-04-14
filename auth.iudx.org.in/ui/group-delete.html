@@ -1,0 +1,60 @@
+<html>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+	<meta content="utf-8" http-equiv="encoding"/>
+	<head>
+		<link rel="stylesheet" href="json-viewer.css"/>
+		<link rel="stylesheet" href="my.css"/>
+		<script src="json-viewer.min.js"></script>
+		<script>
+			var api = "group/delete";
+		</script>
+	</head>
+	<body>
+		<div class="center-screen">
+			<h2><code>API : /auth/v1/group/delete<span id=dots style="visibility:hidden"> ...</span></code></h2>
+			<table>
+			<tr><td align=center>
+			<form id=request onsubmit="return false;">
+				<fieldset>
+					<legend><b><code> Request </code></b></legend>
+					<table>
+						<tr>
+							<td style="padding:15px" align=right>
+								<code>consumer<font color=red>*</font></code>
+							</td>
+							<td>
+								<input name=consumer type=text placeholder="consumer's email id">
+							</td>
+						</tr>
+						<tr>
+							<td style="padding:15px" align=right>
+								<code>group<font color=red>*</font></code>
+							</td>
+							<td>
+								<input name=group type=text placeholder="the group name">
+							</td>
+						</tr>
+						<tr>
+							<td colspan=2 align="center" style="padding:15px">
+							<button id="button" class="button" onClick='call(api);'>
+								<b><code>POST</code></b>
+							</button>
+							</td>
+						</tr>
+					</table>
+				</fieldset>
+			</form>
+			</td></tr>
+			<tr><td align=center>
+			<form id=response style="visibility:hidden">
+				<fieldset>
+					<legend><b><code> Response <span id=time></span> </code></b></legend>
+					<div id="result" style="justify-content:left;text-align:left"></div>
+				</fieldset>
+			</form>
+			</td></tr>
+			</table>
+		</div>
+	</body>
+	<script src="my.js"></script>
+</html>

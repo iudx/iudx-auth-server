@@ -473,7 +473,11 @@ function is_secure (req, res, cert, validate_email = true)
 		// e.g Origin = https://www.iudx.org.in:8443/
 
 		if (! origin.startsWith("https://"))
-			return "Insecure 'origin' field";
+		{
+			// allow the server itself to host "http"
+			if (origin !== "http://" + SERVER_NAME)
+				return "Insecure 'origin' field";
+		}
 
 		if ((origin.match(/\//g) || []).length < 2)
 			return "Invalid 'origin' field";

@@ -62,7 +62,7 @@ CURL example:
 
 		curl -XPOST https://auth.iudx.org.in/auth/v1/token/revoke	\
 										\
-		--cert consumer-certificate.pem --key private-key.pem		\
+		--cert certificate.pem --key private-key.pem			\
 										\
 		-H 'content-type: application/json'				\
 										\
@@ -85,3 +85,4 @@ See also:
 
 	token/revoke-all API:
 		http://auth.iudx.org.in/token-revoke-all.txt
+

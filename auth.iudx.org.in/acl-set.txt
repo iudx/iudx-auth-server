@@ -186,6 +186,14 @@ Known limitations:
 	This issue is expected to be handled by the resource server,
 	by rejecting any queries to invalid "id"s.
 
+	To be able to exploit this, the authorized consumer must guess the regex.
+
+	As a safeguard:
+
+	Auth limits how many tokens can be generated per second; as well as
+	Auth's firewall blocks a IP address for some time if number of packets
+	or connections cross a threshold.
+
 See also:
 
 	acl API:
@@ -196,3 +204,4 @@ See also:
 
 	node-aperture at github.com:
 		https://github.com/rbccps-iisc/node-aperture
+
