@@ -2584,6 +2584,7 @@ app.post("/auth/v1/acl", (req, res) => {
 			"policy" : Buffer
 					.from(results.rows[0].policy,"base64")
 					.toString("ascii")
+					.split(";")
 		};
 
 		return END_SUCCESS (res,response);
