@@ -1907,7 +1907,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 			}
 
 			if (request_for_resource_server.length === 0)
-				return END_ERROR (res, 403, "Invalid token");
+				return END_ERROR (res, 403, "Invalid 'token'");
 
 			if (consumer_request)
 			{
@@ -1933,7 +1933,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					if (! (r1 instanceof Object))
 					{
 						const error_response = {
-							"message"	: "Invalid request",
+							"message"	: "Invalid 'request'",
 							"invalid-input"	: r1,
 						};
 
@@ -2063,7 +2063,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			)
 			{
 				const error_response = {
-					"message"		: "Invalid token",
+					"message"		: "Invalid 'token'",
 					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -2083,7 +2083,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 				(random_hex.length	!== TOKEN_LEN_HEX)
 			) {
 				const error_response = {
-					"message"		: "Invalid token",
+					"message"		: "Invalid 'token'",
 					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -2109,7 +2109,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			if (rows.length === 0)
 			{
 				const error_response = {
-					"message"		: "Invalid token",
+					"message"		: "Invalid 'token'",
 					"invalid-input"		: token,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -2157,7 +2157,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			)
 			{
 				const error_response = {
-					"message"		: "Invalid token-hash",
+					"message"		: "Invalid 'token-hash'",
 					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -2181,7 +2181,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			if (rows.length === 0)
 			{
 				const error_response = {
-					"message"		: "Invalid token hash",
+					"message"		: "Invalid 'token hash'",
 					"invalid-input"		: token_hash,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
@@ -2324,7 +2324,7 @@ app.post("/auth/v1/acl/set", (req, res) => {
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
 	if (typeof body.policy !== "string")
-		return END_ERROR (res, 400, "Invalid policy");
+		return END_ERROR (res, 400, "Invalid 'policy'");
 
 	const policy	= body.policy;
 	const rules	= policy.split(";");
@@ -2429,7 +2429,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
 	if (typeof body.policy !== "string")
-		return END_ERROR (res, 400, "Invalid policy");
+		return END_ERROR (res, 400, "Invalid 'policy'");
 
 	const policy	= body.policy;
 	const rules	= policy.split(";");
