@@ -8,10 +8,11 @@
 		<script>
 			var api = "token/revoke-all";
 		</script>
+		<script src="my.js"></script>
 	</head>
 	<body>
 		<div class="center-screen">
-			<h2><code>API : /auth/v1/group/delete<span id=dots style="visibility:hidden"> ...</span></code></h2>
+			<h2><code>API : /auth/v1/token/revoke-all<span id=dots style="visibility:hidden"> ...</span></code></h2>
 			<table>
 			<tr><td align=center>
 			<form id=request onsubmit="return false;">
@@ -23,7 +24,7 @@
 								<code>serial<font color=red>*</font></code>
 							</td>
 							<td>
-								<input name=serial type=text placeholder="of the certificate">
+								<input name=serial type=text placeholder=" of the certificate">
 							</td>
 						</tr>
 						<tr>
@@ -31,7 +32,7 @@
 								<code>fingerprint<font color=red>*</font></code>
 							</td>
 							<td>
-								<input name=fingerprint type=text placeholder="of the certificate">
+								<input name=fingerprint type=text placeholder=" of the certificate">
 							</td>
 						</tr>
 						<tr>
@@ -56,5 +57,4 @@
 			</table>
 		</div>
 	</body>
-	<script src="my.js"></script>
 </html>

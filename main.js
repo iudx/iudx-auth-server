@@ -1250,7 +1250,9 @@ app.post("/auth/v1/token", (req, res) => {
 		if (rows.length === 0)
 		{
 			const error_response = {
-				"message"	: "Invalid 'id'; no policy found.",
+				"message"	:"Invalid 'id'; no access"	+
+						" control policies have been"	+
+						" set for this id by the data provider",
 				"invalid-input"	: resource
 			};
 
@@ -1750,6 +1752,11 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	dns.lookup(resource_server_name_in_cert, {all:true},
 	(error, ip_addresses) =>
 	{
+		/*
+			No dns checks for "example.com"
+			this for developer's testing purposes.
+		*/
+
 		if (resource_server_name_in_cert === "example.com")
 		{
 			error		= null;

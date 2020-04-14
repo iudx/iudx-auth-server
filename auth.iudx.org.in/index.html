@@ -69,20 +69,21 @@ body {
 
 	On exceptions:
 
-		4. 402 on payment required (due to insufficient credits)
-		5. 429 on too many requests
-		6. 500 on internal error
+		4. 401 on unauthorized request (due to the restrictions placed on the user's certificate) 
+		5. 402 on payment required (due to insufficient credits)
+		6. 429 on too many requests
+		7. 500 on internal error
 
 	Below are the list of Auth APIs.
 
 	 1. Get an access token (to be called by data consumers):
-		<a href="token.txt">/auth/v1/token</a>
+		<a href="token.txt">/auth/v1/token</a> <a href="/ui/token.html" target="_blank"><font color=red>(try online)</font></a>
 
 	 2. Set access control polcies (to be called by data providers):
-		<a href="acl-set.txt">/auth/v1/acl/set</a>
+		<a href="acl-set.txt">/auth/v1/acl/set</a> <a href="/ui/acl-set.html" target="_blank"><font color=red>(try online)</font></a>
 
 	 3. Append to existing access control policies (to be called by data providers):
-		<a href="acl-append.txt">/auth/v1/acl/append</a>
+		<a href="acl-append.txt">/auth/v1/acl/append</a> <a href="/ui/acl-append.html" target="_blank"><font color=red>(try online)</font></a>
 
 	 4. Get the current access control policies (to be called by data providers):
 		<a href="acl.txt">/auth/v1/acl</a> <a href="/ui/acl.html" target="_blank"><font color=red>(try online)</font></a>

@@ -6,13 +6,13 @@
 		<link rel="stylesheet" href="my.css"/>
 		<script src="json-viewer.min.js"></script>
 		<script>
-			var api = "group/add";
+			var api = "token";
 		</script>
 		<script src="my.js"></script>
 	</head>
 	<body>
 		<div class="center-screen">
-			<h2><code>API : /auth/v1/group/add<span id=dots style="visibility:hidden"> ...</span></code></h2>
+			<h2><code>API : /auth/v1/token<span id=dots style="visibility:hidden"> ...</span></code></h2>
 			<table>
 			<tr><td align=center>
 			<form id=request onsubmit="return false;">
@@ -21,27 +21,17 @@
 					<table>
 						<tr>
 							<td style="padding:15px" align=right>
-								<code>consumer<font color=red>*</font></code>
+								<code>request<font color=red>*</font></code>
 							</td>
 							<td>
-								<input name=consumer type=text placeholder=" consumer's email id">
-							</td>
-						</tr>
-						<tr>
-							<td style="padding:15px" align=right>
-								<code>group<font color=red>*</font></code>
-							</td>
-							<td>
-								<input name=group type=text placeholder=" the group name">
-							</td>
-						</tr>
-
-						<tr>
-							<td style="padding:15px" align=right>
-								<code>valid-till<font color=red>*</font></code>
-							</td>
-							<td>
-								<input name=valid_till type=text placeholder=" in hours">
+								<textarea name=request rows=10 cols=100>[
+    {
+        "id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/r1"
+    },
+    {
+        "id": "example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/resource-server.com/r2"
+    }
+]</textarea>
 							</td>
 						</tr>
 						<tr>

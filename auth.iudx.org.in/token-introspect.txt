@@ -19,6 +19,9 @@ Called by:
 	(FQDN) or IP address. And it must be ensured that the IP address of the
 	"CN" matches with the machine that makes the introspect call.
 
+	If you do not have a domain yet and want to test the introspect API,
+	use "example.com" as your resource-server.
+
 	[ Note 2 ]:
 	This API must be only called by the resource-server after ensuring that
 	the resource "id"s requested by consumer is valid. This reduces the
