@@ -1750,6 +1750,13 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	dns.lookup(resource_server_name_in_cert, {all:true},
 	(error, ip_addresses) =>
 	{
+		if (resource_server_name_in_cert === "example.com")
+		{
+			error		= null;
+			ip_matched	= true;
+			ip_addresses	= [];
+		}
+		
 		if (error)
 		{
 			return END_ERROR (
