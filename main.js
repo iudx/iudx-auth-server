@@ -60,12 +60,6 @@ const unveil			= is_openbsd ? require("openbsd-unveil"): null;
 const NUM_CPUS			= os.cpus().length;
 const SERVER_NAME		= "auth.iudx.org.in";
 
-const WHITELISTED_ORIGINS	= [
-					SERVER_NAME,
-					"dashboard.iudx.org.in",
-					"localhost.iudx.org.in",
-];
-
 const MAX_TOKEN_TIME		= 31536000; // in seconds (1 year)
 
 const MIN_TOKEN_HASH_LEN	= 64;
@@ -469,6 +463,12 @@ function is_certificate_ok (req, cert, validate_email)
 
 function is_secure (req, res, cert, validate_email = true)
 {
+	res.header("Referrer-Policy",		"no-referrer-when-downgrade");
+	res.header("X-Frame-Options",		"deny");
+	res.header("X-XSS-Protection",		"1; mode=block");
+	res.header("X-Content-Type-Options",	"nosniff");
+	res.header("Content-Security-Policy",	"default-src 'self'");
+
 	if (req.headers.host && req.headers.host !== SERVER_NAME)
 		return "Invalid 'host' field in the header";
 
@@ -494,13 +494,8 @@ function is_secure (req, res, cert, validate_email = true)
 				.split(":")[0]	// remove port number
 		);
 
-		if (WHITELISTED_ORIGINS.indexOf(origin_domain) < 0)
+		if (! origin_domain.endsWith(".iudx.org.in"))
 			return "Not a whitelisted 'origin'";
-
-		res.header("Referrer-Policy",			"no-referrer-when-downgrade");
-		res.header("X-Frame-Options",			"deny");
-		res.header("X-XSS-Protection",			"1; mode=block");
-		res.header("X-Content-Type-Options",		"nosniff");
 
 		res.header("Access-Control-Allow-Origin",	req.headers.origin);
 		res.header("Access-Control-Allow-Methods",	"POST");
