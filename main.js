@@ -1137,7 +1137,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if ( ! (row.methods instanceof Array))
 		{
 			const error_response = {
-				"message"	: "Invalid 'methods'",
+				"message"	: "Invalid 'methods'; must be a valid JSON array",
 				"invalid-input"	: {
 					"id"		: resource,
 					"methods" 	: row.methods
@@ -1159,7 +1159,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if ( ! (row.apis instanceof Array))
 		{
 			const error_response = {
-				"message"	: "Invalid 'apis'",
+				"message"	: "Invalid 'apis'; must be a valid JSON array",
 				"invalid-input"	: {
 					"id"	: resource,
 					"apis" 	: row.apis
@@ -1183,7 +1183,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if (row.body && (! (row.body instanceof Object)))
 		{
 			const error_response = {
-				"message"	: "Invalid 'body'; not a valid JSON object",
+				"message"	: "Invalid 'body'; must be a valid JSON object",
 				"invalid-input"	: {
 					"id"	: resource,
 					"body"	: row.body
@@ -1335,7 +1335,7 @@ app.post("/auth/v1/token", (req, res) => {
 			if (typeof api !== "string")
 			{
 				const error_response = {
-					"message"	: "Invalid 'api'",
+					"message"	: "Invalid 'api'; must be a string",
 					"invalid-input"	: {
 						"id"	: resource,
 						"api"	: api
@@ -1352,7 +1352,7 @@ app.post("/auth/v1/token", (req, res) => {
 				if (typeof method !== "string")
 				{
 					const error_response = {
-						"message"	: "Invalid 'method'",
+						"message"	: "Invalid 'method'; must be a string",
 						"invalid-input"	: {
 							"id"		: resource,
 							"method"	: method
@@ -1378,7 +1378,7 @@ app.post("/auth/v1/token", (req, res) => {
 					const payment_amount		= result.amount;
 					// const payment_currency	= result.currency;
 
-					if ((! token_time_in_policy) || token_time_in_policy < 0 || payment_amount < 0)
+					if ((! token_time_in_policy) || token_time_in_policy < 1 || payment_amount < 0)
 					{
 						const error_response = {
 							"message"	: "Unauthorized",
@@ -1934,7 +1934,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					if (! (r1 instanceof Object))
 					{
 						const error_response = {
-							"message"	: "Invalid 'request'",
+							"message"	: "Invalid 'request'; must be a valid JSON object",
 							"invalid-input"	: r1,
 						};
 
@@ -2053,7 +2053,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 		// user is a consumer
 
 		if (! (tokens instanceof Array))
-			return END_ERROR (res, 400, "Invalid 'tokens'");
+			return END_ERROR (res, 400, "Invalid 'tokens'; must be a valid JSON array");
 
 		for (const token of tokens)
 		{
@@ -2139,7 +2139,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 		// user is a provider
 
 		if (! (token_hashes instanceof Array))
-			return END_ERROR (res, 400, "Invalid 'token-hashes'");
+			return END_ERROR (res, 400, "Invalid 'token-hashes'; must be a valid JSON array");
 
 		const email_domain	= id.split("@")[1];
 		const sha1_of_email	= sha1(id);
@@ -2325,7 +2325,7 @@ app.post("/auth/v1/acl/set", (req, res) => {
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
 	if (typeof body.policy !== "string")
-		return END_ERROR (res, 400, "Invalid 'policy'");
+		return END_ERROR (res, 400, "Invalid 'policy'; must be a string");
 
 	const policy	= body.policy;
 	const rules	= policy.split(";");
@@ -2430,7 +2430,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
 	if (typeof body.policy !== "string")
-		return END_ERROR (res, 400, "Invalid 'policy'");
+		return END_ERROR (res, 400, "Invalid 'policy'; must be a string");
 
 	const policy	= body.policy;
 	const rules	= policy.split(";");
@@ -2603,8 +2603,8 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 	const hours = parseInt (body.hours,10);
 
 	// 5 yrs max
-	if (isNaN(hours) || hours < 0 || hours > 43800) {
-		return END_ERROR (res, 400, "Invalid 'hours'");
+	if (isNaN(hours) || hours < 1 || hours > 43800) {
+		return END_ERROR (res, 400, "Invalid 'hours'; must be a positive number");
 	}
 
 	const as_consumer = [];
@@ -2713,8 +2713,8 @@ app.post("/auth/v1/group/add", (req, res) => {
 	if (! body.consumer)
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
-	if (! is_string_safe (body.consumer))
-		return END_ERROR (res, 400, "Invalid 'consumer'");
+	if (! is_valid_email(body.consumer))
+		return END_ERROR (res, 400, "Invalid 'consumer'; must be an e-mail");
 
 	const consumer_id = body.consumer.toLowerCase();
 
@@ -2727,13 +2727,13 @@ app.post("/auth/v1/group/add", (req, res) => {
 	const group = body.group.toLowerCase();
 
 	if (! body["valid-till"])
-		return END_ERROR (res, 400, "Invalid 'valid-till'");
+		return END_ERROR (res, 400, "No 'valid-till' found in the body");
 
 	const valid_till = parseInt(body["valid-till"],10);
 
 	// 1 year max
-	if (isNaN(valid_till) || valid_till < 0 || valid_till > 8760) {
-		return END_ERROR (res, 400, "Invalid 'valid-till'");
+	if (isNaN(valid_till) || valid_till < 1 || valid_till > 8760) {
+		return END_ERROR (res, 400, "Invalid 'valid-till'; must be a positive number");
 	}
 
 	const email_domain	= provider_id.split("@")[1];
@@ -2860,8 +2860,8 @@ app.post("/auth/v1/group/delete", (req, res) => {
 
 	if (body.consumer !== "*")
 	{
-		if (! is_string_safe (body.consumer))
-			return END_ERROR (res, 400, "Invalid 'consumer'");
+		if (! is_valid_email(body.consumer))
+			return END_ERROR (res, 400, "Invalid 'consumer'; must be an e-mail");
 	}
 
 	const consumer_id = body.consumer ? body.consumer.toLowerCase() : null;
