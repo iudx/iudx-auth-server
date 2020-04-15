@@ -615,6 +615,14 @@ function has_certificate_been_revoked (socket, cert, CRL)
 	return false;
 }
 
+function xss_safe (input)
+{
+	if (typeof input === "string")
+		return input.replace(/[!#$%^&()+=<>\[\](){}:;"'\\?]/g,"");
+	else
+		return input;
+}
+
 function is_string_safe (str, exceptions = "")
 {
 	if (! str || typeof str !== "string")
@@ -883,7 +891,7 @@ function security (req, res, next)
 							"*"	with	".*"
 					*/
 
-					const final_regex = regex 
+					const final_regex = regex
 								.replace(/\./g,"\\.")
 								.replace(/\*/g,".*");
 
@@ -1122,7 +1130,7 @@ app.post("/auth/v1/token", (req, res) => {
 		{
 			const error_response = {
 				"message"	: "id contains unsafe characters",
-				"invalid-input"	: resource,
+				"invalid-input"	: xss_safe(resource),
 			};
 
 			return END_ERROR (res, 400, error_response);
@@ -1139,8 +1147,8 @@ app.post("/auth/v1/token", (req, res) => {
 			const error_response = {
 				"message"	: "Invalid 'methods'; must be a valid JSON array",
 				"invalid-input"	: {
-					"id"		: resource,
-					"methods" 	: row.methods
+					"id"		: xss_safe(resource),
+					"methods" 	: xss_safe(row.methods)
 				}
 			};
 
@@ -1161,8 +1169,8 @@ app.post("/auth/v1/token", (req, res) => {
 			const error_response = {
 				"message"	: "Invalid 'apis'; must be a valid JSON array",
 				"invalid-input"	: {
-					"id"	: resource,
-					"apis" 	: row.apis
+					"id"	: xss_safe(resource),
+					"apis" 	: xss_safe(row.apis)
 				}
 			};
 
@@ -1173,7 +1181,7 @@ app.post("/auth/v1/token", (req, res) => {
 		{
 			const error_response = {
 				"message"	: "Invalid 'id'; must have at least 3 '/' characters.",
-				"invalid-input"	: resource
+				"invalid-input"	: xss_safe(resource)
 			};
 
 			return END_ERROR (res, 400, error_response);
@@ -1185,8 +1193,8 @@ app.post("/auth/v1/token", (req, res) => {
 			const error_response = {
 				"message"	: "Invalid 'body'; must be a valid JSON object",
 				"invalid-input"	: {
-					"id"	: resource,
-					"body"	: row.body
+					"id"	: xss_safe(resource),
+					"body"	: xss_safe(row.body)
 				}
 			};
 
@@ -1211,7 +1219,7 @@ app.post("/auth/v1/token", (req, res) => {
 				const error_response = {
 					"message"	: "Your certificate does not allow access to this 'id'",
 					"invalid-input"	: {
-						"id"	: resource,
+						"id"	: xss_safe(resource),
 					}
 				};
 
@@ -1254,7 +1262,7 @@ app.post("/auth/v1/token", (req, res) => {
 				"message"	:"Invalid 'id'; no access"	+
 						" control policies have been"	+
 						" set for this id by the data provider",
-				"invalid-input"	: resource
+				"invalid-input"	: xss_safe(resource)
 			};
 
 			return END_ERROR (res, 400, error_response);
@@ -1337,8 +1345,8 @@ app.post("/auth/v1/token", (req, res) => {
 				const error_response = {
 					"message"	: "Invalid 'api'; must be a string",
 					"invalid-input"	: {
-						"id"	: resource,
-						"api"	: api
+						"id"	: xss_safe(resource),
+						"api"	: xss_safe(api)
 					}
 				};
 
@@ -1354,8 +1362,8 @@ app.post("/auth/v1/token", (req, res) => {
 					const error_response = {
 						"message"	: "Invalid 'method'; must be a string",
 						"invalid-input"	: {
-							"id"		: resource,
-							"method"	: method
+							"id"		: xss_safe(resource),
+							"method"	: xss_safe(method)
 						}
 					};
 
@@ -1383,9 +1391,9 @@ app.post("/auth/v1/token", (req, res) => {
 						const error_response = {
 							"message"	: "Unauthorized",
 							"invalid-input"	: {
-								"id"		: resource,
-								"api"		: api,
-								"method"	: method
+								"id"		: xss_safe(resource),
+								"api"		: xss_safe(api),
+								"method"	: xss_safe(method)
 							}
 						};
 
@@ -1411,9 +1419,9 @@ app.post("/auth/v1/token", (req, res) => {
 					const error_response = {
 						"message"	: "Unauthorized",
 						"invalid-input"	: {
-							"id"		: resource,
-							"api"		: api,
-							"method"	: method
+							"id"		: xss_safe(resource),
+							"api"		: xss_safe(api),
+							"method"	: xss_safe(method)
 						}
 					};
 
@@ -1764,7 +1772,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 			ip_matched	= true;
 			ip_addresses	= [];
 		}
-		
+
 		if (error)
 		{
 			return END_ERROR (
@@ -1935,7 +1943,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					{
 						const error_response = {
 							"message"	: "Invalid 'request'; must be a valid JSON object",
-							"invalid-input"	: r1,
+							"invalid-input"	: xss_safe(r1),
 						};
 
 						return END_ERROR (res, 400,
@@ -1964,7 +1972,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 							{
 								const error_response = {
 									"message"	: "Unauthorized",
-									"invalid-input"	: r1
+									"invalid-input"	: xss_safe(r1.id)
 								};
 
 								return END_ERROR (res, 403, error_response);
@@ -1979,7 +1987,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					{
 						const error_response = {
 							"message"	: "Unauthorized",
-							"invalid-input"	: r1,
+							"invalid-input"	: xss_safe(r1.id),
 						};
 
 						return END_ERROR (res, 403, error_response);
@@ -2065,7 +2073,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			{
 				const error_response = {
 					"message"		: "Invalid 'token'",
-					"invalid-input"		: token,
+					"invalid-input"		: xss_safe(token),
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -2085,7 +2093,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			) {
 				const error_response = {
 					"message"		: "Invalid 'token'",
-					"invalid-input"		: token,
+					"invalid-input"		: xss_safe(token),
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -2111,7 +2119,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			{
 				const error_response = {
 					"message"		: "Invalid 'token'",
-					"invalid-input"		: token,
+					"invalid-input"		: xss_safe(token),
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -2159,7 +2167,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			{
 				const error_response = {
 					"message"		: "Invalid 'token-hash'",
-					"invalid-input"		: token_hash,
+					"invalid-input"		: xss_safe(token_hash),
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -2183,7 +2191,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			{
 				const error_response = {
 					"message"		: "Invalid 'token hash'",
-					"invalid-input"		: token_hash,
+					"invalid-input"		: xss_safe(token_hash),
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
