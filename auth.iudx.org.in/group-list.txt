@@ -56,8 +56,8 @@ CURL example:
 
 		[
 			{
-			    "consumer": "user-1@domain.org",
-			    "valid-till": "2019-09-30T10:44:33.527Z"
+				"consumer": "user-1@domain.org",
+				"valid-till": "2019-09-30T10:44:33.527Z"
 			},
 			{
 				"consumer": "user-2@domain.com",

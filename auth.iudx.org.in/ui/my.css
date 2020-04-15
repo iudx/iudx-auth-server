@@ -26,3 +26,8 @@
 	color: black;
 	border: solid 1px #4CAF50;
 }
+
+.overflow {
+  overflow: scroll;
+  width: 100%;
+}

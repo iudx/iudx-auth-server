@@ -24,9 +24,18 @@
 								<code>token<font color=red>*</font></code>
 							</td>
 							<td>
-								<input name=token type=text placeholder=" an access token">
+								<input name=token type=text placeholder=" user's access token">
 							</td>
 						</tr>
+						<tr>
+							<td style="padding:15px" align=right>
+								<code>server-token</code>
+							</td>
+							<td>
+								<input name=server_token type=text placeholder=" server's access token">
+							</td>
+						</tr>
+
 						<tr>
 							<td colspan=2 align="center" style="padding:15px">
 							<button id="button" class="button" onClick='call(api);'>
@@ -42,7 +51,7 @@
 			<form id=response style="visibility:hidden">
 				<fieldset>
 					<legend><b><code> Response <span id=time></span> </code></b></legend>
-					<div id="result" style="justify-content:left;text-align:left"></div>
+					<div class="overflow" id="result" style="justify-content:left;text-align:left"></div>
 				</fieldset>
 			</form>
 			</td></tr>

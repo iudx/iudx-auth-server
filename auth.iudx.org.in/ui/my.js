@@ -59,7 +59,7 @@ function post(url,body)
 	{
 		if (this.readyState === 4)
 		{
-			time.innerHTML = "<font color=" + color_code[this.status] + ">" + this.status + " - " + error_codes[this.status] + "</font> (took " + (new Date() - start_time)/1000 + " seconds)";
+			time.innerHTML = ": <font color=" + color_code[this.status] + ">" + this.status + " - " + error_codes[this.status] + "</font> (took " + (new Date() - start_time)/1000 + " seconds)";
 
 			try
 			{
@@ -90,6 +90,8 @@ function post(url,body)
 	ajax.withCredentials = true;
 	ajax.setRequestHeader("Content-Type", "text/plain");
 	ajax.send(body);
+
+	start_time = new Date();
 }
 
 function id(id)
@@ -111,16 +113,24 @@ function call(endpoint)
 			var k = e[i].name;
 			var v = e[i].value;
 
-			if (e[i].type === "textarea")
-			{
-				v = v.trim();
+			v = v.trim();
 
-				// if it looks like a JSON do not process it
-				if (v.startsWith("[") || v.startsWith("{"))
+			// if it looks like a JSON do not process it
+			if (v.startsWith("[") || v.startsWith("{"))
+			{
+				var string_v = String(v);
+
+				try
+				{
 					v = JSON.parse(v);
-				else
-					v = v.replace(/\n/g,";");
+				}
+				catch
+				{
+					v = string_v;
+				}
 			}
+			else
+				v = v.replace(/\n/g,";");
 
 			if (k && v)
 			{
