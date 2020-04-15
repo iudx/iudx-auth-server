@@ -2077,7 +2077,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			{
 				const error_response = {
 					"message"		: "Invalid 'token'",
-					"invalid-input"		: xss_safe(token),
+					"invalid-input"		: "Token no. " + i,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -2158,10 +2158,10 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 
 		const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
+		let i = 0;
 		for (const token_hash of token_hashes)
 		{
-			// TODO set revoked = true if all providers keys
-			// are false ?
+			++i;
 
 			if (
 				(! is_string_safe(token_hash))		||
@@ -2171,7 +2171,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			{
 				const error_response = {
 					"message"		: "Invalid 'token-hash'",
-					"invalid-input"		: xss_safe(token_hash),
+					"invalid-input"		: "Token Hash no. " + i ,
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -2339,7 +2339,7 @@ app.post("/auth/v1/acl/set", (req, res) => {
 	if (typeof body.policy !== "string")
 		return END_ERROR (res, 400, "Invalid 'policy'; must be a string");
 
-	const policy	= body.policy;
+	const policy	= body.policy.trim();
 	const rules	= policy.split(";");
 
 	let policy_in_json;
@@ -2347,7 +2347,7 @@ app.post("/auth/v1/acl/set", (req, res) => {
 	try {
 		policy_in_json = rules.map (
 			(r) => {
-				return (parser.parse(r));
+				return (parser.parse(r.trim()));
 			}
 		);
 	}
@@ -2444,7 +2444,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 	if (typeof body.policy !== "string")
 		return END_ERROR (res, 400, "Invalid 'policy'; must be a string");
 
-	const policy	= body.policy;
+	const policy	= body.policy.trim();
 	const rules	= policy.split(";");
 
 	let policy_in_json;
@@ -2452,7 +2452,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 	try {
 		policy_in_json = rules.map (
 			(r) => {
-				return (parser.parse(r));
+				return (parser.parse(r.trim()));
 			}
 		);
 	}
@@ -2494,7 +2494,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 			try {
 				policy_in_json = new_rules.map (
 					(r) => {
-						return (parser.parse(r));
+						return (parser.parse(r.trim()));
 					}
 				);
 			}
@@ -3002,7 +3002,7 @@ if (! is_openbsd)
 
 	const _tmp = ["x can y z"].map (
 		(r) => {
-			return (parser.parse(r));
+			return (parser.parse(r.trim()));
 		}
 	);
 
