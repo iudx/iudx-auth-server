@@ -863,8 +863,11 @@ function security (req, res, next)
 
 				const can_access_regex		= user_notice["can-access"].split(";");
 
+				let i = 0;
 				for (const r of can_access_regex)
 				{
+					++i;
+
 					const regex = r.trim();
 
 					if (regex === "")
@@ -879,7 +882,7 @@ function security (req, res, next)
 					{
 						const error_response = {
 							"message"	: "Unsafe 'can-access' RegEx in certificate",
-							"invalid-input"	: regex,
+							"invalid-input"	: "RegEx no. " + i,
 						};
 
 						return END_ERROR (res, 400, error_response);
@@ -899,7 +902,7 @@ function security (req, res, next)
 					{
 						const error_response = {
 							"message"	: "Unsafe 'can-access' RegEx in certificate",
-							"invalid-input"	: regex,
+							"invalid-input"	: "RegEx no. " + i,
 						};
 
 						return END_ERROR (res, 400, error_response);
@@ -1775,11 +1778,12 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 
 		if (error)
 		{
-			return END_ERROR (
-				res, 400,
-				"Invalid 'hostname' : " +
-					resource_server_name_in_cert
-			);
+			const error_response = {
+				"message"	: "Invalid 'hostname' in certificate",
+				"invalid-input"	: xss_safe(resource_server_name_in_cert)
+			};
+
+			return END_ERROR (res, 400, error_response);
 		}
 
 		for (const a of ip_addresses)
@@ -1943,7 +1947,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					{
 						const error_response = {
 							"message"	: "Invalid 'request'; must be a valid JSON object",
-							"invalid-input"	: xss_safe(r1),
+							"invalid-input"	: xss_safe(r1)
 						};
 
 						return END_ERROR (res, 400,
@@ -2042,7 +2046,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 	{
 		return END_ERROR (
 			res, 400,
-			"Provide either 'tokens' or 'token-hashes'; not both"
+			"Provide either 'tokens' or 'token-hashes'; but not both"
 		);
 	}
 
