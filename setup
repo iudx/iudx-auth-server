@@ -91,7 +91,7 @@ npm install
 npm audit fix --force
 
 echo /sbin/pfctl -t bruteforce -T expire 86400 > /etc/daily.local
-echo syspatch >> /etc/daily.local
+echo /usr/sbin/syspatch >> /etc/daily.local
 
 rcctl disable sndiod slaacd smtpd xenodm 
 
