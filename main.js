@@ -2077,7 +2077,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			{
 				const error_response = {
 					"message"		: "Invalid 'token'",
-					"invalid-input"		: "Token no. " + i,
+					"invalid-input"		: xss_safe(token),
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
@@ -2158,11 +2158,8 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 
 		const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
-		let i = 0;
 		for (const token_hash of token_hashes)
 		{
-			++i;
-
 			if (
 				(! is_string_safe(token_hash))		||
 				(token_hash.length < MIN_TOKEN_HASH_LEN)||
@@ -2171,7 +2168,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			{
 				const error_response = {
 					"message"		: "Invalid 'token-hash'",
-					"invalid-input"		: "Token Hash no. " + i ,
+					"invalid-input"		: xss_safe(token_hash),
 					"num-tokens-revoked"	: num_tokens_revoked
 				};
 
