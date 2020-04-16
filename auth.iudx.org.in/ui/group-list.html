@@ -1,7 +1,8 @@
+<!DOCTYPE html>
 <html>
-	<meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
-	<meta content="utf-8" http-equiv="encoding"/>
 	<head>
+		<meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+		<meta content="utf-8" http-equiv="encoding"/>
 		<link rel="stylesheet" href="json-viewer.css"/>
 		<link rel="stylesheet" href="my.css"/>
 		<script src="json-viewer.min.js"></script>
@@ -10,7 +11,7 @@
 		</script>
 		<script src="my.js"></script>
 	</head>
-	<body>
+	<body onLoad="init();">
 		<div class="center-screen">
 			<h2><code>API : /auth/v1/group/list<span id=dots style="visibility:hidden"> ...</span></code></h2>
 			<table>
@@ -24,7 +25,7 @@
 								<code>group</code>
 							</td>
 							<td>
-								<input name=group type=text placeholder=" the group name">
+								<input autofocus name=group type=text placeholder=" the group name">
 							</td>
 						</tr>
 						<tr>

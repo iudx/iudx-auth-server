@@ -1,7 +1,8 @@
+<!DOCTYPE html>
 <html>
-	<meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
-	<meta content="utf-8" http-equiv="encoding"/>
 	<head>
+		<meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+		<meta content="utf-8" http-equiv="encoding"/>
 		<link rel="stylesheet" href="json-viewer.css"/>
 		<link rel="stylesheet" href="my.css"/>
 		<script src="json-viewer.min.js"></script>
@@ -9,8 +10,41 @@
 			var api = "acl/set";
 		</script>
 		<script src="my.js"></script>
+		<script>
+			function local_init()
+			{
+				init();	
+				
+				var ajax = new XMLHttpRequest();
+
+				ajax.onreadystatechange = function()
+				{
+					if (this.readyState === 4 && this.status === 200)
+					{
+						try
+						{
+							var result = JSON.parse(this.responseText);
+							var policy = id("policy");
+
+							if (policy.value.trim() === "")
+							{
+								policy.value = result.policy.join("\n") + "\n";
+							}
+						}
+						catch
+						{
+						}
+					}
+				}
+
+				ajax.open("POST", auth_server+"/auth/v1/acl", true);
+				ajax.withCredentials = true;
+				ajax.setRequestHeader("Content-Type", "text/plain");
+				ajax.send();
+			}
+		</script>
 	</head>
-	<body>
+	<body onLoad="local_init();">
 		<div class="center-screen">
 			<h2><code>API : /auth/v1/acl/set<span id=dots style="visibility:hidden"> ...</span></code></h2>
 			<table>
@@ -24,7 +58,7 @@
 								<code>policy<font color=red>*</font></code>
 							</td>
 							<td>
-								<textarea name=policy placeholder=" in aperture policy language, multiple policies can be seperated by ;" rows=10 cols=100></textarea>
+								<textarea autofocus name=policy id=policy placeholder=" in aperture policy language, multiple policies can be seperated by ;" rows=10 cols=100></textarea>
 							</td>
 						</tr>
 						<tr>

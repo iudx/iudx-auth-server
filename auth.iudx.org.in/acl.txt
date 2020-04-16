@@ -49,7 +49,8 @@ CURL example:
 
 		{
 			"policy"	: [
-				"*@iisc.ac.in can access rs1.com/my-resource-name"
+				"*@iisc.ac.in can access rs1.com/my-resource-name for 3 hours",
+				"arun@iisc.ac.in can access *.com/rs1 if tokens_per_day < 100"
 			]
 		}
 

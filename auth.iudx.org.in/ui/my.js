@@ -1,17 +1,17 @@
 "use strict";
 
-var auth_server	= "https://auth.iudx.org.in";
+const auth_server = "https://auth.iudx.org.in";
 
-var dots;
-var code;
-var time;
-var button;
-var request;
-var response;
+let dots;
+let code;
+let time;
+let button;
+let request;
+let response;
 
-var jsonViewer	= new JSONViewer();
+let jsonViewer	= new JSONViewer();
 
-var init_done	= false;
+let init_done	= false;
 
 function init ()
 {
@@ -30,7 +30,7 @@ function init ()
 	init_done	= true;
 }
 
-var error_codes = {
+const error_codes = {
 	"0"	: "Authentication failed : No valid <a href=https://en.wikipedia.org/wiki/Client_certificate>client-side certificate</a> was provided [OR] a <a href=https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSDidNotSucceed>CORS</a> issue",
 	"200"	: "OK",
 	"400"	: "Bad request",
@@ -40,7 +40,7 @@ var error_codes = {
 	"500"	: "Internal error",
 };
 
-var color_code = {
+const color_code = {
 	"0"	: "red",
 	"200"	: "blue",
 	"400"	: "red",
@@ -48,12 +48,12 @@ var color_code = {
 	"402"	: "red",
 	"403"	: "red",
 	"500"	: "red",
-}
+};
 
 function post(url,body)
 {
-	var ajax	= new XMLHttpRequest();
-	var start_time	= new Date();
+	const	ajax		= new XMLHttpRequest();
+	let	start_time	= new Date();
 
 	ajax.onreadystatechange = function()
 	{
@@ -67,7 +67,7 @@ function post(url,body)
 			}
 			catch
 			{
-				var error_response = {
+				const error_response = {
 					"error" : {
 					}
 				};
@@ -75,7 +75,7 @@ function post(url,body)
 				if (this.status === 0)
 					error_response.error.message = "Authentication failure";
 				else
-					error_response.error.message = "Unknown failure!";
+					error_response.error.message = "Response from the server was not a valid JSON";
 
 				jsonViewer.showJSON(JSON.parse(JSON.stringify(error_response)));
 			}
@@ -103,53 +103,53 @@ function call(endpoint)
 {
 	init();
 
-	var body = {};
-	var e = document.forms[0].elements;
+	const body	= {};
+	const e		= document.forms[0].elements;
 
-	for (var i = 0; i < e.length; ++i)
+	for (let i = 0; i < e.length; ++i)
 	{
 		if (e[i].type === "text" || e[i].type === "textarea")
 		{
-			var k = e[i].name;
-			var v = e[i].value;
+			let key		= e[i].name;
+			let value	= e[i].value;
 
-			v = v.trim();
+			value = value.trim();
 
 			// if it looks like a JSON do not process it
-			if (v.startsWith("[") || v.startsWith("{"))
+			if (value.startsWith("[") || value.startsWith("{"))
 			{
-				var string_v = String(v);
-
 				try
 				{
-					v = JSON.parse(v);
+					value = JSON.parse(value);
 				}
 				catch
 				{
-					v = string_v;
+					value = String(value); 
 				}
 			}
 			else
-				v = v.replace(/\n/g,";");
-
-			if (k && v)
 			{
-				k = k.trim().replace("_","-");
+				value = value.replace(/\n/g,";");
+			}
 
-				if (v.trim)
-					v = v.trim();
+			if (key && value)
+			{
+				key = key.trim().replace("_","-");
 
-				body[k] = v;
+				if (value.trim)
+					value = value.trim();
+
+				body[key] = value;
 			}
 		}
 	}
 
-	body = JSON.stringify(body);
+	const json_body = JSON.stringify(body);
 
 	dots.style.visibility		= "visible";
 
 	response.style.visibility	= "hidden";
 	button.style.visibility		= "hidden";
 
-	post(auth_server + "/auth/v1/" + endpoint,body);
+	post(auth_server + "/auth/v1/" + endpoint, json_body);
 }
