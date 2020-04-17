@@ -94,7 +94,8 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/list"			: 3,
 });
 
-let has_started_serving_apis = false;
+/* --- we will further drop worker privileges when we start serving APIs --- */
+let has_started_serving_apis	= false;
 
 /* --- time zone --- */
 process.env.TZ= "Asia/Kolkata";
@@ -306,7 +307,7 @@ function END_SUCCESS (res, response = null)
 	res.status(200).end(JSON.stringify(response) + "\n");
 }
 
-function END_ERROR (res, http_status, error_message, exception = null)
+function END_ERROR (res, http_status, error, exception = null)
 {
 	if (exception)
 		log("red", String(exception).replace(/\n/g," "));
@@ -316,10 +317,17 @@ function END_ERROR (res, http_status, error_message, exception = null)
 
 	const response = {};
 
-	if (typeof error_message === "string")
-		response.error = {"message" : error_message};
+	if (typeof error === "string")
+		response.error = {"message" : error};
 	else
-		response.error = error_message; // is already a json
+	{
+		// error is already a JSON
+
+		if (error["invalid-input"])
+			error["comment"] = "All unsafe characters in 'invalid-input' have been replaced with '*'";
+
+		response.error = error;
+	}
 
 	res.status(http_status).end(JSON.stringify(response) + "\n");
 
@@ -618,7 +626,7 @@ function has_certificate_been_revoked (socket, cert, CRL)
 function xss_safe (input)
 {
 	if (typeof input === "string")
-		return input.replace(/[!#$%^&()+=<>\[\](){}:;"'\\?]/g,"");
+		return input.replace(/[^-a-zA-Z0-9:/.@]/g,"*");
 	else
 		return input;
 }
@@ -711,7 +719,7 @@ function security (req, res, next)
 {
 	if (! has_started_serving_apis)
 	{
-		if (is_openbsd) // drop "rpath"
+		if (is_openbsd) // drop "rpath" in worker
 			pledge.init("error stdio tty prot_exec inet dns recvfd");
 
 		has_started_serving_apis = true;
