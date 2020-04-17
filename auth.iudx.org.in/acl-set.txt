@@ -1,0 +1,208 @@
+
+Set access control policy
+-------------------------
+
+Endpoint:
+
+	https://<auth-server>/auth/v1/acl/set
+
+Description:
+
+	This API is used to set access control policies.
+
+Called by:
+
+	A data provider with a valid class-3 or above certificate.
+
+Methods:
+
+	POST
+
+Headers:
+
+	content-type : "application/json"
+
+Body in JSON format:
+
+	{
+		"policy" : "acl policy (a string) in aperture policy language"	// required
+	}
+
+HTTP response code:
+
+	200
+		If the policy has been successfully set.
+
+	400
+		If the policy contains syntax errors.
+
+Aperture policy language:
+
+	The authorization rules are in aperture policy language,
+	and are in the format:
+
+		<consumer(s)>
+			CAN access <resource id(s)>
+			FOR <n> <second(s)/minute(s)/week(s)/month(s)/year(s)>
+			IF <condition> AND/OR <more-conditions>
+
+	Examples:
+
+		arun@iisc.ac.in can access resource-server.com/streetlights.1 for 2 hours
+
+		*@rbcps.org, *@iisc.ac.in can access * if time > 18:00:00 AND time < 24:00:00
+
+		all can access resource-server.com/public.* if api = "/latest" AND country = "IN"
+
+	Aperture also supports conditions such as:
+
+		ip = 10.0.0.1
+
+		latitude > 20.03 AND longitude > 40.22
+
+		time::day in (Monday, Tuesday, Wednesday, Thursday, Friday)
+
+		consumer-in-group(confidential)
+
+	You may use a single "*", or "all", "everything", or "anything" to match
+	any identifier.
+	
+	For example:
+
+	    barun@iisc.ac.in can access *
+
+	    all can access anything
+
+	Several rules could be combined together using semicolons:
+
+		rule-1; rule-2; .... ; rule-n
+
+Variables in policy language:
+
+	Below are the variables available in rules, and its type.
+
+	+--------------------------------------------------------------------------------------------------+
+	| Variable	    | Type   | Description							   |
+	|-------------------+--------+---------------------------------------------------------------------|
+	| api		    | string | The api the consumer is requesting to access on a resource id.      |
+	| method	    | string | The method the consumer is requesting to access on the APIs.        |
+	| body.*	    | string | The list of variables to be passed in the body of an API.	   |
+	| time		    | time   | The time at which the data request was made.		   	   |
+	| ip		    | ip     | The originating IP address of the token request.                    |
+	|												   |
+	| tokens_per_day    | number | The number of tokens issued today to the consumer For a resource.   |
+	|												   |
+	| country	    | string | consumer's country code from where the request has originated.      |
+	| region	    | string | consumer's region from where the request has originated.	   	   |
+	| timezone	    | string | consumer's timezone from where the request has originated.	   |
+	| city		    | string | consumer's city from where the request has originated.	   	   |
+	| latitude	    | number | consumer's latitude from where the request has originated.	   |
+	| longitude	    | number | consumer's longitude from where the request has originated.   	   |
+	|												   |
+	| cert.class	    | string | consumer's certificate attributes				   |
+	| cert.cn	    | string | 									   |
+	| cert.o	    | string | 									   |
+	| cert.ou	    | string | 									   |
+	| cert.c	    | string | 									   |
+	| cert.st	    | string | 									   |
+	| cert.gn	    | string | 									   |
+	| cert.sn	    | string | 									   |
+	| cert.title	    | string | 									   |
+	|												   |
+	| cert.issuer.cn    | string | consumer's certificate issuer details				   |
+	| cert.issuer.o	    | string | 									   |
+	| cert.issuer.email | string | 									   |
+	| cert.issuer.ou    | string |									   |
+	| cert.issuer.c     | string | 									   |
+	| cert.issuer.st    | string | 									   |
+	+--------------------------------------------------------------------------------------------------+
+
+Resource IDs in policies:
+
+	The "id" is the identifier of the resource (a data-set) the provider is interested in sharing with consumers.
+
+	Data consumers typically get these "id"s from a catalogue server.
+
+	An example catalog server is: https://varanasi.iudx.org.in
+
+	And an example query to get ids is:
+		https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem
+
+	The resource "id" consists of at least 4 parts seperated by a "/" indicating:
+
+		1. The email domain of the data provider.
+
+		2. SHA-1 hash of the data provider's email-id (to mask the provider's email).
+
+		3. The hostname (FQDN) of the resource server where the resource is hosted.
+
+		4. The name of the resource (which may contain additional "/"s).
+
+	For example:
+		"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/resource-name"
+
+	However while writing rules the first 2 fields should be skipped:
+		for example, in the above id, "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c" can be skipped.
+
+	The rule would look like this:
+		"consumer@domain.com can access resource-server.com/resource-name"
+
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
+
+	iudx_auth.set_policy("*@gov.in can access rs1.com/my-resource")
+
+CURL example:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/acl/set
+
+			--cert certificate.pem --key private-key.pem
+
+			-H 'content-type: application/json'
+
+			-d '{"policy":"*@gov.in can access rs1.com/my-resource"}'
+
+	Response:
+
+		200 OK
+		content-type : "application/json"
+
+		{
+			"success" : true
+		}
+
+Known limitations:
+
+	If the access control rules contain regex on "id"s, then an authorized
+	consumer can get a token for "id"s which may not exist.
+
+	This is by design. Having regex makes writing rules easier.
+	Also, the provider doesn't have to remember all valid "id"s.
+
+	This issue is expected to be handled by the resource server,
+	by rejecting any queries to invalid "id"s.
+
+	To be able to exploit this, the authorized consumer must guess the regex.
+
+	As a safeguard:
+
+	Auth server limits how many tokens can be generated per second; as well
+	as Auth server's firewall blocks a IP address for some time if number of
+	packets or connections cross a threshold.
+
+See also:
+
+	acl API:
+		http://auth.iudx.org.in/acl.html
+
+	acl append API:
+		http://auth.iudx.org.in/acl-append.html
+
+	node aperture at github:
+		https://github.com/rbccps-iisc/node-aperture
+

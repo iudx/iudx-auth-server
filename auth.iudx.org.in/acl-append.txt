@@ -1,0 +1,97 @@
+
+Append access control policy
+----------------------------
+
+Endpoint:
+
+	https://<auth-server>/auth/v1/acl/append
+
+Description:
+
+	This API is used to append access control rules to existing rules.
+
+Called by:
+
+	A a data provider with a valid class-3 or above certificate.
+
+Methods:
+
+	POST
+
+Headers:
+
+	content-type : "application/json"
+
+Body in JSON format:
+
+	{
+		"policy" : "acl policy (a string) in aperture policy language"	// required
+	}
+
+HTTP response code:
+
+	200
+		If the policy has been successfully appended.
+
+	400
+		If the policy contains syntax errors.
+
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.append_policy("*@gov.in can access rs1.com/my-resource")
+
+CURL example:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/acl/append	
+
+			--cert certificate.pem --key private-key.pem
+
+			-H 'content-type: application/json'
+
+			-d '{"policy":"*@gov.in can access rs1.com/resource"}'
+
+	Response:
+
+		200 OK
+		content-type : "application/json"
+
+		{
+			"success" : true
+		}
+
+Known limitations:
+
+	If the access control rules contain regex on "id"s, then an authorized
+	consumer can get a token for "id"s which may not exist.
+
+	This is by design. Having regex makes writing rules easier.
+	Also, the provider doesn't have to remember all valid "id"s.
+
+	This issue is expected to be handled by the resource server,
+	by rejecting any queries to invalid "id"s. 
+
+	To be able to exploit this, the authorized consumer must guess the regex.
+
+	As a safeguard:
+
+	Auth server limits how many tokens can be generated per second; as well
+	as Auth server's firewall blocks a IP address for some time if number of
+	packets or connections cross a threshold.
+
+See also:
+
+	acl API:
+		http://auth.iudx.org.in/acl.html
+
+	acl set API:
+		http://auth.iudx.org.in/acl-set.html
+
+	node aperture at github:
+		https://github.com/rbccps-iisc/node-aperture
+

@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>IUDX API documentation</title>
+<title>~/iudx-auth-server/auth.iudx.org.in/file.c.html</title>
 <meta name="Generator" content="Vim/8.1">
 <meta name="plugin-version" content="vim8.1_v1">
 <meta name="syntax" content="c">
@@ -12,7 +12,7 @@
 <!--
 pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
 body { font-family: monospace; color: #ffffff; background-color: #000000; }
-* { font-size: 1.1em; }
+* { font-size: 1em; }
 .rainbow_o0 { color: #8080ff; font-weight: bold; }
 .Comment { color: #ff6060; }
 .rainbow_o1 { color: #ffff00; font-weight: bold; }
@@ -28,19 +28,19 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 <body>
 <pre id='vimCodeElement'>
 
-<b>Request <span class="Statement">for</span> an access token</b>
-<b>---------------------------</b>
+*Request <span class="Statement">for</span> an access token*
+*---------------------------*
 
 <span class="Statement">Endpoint</span>:
 
-	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/token>https://&lt;auth-server&gt;/auth/v1/token</a>
+	$HTTPS$&lt;auth-server&gt;/auth/v1/token
 
 <span class="Statement">Description</span>:
 
 	This API is used to request an access token from the Auth server.
 	The <span class="Constant">&quot;token&quot;</span> can then be used to get data from a resource server.
 
-<span class="Statement">Called by</span>:
+<span class="Statement">Called_xxx_by</span>:
 
 	A data consumer with a valid class-<span class="Constant">2</span> or above certificate.
 
@@ -54,7 +54,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 	Please note that <span class="Constant">&quot;text/plain&quot;</span> can also be used to avoid CORS issues.
 
-<span class="Statement">Body in JSON format</span>:
+<span class="Statement">Body_xxx_in_xxx_JSON_xxx_format</span>:
 
 	<span class="rainbow_p0">{</span>
 		<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">{</span>											<span class="Comment">// required</span>
@@ -74,21 +74,21 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 	should NOT be created; i.e. the existing token will be used to access
 	the new requested list of resource ids.
 
-	The 'request' fields are:
+	The_xxx_'request'_xxx_fields_xxx_are:
 
-	<span class="Constant">1.</span> id:
+	<span class="Constant">1.</span>_xxx_id:
 
 		The <span class="Constant">&quot;id&quot;</span> is the identifer of the resource <span class="rainbow_p0">(</span>a data-set<span class="rainbow_p0">)</span> the consumer is interested in accessing.
 
 		Data consumers are not expected to create these <span class="Constant">&quot;ids&quot;</span> themselves;
 		but are expected to get these <span class="Constant">&quot;id&quot;</span>s from a catalogue server.
 
-		An example catalog server is: <a style="color:#F4D03F" href=https://varanasi.iudx.org.in>https://varanasi.iudx.org.in</a>
+		An example catalog server is: $HTTPS$varanasi.iudx.org.in
 
-		<span class="Statement">And an example query to get ids is</span>:
-			<a style="color:#F4D03F" href=https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem>https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem</a>
+		<span class="Statement">And_xxx_an_xxx_example_xxx_query_xxx_to_xxx_get_xxx_ids_xxx_is</span>:
+			$HTTPS$varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem
 
-		The resource 'id' consists of at least 4 parts seperated by a <span class="Constant">'/'</span> indicating:
+		The_xxx_resource_xxx_'id'_xxx_consists_xxx_of_xxx_at_xxx_least_xxx_4_xxx_parts_xxx_seperated_xxx_by_xxx_a_xxx_<span class="Constant">'/'</span>_xxx_indicating:
 
 			<span class="Constant">1.</span> The email domain of the data provider.
 
@@ -100,7 +100,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 		For example: example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/resource-name
 
-	<span class="Constant">2.</span> apis:
+	<span class="Constant">2.</span>_xxx_apis:
 
 		The 'apis' is the set of APIs a consumer wants to access on a 'id'.
 		Instead of 'apis', just 'api' <span class="rainbow_p0">(</span>a string<span class="rainbow_p0">)</span> could also be used.
@@ -108,7 +108,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 		For example: <span class="rainbow_p0">[</span><span class="Constant">&quot;/latest&quot;</span><span class="rainbow_o0">,</span> <span class="Constant">&quot;/query&quot;</span><span class="rainbow_p0">]</span>
 		As the field is optional, the <span class="Statement">default</span> value of 'apis' is: <span class="rainbow_p0">[</span><span class="Constant">&quot;/*&quot;</span><span class="rainbow_p0">]</span>
 
-	<span class="Constant">3.</span> methods:
+	<span class="Constant">3.</span>_xxx_methods:
 
 		The 'methods' is the set of methods a consumer wants to access on an 'api'.
 		Instead of 'methods', just 'method' <span class="rainbow_p0">(</span>a string<span class="rainbow_p0">)</span> could also be used.
@@ -116,7 +116,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 		For example: <span class="rainbow_p0">[</span><span class="Constant">&quot;GET&quot;</span><span class="rainbow_o0">,</span> <span class="Constant">&quot;POST&quot;</span><span class="rainbow_p0">]</span>
 		As the field is optional, the <span class="Statement">default</span> value of 'apis' is: <span class="rainbow_p0">[</span><span class="Constant">&quot;*&quot;</span><span class="rainbow_p0">]</span>
 
-	<span class="Constant">4.</span> body:
+	<span class="Constant">4.</span>_xxx_body:
 
 		The body indicates the JSON body to be passed with the 'apis'.
 
@@ -124,7 +124,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 		As the field is optional, the <span class="Statement">default</span> value of 'body' is: null
 
 
-<span class="Statement">HTTP response code</span>:
+<span class="Statement">HTTP_xxx_response_xxx_code</span>:
 
 	<span class="Constant">200</span>
 		If access is allowed.
@@ -135,7 +135,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 	<span class="Constant">429</span>
 		If the client makes too many requests.
 
-<span class="Statement">Using pyIUDX SDK</span>:
+<span class="Statement">Using_xxx_pyIUDX_xxx_SDK</span>:
 
 	from pyIUDX.auth import auth
 
@@ -148,13 +148,13 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 	iudx_auth.get_token<span class="rainbow_p0">(</span>request<span class="rainbow_p0">)</span>
 
-<span class="Statement">CURL examples</span>:
+<span class="Statement">CURL_xxx_examples</span>:
 
 	<span class="Constant">1.</span> Requesting token <span class="Statement">for</span> data from a single resource server
 
 		<span class="Statement">Request</span>:
 
-			curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/token>https://auth.iudx.org.in/auth/v1/token</a>
+			curl -XPOST $HTTPS$auth.iudx.org.in/auth/v1/token
 
 			--cert certificate.pem --key private-key.pem
 
@@ -178,19 +178,19 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 				<span class="Constant">&quot;expires-in&quot;</span>	: <span class="Constant">3600</span>
 			<span class="rainbow_p0">}</span>
 
-		<span class="Statement">Response fields</span>:
+		<span class="Statement">Response_xxx_fields</span>:
 
 		<span class="Constant">1.</span> token
 			Is the access token required to access data from a resource server
 			<span class="rainbow_p0">(</span>rs.com in this <span class="Statement">case</span><span class="rainbow_p0">)</span>, and is in the format: 'auth-server/consumer/random-bytes'
 
-			A valid IUDX token consist of 3 fields <span class="rainbow_p0">(</span>delimited by <span class="Constant">'/'</span><span class="rainbow_p0">)</span>:
+			A_xxx_valid_xxx_IUDX_xxx_token_xxx_consist_xxx_of_xxx_3_xxx_fields_xxx_<span class="rainbow_p0">(</span>delimited_xxx_by_xxx_<span class="Constant">'/'</span><span class="rainbow_p0">)</span>:
 
 				<span class="Constant">1.</span> Who has issued the token <span class="rainbow_p0">(</span>The Auth server<span class="rainbow_p0">)</span>
 				<span class="Constant">2.</span> To whom the token has been issued <span class="rainbow_p0">(</span>The consumer<span class="rainbow_p0">)</span>
 				<span class="Constant">3.</span> Random string
 
-			<span class="Statement">In the above example</span>:
+			<span class="Statement">In_xxx_the_xxx_above_xxx_example</span>:
 				token = <span class="Constant">&quot;auth.iudx.org.in/user@domain.com/2204adcbc990ffff234689aaabcdef90&quot;</span>
 
 		<span class="Constant">2.</span> expires-in
@@ -200,7 +200,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 		<span class="Statement">Request</span>:
 
-			curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/token>https://auth.iudx.org.in/auth/v1/token</a>
+			curl -XPOST $HTTPS$auth.iudx.org.in/auth/v1/token
 
 				--cert certificate.pem --key private-key.pem
 
@@ -227,24 +227,24 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 				<span class="rainbow_p1">}</span>
 			<span class="rainbow_p0">}</span>
 
-		<span class="Statement">Other response fields</span>:
+		<span class="Statement">Other_xxx_response_xxx_fields</span>:
 
 			<span class="Constant">3.</span> server-token
 
 				The <span class="Constant">&quot;server-token&quot;</span> field is sent only <span class="Statement">if</span> the request body
 				contains id's from multiple resource servers
 
-				<span class="Statement">In this example</span>:
+				<span class="Statement">In_xxx_this_xxx_example</span>:
 					<span class="Constant">&quot;rs1.com&quot;</span> and <span class="Constant">&quot;rs2.com&quot;</span>
 
 				In the above example, when requesting data from a resource server,
 				the consumer must also provide the <span class="Constant">&quot;server-token&quot;</span> of the respective resource server,
 				along with the consumer's <span class="Constant">&quot;token&quot;</span>.
 
-				<span class="Statement">In the above example</span>:
+				<span class="Statement">In_xxx_the_xxx_above_xxx_example</span>:
 					token = <span class="Constant">&quot;auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee&quot;</span>
 
-				and the <span class="Constant">&quot;server-token&quot;</span> when a consumer requests data from: 
+				and_xxx_the_xxx_<span class="Constant">&quot;server-token&quot;</span>_xxx_when_xxx_a_xxx_consumer_xxx_requests_xxx_data_xxx_from:_xxx_
 
 					<span class="Constant">&quot;rs1.com&quot;</span> is <span class="Constant">&quot;rs1.com/91834abcd323924339ab&quot;</span>,
 							and
@@ -258,20 +258,19 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 				multiple resource servers. Hence, consumers must update their
 				<span class="Constant">&quot;server-token&quot;</span>s as in the API response.
 
-<span class="Statement">See also</span>:
+<span class="Statement">See_xxx_also</span>:
 
-	<span class="Statement">token introspect API</span>:
-		<a style="color:#F4D03F" href=http://auth.iudx.org.in/token-introspect.html>http://auth.iudx.org.in/token-introspect.html</a>
+	<span class="Statement">token_xxx_introspect_xxx_API</span>:
+		$HTTP$auth.iudx.org.in/token-introspect.html
 
-	<span class="Statement">token revoke API</span>:
-		<a style="color:#F4D03F" href=http://auth.iudx.org.in/token-revoke.html>http://auth.iudx.org.in/token-revoke.html</a>
+	<span class="Statement">token_xxx_revoke_xxx_API</span>:
+		$HTTP$auth.iudx.org.in/token-revoke.html
 
-	<span class="Statement">token revoke all API</span>:
-		<a style="color:#F4D03F" href=http://auth.iudx.org.in/token-revoke-all.html>http://auth.iudx.org.in/token-revoke-all.html</a>
+	<span class="Statement">token_xxx_revoke_xxx_all_xxx_API</span>:
+		$HTTP$auth.iudx.org.in/token-revoke-all.html
 
 
 </pre>
 </body>
 </html>
 <!-- vim: set foldmethod=manual : -->
-

@@ -1,0 +1,73 @@
+
+Delete a consumer from a group
+------------------------------
+
+Endpoint:
+
+	https://<auth-server>/auth/v1/group/delete
+
+Description:
+
+	This API is used to delete a consumer from a group.
+
+Called by:
+
+	A data provider with a valid class-3 or above certificate.
+
+Methods:
+
+	POST
+
+Headers:
+
+	content-type : "application/json"
+
+Body in JSON format:
+
+	{
+		"group"	: <a valid group name already created by the user>			// required
+		"consumer"	: <the consumer's email-id, which is to be deleted from the group>	// required
+	}
+
+	Note: If the value of consumer is "*", then the group itself will be deleted.
+
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.delete_consumer_from_group("user@domain.com","confidential")
+
+CURL example:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/group/delete
+
+			--cert certificate.pem --key private-key.pem
+
+			-H 'content-type: application/json'
+
+			-d '{"group" : "confidential","consumer" : "user@domain.com"}'
+
+	Response:
+
+		200 OK
+		content-type : "application/json"
+
+		{
+			"num-consumers-deleted" : 5
+		}
+
+See also:
+
+	acl set API:
+		http://auth.iudx.org.in/acl-set.html
+
+	group add API:
+		http://auth.iudx.org.in/group-add.html
+
+	group list API:
+		http://auth.iudx.org.in/group-list.html
+

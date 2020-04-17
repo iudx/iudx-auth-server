@@ -1,0 +1,54 @@
+
+Get information about the user certificate 
+------------------------------------------
+
+Endpoint:
+
+	https://<auth-server>/auth/v1/certificate-info
+
+Description:
+
+	This API is used to get the user's certificate details. 
+
+Called by:
+
+	A data provider or a data consumer with a valid certificate.
+
+Methods:
+
+	POST	
+
+HTTP response code:
+
+	200
+		If the request is successful 
+
+	403
+		If access is denied.
+
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.get_certificate_info()
+
+CURL example:
+
+	Request:
+
+		curl https://auth.iudx.org.in/auth/v1/certificate-info --cert certificate.pem --key private-key.pem
+
+	Response:
+		
+		200 OK
+		content-type : "application/json"
+
+		{
+			"id"			: "user@example.com",
+			"certificate-class"	: 2
+			"serial"		: "5badd8f2b7d2c8cb0413883c7d023624543e6802",
+			"fingerprint"		: "8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70"
+		}
+

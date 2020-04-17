@@ -1,0 +1,78 @@
+
+Get members of a group
+----------------------
+
+Endpoint:
+
+	https://<auth-server>/auth/v1/group/list
+
+Description:
+
+	This API is used get the list of members in a group.
+	This group must have been already created by the provider. 
+
+Called by:
+
+	A data provider with a valid class-3 or above certificate.
+
+Methods:
+
+	POST
+
+Headers:
+
+	content-type : "application/json"
+
+Body in JSON format:
+
+	{
+		"group"	: <a valid group name already created by the user>	// optional
+	}
+
+Using pyIUDX SDK:
+
+	from pyIUDX.auth import auth	
+	
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+
+	iudx_auth.list_group("confidential")
+
+CURL example:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/group/list
+
+		--cert certificate.pem --key private-key.pem
+
+		-H 'content-type: application/json'
+
+		-d '{"group" : "confidential" }'
+
+	Response:
+
+		200 OK
+		content-type : "application/json"
+
+		[
+			{
+				"consumer": "user-1@domain.org",
+				"valid-till": "2019-09-30T10:44:33.527Z"
+			},
+			{
+				"consumer": "user-2@domain.com",
+				"valid-till": "2019-09-30T10:44:34.002Z"
+			}
+		]
+
+See also:
+
+	acl set API:
+		http://auth.iudx.org.in/acl-set.html
+
+	group add API:
+		http://auth.iudx.org.in/group-add.html
+
+	group delete API:
+		http://auth.iudx.org.in/group-delete.html
+

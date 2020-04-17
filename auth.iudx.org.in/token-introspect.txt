@@ -1,0 +1,230 @@
+
+Token introspection
+-------------------
+
+Endpoint:
+
+	https://<auth-server>/auth/v1/token/introspect
+
+Description:
+
+	This API is used to validate an access token provided by a consumer.
+
+Called by:
+
+	A "resource-server" with a valid class-1 certificate.
+
+	[ Note 1 ]:
+
+	The "CN" of the resource-server certificate should be valid hostname
+	(FQDN) or IP address. And it must be ensured that the IP address of the
+	"CN" matches with the machine that makes the introspect call.
+
+	If you do not have a domain yet and want to test the introspect API,
+	use "example.com" as your resource-server.
+
+	[ Note 2 ]:
+
+	This API must be only called by the resource-server after ensuring that
+	the resource "id"s requested by consumer is valid. This reduces the
+	number of API calls to the Auth server.
+
+Methods:
+
+	POST
+
+Headers:
+
+	content-type : "application/json"
+
+Body in JSON format:
+
+	{
+		"token"	: <token presented by the consumer>		// required
+		"server-token"	: <server token presented by the consumer>	// optional
+		"request"	: <the request that was sent by the consumer>	// optional
+	}
+
+	Fields:
+
+		1. "token"
+
+			The token which was presented by a consumer.
+
+		2. "server-token"
+
+			The server token presented by a consumer.
+
+			The server-token always starts with a resource-server
+			name and a "/" and random bytes.
+
+			For example:
+				"example.org/ebd8ae1de4a3be9b26a6173625df3d3f"
+
+			server-token is only required if a token is valid for
+			multiple resource-servers.	
+
+			As a "token" can be valid of many resource-servers:
+			"server-token"s are used to prevent a malicious resource
+			server from presenting a consumer's "token" as its own
+			to another resource-server. 
+
+		3. "request"
+
+			This is the exact data request sent by the consumer to
+			the resource-server.
+
+			If this field is presented:
+
+				then the auth server will exactly match this "request" field
+				with the "request" that was presented by the consumer during
+				the /token API. 
+
+			If this field is not presented:
+
+				Then the auth server returns the "request" for which the
+				token is valid. The resource-server should then validate
+				the consumer's "request" itself.
+
+				This is useful in cases where there may be complex regular
+				expressions in "request" field.
+
+				Also in cases where the resource-server does not want to share
+				the user's request with Auth server for privacy reasons.
+
+Checks before making the introspect API:
+
+	A valid IUDX token consist of 3 fields (delimited by '/'):
+
+		1. Who has issued the token (The Auth server)
+		2. To whom the token has been issued (The consumer)
+		3. Random string 
+
+	For example:
+		"auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee" 
+
+	[NOTE] : It is important for a resource-server to check if the token
+	was issued by a trusted Auth server before making the introspect call.
+
+	That is - *NEVER* create the Auth server URL based on the token
+	provided by the consumer.
+
+HTTP response code:
+
+	200
+		If the token is valid
+
+	403
+		If the token is invalid/expired
+
+			-OR-
+
+		The "CN" of the resource-server certificate does not match the
+		IP address of the machine which is calling this API.
+
+	429
+		If the resource-server makes too many requests
+
+Using pyIUDX SDK:
+
+	Example 1:
+
+		# simple example 
+
+		from pyIUDX.auth import auth
+
+		iudx_auth = auth.Auth(
+			"resource-server-certificate.pem","private-key.pem"
+		)
+
+		iudx_auth.introspect_token(
+			"auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90"
+		)
+
+	Example 2:
+
+		# dealing with multiple auth servers
+
+		from pyIUDX.auth import auth
+
+		cert = "resource-server-certificate.pem"
+		key  = "private-key.pem"
+
+		my_trusted_auth_servers = {
+			"auth.iudx.org.in"		: auth.Auth(cert,key,"auth.iudx.org.in"),
+			"my.auth.server.com"		: auth.Auth(cert,key,"my.auth.server.com"),
+			"third.party.auth.com"	: auth.Auth(cert,key,"third.party.auth.com"),
+		}
+
+		# received token from consumer
+		token = "auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90"
+
+		try:
+			token_auth_server	= token.split("/")[0]
+			auth_server		= my_trusted_auth_servers [token_auth_server]
+
+			print(valid_auth_server.introspect_token(token))
+		except:
+			print("Invalid token")
+
+CURL example:
+
+	Request:
+
+		curl -XPOST https://auth.iudx.org.in/auth/v1/token/introspect
+
+			--cert resource-server-certificate.pem --key private-key.pem
+
+			-H 'content-type: application/json'
+
+			-d '{"token": "auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90"}'
+
+	Response:
+
+		200 OK
+		content-type : "application/json"
+
+		{
+			"consumer"			: "arun.babu@rbccps.org",
+			"consumer-certificate-class"	: 3
+
+			"expiry"			: "2019-12-12T04:29:50.779Z",
+
+			"request" : [
+				{
+					"id"	: "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r3",
+
+					"apis"	: [
+						"/*"
+					],
+
+					"methods" : [
+						"*"
+					],
+
+					"body"	: null 
+				}
+			],
+		}
+
+	Response fields:
+
+		1. "consumer"
+			The consumer's email-id.
+
+		2. "consumer-certificate-class"
+			The class of certificate used by the consumer to get the
+			token.
+
+		3. "expiry"
+			Indicates till what time the token is valid.
+
+		4. "request"
+			The list of resource id's, methods, and APIs for which
+			the token is valid.
+
+See also:
+
+	token API:
+		http://auth.iudx.org.in/token.html
+

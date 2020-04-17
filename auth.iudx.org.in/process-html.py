@@ -11,7 +11,7 @@ for l in d:
 	l = l.replace("1em","1.1em")
 
 	l = re.sub(r'\$HTTPS\$([^\s]+)',r'<a style="color:#F4D03F" href=https://\g<1>>https://\g<1></a>',l)
-	l = re.sub(r'\$HTTP\$([^\s]+)',r'<a style="color:#F4D03F" href=https://\g<1>>http://\g<1></a>',l)
+	l = re.sub(r'\$HTTP\$([^\s]+)',r'<a style="color:#F4D03F" href=http://\g<1>>http://\g<1></a>',l)
 
 	if l.startswith("<title>"):
 		l = "<title>IUDX API documentation</title>"
