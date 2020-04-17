@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>IUDX API documentation</title>
+<meta name="Generator" content="Vim/8.1">
+<meta name="plugin-version" content="vim8.1_v1">
+<meta name="syntax" content="c">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="colorscheme" content="delek">
+<style type="text/css">
+<!--
+pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+* { font-size: 1.1em; }
+.Type { color: #8080ff; font-weight: bold; }
+.rainbow_p1 { color: #ffff00; font-weight: bold; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
+.rainbow_p0 { color: #8080ff; font-weight: bold; }
+.Comment { color: #ff6060; }
+.Constant { color: #00ff00; }
+.Statement { color: #8080ff; font-weight: bold; }
+-->
+</style>
+</head>
+<body>
+<pre id='vimCodeElement'>
+
+<b>Add a consumer to a group</b>
+<b>-------------------------</b>
+
+<span class="Statement">Endpoint</span>:
+
+	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/group/add>https://&lt;auth-server&gt;/auth/v1/group/add</a>
+
+<span class="Statement">Description</span>:
+
+	This API is used to add a consumer to a group.
+
+	Groups are useful in setting access control polcies where access to
+	resources is given to a group of consumers.
+
+	This is done using the <span class="Constant">&quot;consumer-in-group(group-name)&quot;</span> function in
+	the aperture policy when using the <span class="Constant">&quot;/acl/set&quot;</span> API.
+
+<span class="Statement">Called by</span>:
+
+	A data provider with a valid class-<span class="Constant">3</span> or above certificate.
+
+<span class="Statement">Methods</span>:
+
+	POST
+
+<span class="Statement">Headers</span>:
+
+	content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+<span class="Statement">Body in JSON format</span>:
+
+	<span class="rainbow_p0">{</span>
+		<span class="Constant">&quot;group&quot;</span>	: &lt;a valid group name created by the user&gt;			<span class="Comment">// required</span>
+		<span class="Constant">&quot;consumer&quot;</span>	: &lt;the consumer's email-id<span class="rainbow_o0">,</span> which is to be added to the group&gt;	<span class="Comment">// required</span>
+		<span class="Constant">&quot;valid-till&quot;</span>	: &lt;how <span class="Type">long</span> <span class="rainbow_p1">(</span>in hours<span class="rainbow_p1">)</span> the consumer will be in the group&gt;	<span class="Comment">// required</span>
+	<span class="rainbow_p0">}</span>
+
+	<span class="Statement">Note</span>: If the <span class="Constant">&quot;group&quot;</span> doesn't exist, it will be created automatically.
+
+<span class="Statement">Using pyIUDX SDK</span>:
+
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
+
+	# add user@domain.com to confidential group <span class="Statement">for</span> <span class="Constant">1</span> hour
+	iudx_auth.add_consumer_to_group<span class="rainbow_p0">(</span><span class="Constant">&quot;user@domain.com&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;confidential&quot;</span><span class="rainbow_o0">,</span><span class="Constant">1</span><span class="rainbow_p0">)</span>
+
+<span class="Statement">CURL example</span>:
+
+	<span class="Statement">Request</span>:
+
+		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/group/add>https://auth.iudx.org.in/auth/v1/group/add</a>
+
+			--cert certificate.pem --key private-key.pem
+
+			-H 'content-type: application/json'
+
+			-d '<span class="rainbow_p0">{</span><span class="Constant">&quot;group&quot;</span> : <span class="Constant">&quot;confidential&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;consumer&quot;</span> : <span class="Constant">&quot;user@domain.com&quot;</span><span class="rainbow_o0">,</span> <span class="Constant">&quot;valid-till&quot;</span> : <span class="Constant">3600</span><span class="rainbow_p0">}</span>'
+
+	<span class="Statement">Response</span>:
+
+		<span class="Constant">200</span> OK
+		content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+		<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;success&quot;</span> : <span class="Constant">true</span>
+		<span class="rainbow_p0">}</span>
+
+
+<span class="Statement">See also</span>:
+
+	<span class="Statement">acl set API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/acl-set.html>http://auth.iudx.org.in/acl-set.html</a>
+
+	<span class="Statement">group delete API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/group-delete.html>http://auth.iudx.org.in/group-delete.html</a>
+
+	<span class="Statement">group list API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/group-list.html>http://auth.iudx.org.in/group-list.html</a>
+
+
+</pre>
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->
+

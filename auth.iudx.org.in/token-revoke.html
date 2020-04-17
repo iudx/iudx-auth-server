@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>IUDX API documentation</title>
+<meta name="Generator" content="Vim/8.1">
+<meta name="plugin-version" content="vim8.1_v1">
+<meta name="syntax" content="c">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="colorscheme" content="delek">
+<style type="text/css">
+<!--
+pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+* { font-size: 1.1em; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
+.Comment { color: #ff6060; }
+.rainbow_p1 { color: #ffff00; font-weight: bold; }
+.rainbow_p0 { color: #8080ff; font-weight: bold; }
+.Constant { color: #00ff00; }
+.Statement { color: #8080ff; font-weight: bold; }
+-->
+</style>
+</head>
+<body>
+<pre id='vimCodeElement'>
+
+<b>Revoke a token</b>
+<b>--------------</b>
+
+<span class="Statement">Endpoint</span>:
+
+	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/token/revoke>https://&lt;auth-server&gt;/auth/v1/token/revoke</a>
+
+<span class="Statement">Description</span>:
+
+	This API is used to revoke a valid access token.
+
+<span class="Statement">Called by</span>:
+
+	A user with a valid class-<span class="Constant">3</span> or above certificate.
+
+<span class="Statement">Methods</span>:
+
+	POST
+
+<span class="Statement">Headers</span>:
+
+	content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+<span class="Statement">Body in JSON format</span>:
+
+	<span class="rainbow_p0">{</span>
+		<span class="Constant">&quot;tokens&quot;</span>	: &lt;list of tokens to be revoked&gt;	<span class="rainbow_p1">(</span>to be sent by a data consumer<span class="rainbow_p1">)</span>		<span class="Comment">// optional</span>
+		<span class="Constant">&quot;token-hashes&quot;</span>	: &lt;list of token-hashes to be revoked&gt;	<span class="rainbow_p1">(</span>to be sent by a data provider<span class="rainbow_p1">)</span>		<span class="Comment">// optional</span>
+	<span class="rainbow_p0">}</span>
+
+	<span class="Statement">Note</span>: a data provider can get the <span class="Constant">&quot;token-hashes&quot;</span> using the <span class="Constant">&quot;audit/tokens&quot;</span> API.
+
+<span class="Statement">HTTP response codes</span>:
+
+	<span class="Constant">200</span>
+		If token has been successfully revoked.
+
+	<span class="Constant">403</span>
+		If token is invalid.
+
+	<span class="Constant">429</span>
+		If the user makes too many requests.
+
+<span class="Statement">Using pyIUDX SDK</span>:
+
+	from pyIUDX.auth import auth
+
+	# as a data consumer
+	iudx_auth		= auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;consumer-certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
+	tokens_to_revoke	= <span class="rainbow_p0">[</span><span class="Constant">&quot;auth.iudx.org.in/email-id@domain.com/2204adcbc990ffff234689aaabcdef90&quot;</span><span class="rainbow_p0">]</span>
+
+	iudx_auth.revoke_tokens<span class="rainbow_p0">(</span>tokens_to_revoke<span class="rainbow_p0">)</span>
+
+	# as a data provider
+	iudx_auth		= auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;provider-certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
+	token_hashes_to_revoke	= <span class="rainbow_p0">[</span><span class="Constant">&quot;6d025974c916cadf8f683a99c65ebce871913118&quot;</span><span class="rainbow_p0">]</span>
+
+	iudx_auth.revoke_token_hashes<span class="rainbow_p0">(</span>token_hashes_to_revoke<span class="rainbow_p0">)</span>
+
+<span class="Statement">CURL example</span>:
+
+	<span class="Statement">Request</span>:
+
+		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/token/revoke>https://auth.iudx.org.in/auth/v1/token/revoke</a>
+
+		--cert certificate.pem --key private-key.pem
+
+		-H 'content-type: application/json'
+
+		-d '<span class="rainbow_p0">{</span><span class="Constant">&quot;tokens&quot;</span> : <span class="rainbow_p1">[</span><span class="Constant">&quot;auth.iudx.org.in/email-id@domain.com/2204adcbc990ffff234689aaabcdef90&quot;</span><span class="rainbow_p1">]</span><span class="rainbow_p0">}</span>
+
+
+	<span class="Statement">Response</span>:
+
+		<span class="Constant">200</span> OK
+		content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+		<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;num-tokens-revoked&quot;</span> : <span class="Constant">1</span>
+		<span class="rainbow_p0">}</span>
+
+<span class="Statement">See also</span>:
+
+	<span class="Statement">audit tokens API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/audit-tokens.html>http://auth.iudx.org.in/audit-tokens.html</a>
+
+	<span class="Statement">token revoke all API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/token-revoke-all.html>http://auth.iudx.org.in/token-revoke-all.html</a>
+
+
+</pre>
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->
+

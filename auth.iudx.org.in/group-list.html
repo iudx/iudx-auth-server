@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>IUDX API documentation</title>
+<meta name="Generator" content="Vim/8.1">
+<meta name="plugin-version" content="vim8.1_v1">
+<meta name="syntax" content="c">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="colorscheme" content="delek">
+<style type="text/css">
+<!--
+pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+* { font-size: 1.1em; }
+.rainbow_p1 { color: #ffff00; font-weight: bold; }
+.rainbow_o1 { color: #ffff00; font-weight: bold; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
+.rainbow_p0 { color: #8080ff; font-weight: bold; }
+.Comment { color: #ff6060; }
+.Constant { color: #00ff00; }
+.Statement { color: #8080ff; font-weight: bold; }
+-->
+</style>
+</head>
+<body>
+<pre id='vimCodeElement'>
+
+<b>Get members of a group</b>
+<b>----------------------</b>
+
+<span class="Statement">Endpoint</span>:
+
+	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/group/list>https://&lt;auth-server&gt;/auth/v1/group/list</a>
+
+<span class="Statement">Description</span>:
+
+	This API is used get the list of members in a group.
+	This group must have been already created by the provider.
+
+<span class="Statement">Called by</span>:
+
+	A data provider with a valid class-<span class="Constant">3</span> or above certificate.
+
+<span class="Statement">Methods</span>:
+
+	POST
+
+<span class="Statement">Headers</span>:
+
+	content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+<span class="Statement">Body in JSON format</span>:
+
+	<span class="rainbow_p0">{</span>
+		<span class="Constant">&quot;group&quot;</span>	: &lt;a valid group name already created by the user&gt;	<span class="Comment">// optional</span>
+	<span class="rainbow_p0">}</span>
+
+<span class="Statement">Using pyIUDX SDK</span>:
+
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
+
+	iudx_auth.list_group<span class="rainbow_p0">(</span><span class="Constant">&quot;confidential&quot;</span><span class="rainbow_p0">)</span>
+
+<span class="Statement">CURL example</span>:
+
+	<span class="Statement">Request</span>:
+
+		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/group/list>https://auth.iudx.org.in/auth/v1/group/list</a>
+
+		--cert certificate.pem --key private-key.pem
+
+		-H 'content-type: application/json'
+
+		-d '<span class="rainbow_p0">{</span><span class="Constant">&quot;group&quot;</span> : <span class="Constant">&quot;confidential&quot;</span> <span class="rainbow_p0">}</span>'
+
+	<span class="Statement">Response</span>:
+
+		<span class="Constant">200</span> OK
+		content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+		<span class="rainbow_p0">[</span>
+			<span class="rainbow_p1">{</span>
+				<span class="Constant">&quot;consumer&quot;</span>: <span class="Constant">&quot;user-1@domain.org&quot;</span><span class="rainbow_o1">,</span>
+				<span class="Constant">&quot;valid-till&quot;</span>: <span class="Constant">&quot;2019-09-30T10:44:33.527Z&quot;</span>
+			<span class="rainbow_p1">}</span><span class="rainbow_o0">,</span>
+			<span class="rainbow_p1">{</span>
+				<span class="Constant">&quot;consumer&quot;</span>: <span class="Constant">&quot;user-2@domain.com&quot;</span><span class="rainbow_o1">,</span>
+				<span class="Constant">&quot;valid-till&quot;</span>: <span class="Constant">&quot;2019-09-30T10:44:34.002Z&quot;</span>
+			<span class="rainbow_p1">}</span>
+		<span class="rainbow_p0">]</span>
+
+<span class="Statement">See also</span>:
+
+	<span class="Statement">acl set API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/acl-set.html>http://auth.iudx.org.in/acl-set.html</a>
+
+	<span class="Statement">group add API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/group-add.html>http://auth.iudx.org.in/group-add.html</a>
+
+	<span class="Statement">group delete API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/group-delete.html>http://auth.iudx.org.in/group-delete.html</a>
+
+
+</pre>
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->
+

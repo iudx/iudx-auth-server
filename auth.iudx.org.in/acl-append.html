@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>IUDX API documentation</title>
+<meta name="Generator" content="Vim/8.1">
+<meta name="plugin-version" content="vim8.1_v1">
+<meta name="syntax" content="c">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="colorscheme" content="delek">
+<style type="text/css">
+<!--
+pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+* { font-size: 1.1em; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
+.rainbow_p0 { color: #8080ff; font-weight: bold; }
+.Comment { color: #ff6060; }
+.Constant { color: #00ff00; }
+.Statement { color: #8080ff; font-weight: bold; }
+-->
+</style>
+</head>
+<body>
+<pre id='vimCodeElement'>
+
+<b>Append access control policy</b>
+<b>----------------------------</b>
+
+<span class="Statement">Endpoint</span>:
+
+	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/acl/append>https://&lt;auth-server&gt;/auth/v1/acl/append</a>
+
+<span class="Statement">Description</span>:
+
+	This API is used to append access control rules to existing rules.
+
+<span class="Statement">Called by</span>:
+
+	A a data provider with a valid class-<span class="Constant">3</span> or above certificate.
+
+<span class="Statement">Methods</span>:
+
+	POST
+
+<span class="Statement">Headers</span>:
+
+	content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+<span class="Statement">Body in JSON format</span>:
+
+	<span class="rainbow_p0">{</span>
+		<span class="Constant">&quot;policy&quot;</span> : <span class="Constant">&quot;acl policy (a string) in aperture policy language&quot;</span>	<span class="Comment">// required</span>
+	<span class="rainbow_p0">}</span>
+
+<span class="Statement">HTTP response code</span>:
+
+	<span class="Constant">200</span>
+		If the policy has been successfully appended.
+
+	<span class="Constant">400</span>
+		If the policy contains syntax errors.
+
+<span class="Statement">Using pyIUDX SDK</span>:
+
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
+
+	iudx_auth.append_policy<span class="rainbow_p0">(</span><span class="Constant">&quot;*@gov.in can access rs1.com/my-resource&quot;</span><span class="rainbow_p0">)</span>
+
+<span class="Statement">CURL example</span>:
+
+	<span class="Statement">Request</span>:
+
+		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/acl/append>https://auth.iudx.org.in/auth/v1/acl/append</a>
+
+			--cert certificate.pem --key private-key.pem
+
+			-H 'content-type: application/json'
+
+			-d '<span class="rainbow_p0">{</span><span class="Constant">&quot;policy&quot;</span>:<span class="Constant">&quot;*@gov.in can access rs1.com/resource&quot;</span><span class="rainbow_p0">}</span>'
+
+	<span class="Statement">Response</span>:
+
+		<span class="Constant">200</span> OK
+		content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+		<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;success&quot;</span> : <span class="Constant">true</span>
+		<span class="rainbow_p0">}</span>
+
+<span class="Statement">Known limitations</span>:
+
+	If the access control rules contain regex on <span class="Constant">&quot;id&quot;</span>s, then an authorized
+	consumer can get a token <span class="Statement">for</span> <span class="Constant">&quot;id&quot;</span>s which may not exist.
+
+	This is by design. Having regex makes writing rules easier.
+	Also, the provider doesn't have to remember all valid <span class="Constant">&quot;id&quot;</span>s.
+
+	This issue is expected to be handled by the resource server,
+	by rejecting any queries to invalid <span class="Constant">&quot;id&quot;</span>s.
+
+	To be able to exploit this, the authorized consumer must guess the regex.
+
+	<span class="Statement">As a safeguard</span>:
+
+	Auth server limits how many tokens can be generated per second; as well
+	as Auth server's firewall blocks a IP address <span class="Statement">for</span> some time <span class="Statement">if</span> number of
+	packets or connections cross a threshold.
+
+<span class="Statement">See also</span>:
+
+	<span class="Statement">acl API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/acl.html>http://auth.iudx.org.in/acl.html</a>
+
+	<span class="Statement">acl set API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/acl-set.html>http://auth.iudx.org.in/acl-set.html</a>
+
+	<span class="Statement">node aperture at github</span>:
+		<a style="color:#F4D03F" href=https://github.com/rbccps-iisc/node-aperture>https://github.com/rbccps-iisc/node-aperture</a>
+
+
+</pre>
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->
+

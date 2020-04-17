@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>IUDX API documentation</title>
+<meta name="Generator" content="Vim/8.1">
+<meta name="plugin-version" content="vim8.1_v1">
+<meta name="syntax" content="c">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="colorscheme" content="delek">
+<style type="text/css">
+<!--
+pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+* { font-size: 1.1em; }
+.PreProc { color: #ff40ff; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
+.rainbow_p0 { color: #8080ff; font-weight: bold; }
+.Comment { color: #ff6060; }
+.Constant { color: #00ff00; }
+.Statement { color: #8080ff; font-weight: bold; }
+-->
+</style>
+</head>
+<body>
+<pre id='vimCodeElement'>
+
+<b>Set access control policy</b>
+<b>-------------------------</b>
+
+<span class="Statement">Endpoint</span>:
+
+	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/acl/set>https://&lt;auth-server&gt;/auth/v1/acl/set</a>
+
+<span class="Statement">Description</span>:
+
+	This API is used to set access control policies.
+
+<span class="Statement">Called by</span>:
+
+	A data provider with a valid class-<span class="Constant">3</span> or above certificate.
+
+<span class="Statement">Methods</span>:
+
+	POST
+
+<span class="Statement">Headers</span>:
+
+	content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+<span class="Statement">Body in JSON format</span>:
+
+	<span class="rainbow_p0">{</span>
+		<span class="Constant">&quot;policy&quot;</span> : <span class="Constant">&quot;acl policy (a string) in aperture policy language&quot;</span>	<span class="Comment">// required</span>
+	<span class="rainbow_p0">}</span>
+
+<span class="Statement">HTTP response code</span>:
+
+	<span class="Constant">200</span>
+		If the policy has been successfully set.
+
+	<span class="Constant">400</span>
+		If the policy contains syntax errors.
+
+<span class="Statement">Aperture policy language</span>:
+
+	The authorization rules are in aperture policy language,
+	<span class="Statement">and are in the format</span>:
+
+		&lt;consumer<span class="rainbow_p0">(</span>s<span class="rainbow_p0">)</span>&gt;
+			CAN access &lt;resource id<span class="rainbow_p0">(</span>s<span class="rainbow_p0">)</span>&gt;
+			FOR &lt;n&gt; &lt;second<span class="rainbow_p0">(</span>s<span class="rainbow_p0">)</span>/minute<span class="rainbow_p0">(</span>s<span class="rainbow_p0">)</span>/week<span class="rainbow_p0">(</span>s<span class="rainbow_p0">)</span>/month<span class="rainbow_p0">(</span>s<span class="rainbow_p0">)</span>/year<span class="rainbow_p0">(</span>s<span class="rainbow_p0">)</span>&gt;
+			IF &lt;condition&gt; AND/OR &lt;more-conditions&gt;
+
+	<span class="Statement">Examples</span>:
+
+		arun@iisc.ac.in can access resource-server.com/streetlights<span class="Constant">.1</span> <span class="Statement">for</span> <span class="Constant">2</span> hours
+
+		*@rbcps.org, *@iisc.ac.in can access * <span class="Statement">if</span> time &gt; <span class="Constant">18</span>:<span class="PreProc">0</span><span class="Constant">0</span>:<span class="PreProc">0</span><span class="Constant">0</span> AND time &lt; <span class="Constant">24</span>:<span class="PreProc">0</span><span class="Constant">0</span>:<span class="PreProc">0</span><span class="Constant">0</span>
+
+		all can access resource-server.com/public.* <span class="Statement">if</span> api = <span class="Constant">&quot;/latest&quot;</span> AND country = <span class="Constant">&quot;IN&quot;</span>
+
+	<span class="Statement">Aperture also supports conditions such as</span>:
+
+		ip = <span class="Constant">10.0.0.1</span>
+
+		latitude &gt; <span class="Constant">20.03</span> AND longitude &gt; <span class="Constant">40.22</span>
+
+		time::day in <span class="rainbow_p0">(</span>Monday<span class="rainbow_o0">,</span> Tuesday<span class="rainbow_o0">,</span> Wednesday<span class="rainbow_o0">,</span> Thursday<span class="rainbow_o0">,</span> Friday<span class="rainbow_p0">)</span>
+
+		consumer-in-group<span class="rainbow_p0">(</span>confidential<span class="rainbow_p0">)</span>
+
+	You may use a single <span class="Constant">&quot;*&quot;</span>, or <span class="Constant">&quot;all&quot;</span>, <span class="Constant">&quot;everything&quot;</span>, or <span class="Constant">&quot;anything&quot;</span> to match
+	any identifier.
+
+	<span class="Statement">For example</span>:
+
+	    barun@iisc.ac.in can access *
+
+	    all can access anything
+
+	<span class="Statement">Several rules could be combined together using semicolons</span>:
+
+		rule-<span class="Constant">1</span>; rule-<span class="Constant">2</span>; .... ; rule-n
+
+<span class="Statement">Variables in policy language</span>:
+
+	Below are the variables available in rules, and its type.
+
+	+--------------------------------------------------------------------------------------------------+
+	| Variable	    | Type   | Description							   |
+	|-------------------+--------+---------------------------------------------------------------------|
+	| api		    | string | The api the consumer is requesting to access on a resource id.      |
+	| method	    | string | The method the consumer is requesting to access on the APIs.        |
+	| body.*	    | string | The list of variables to be passed in the body of an API.	   |
+	| time		    | time   | The time at which the data request was made.		   	   |
+	| ip		    | ip     | The originating IP address of the token request.                    |
+	|												   |
+	| tokens_per_day    | number | The number of tokens issued today to the consumer For a resource.   |
+	|												   |
+	| country	    | string | consumer's country code from where the request has originated.      |
+	| region	    | string | consumer's region from where the request has originated.	   	   |
+	| timezone	    | string | consumer's timezone from where the request has originated.	   |
+	| city		    | string | consumer's city from where the request has originated.	   	   |
+	| latitude	    | number | consumer's latitude from where the request has originated.	   |
+	| longitude	    | number | consumer's longitude from where the request has originated.   	   |
+	|												   |
+	| cert.class	    | string | consumer's certificate attributes				   |
+	| cert.cn	    | string | 									   |
+	| cert.o	    | string | 									   |
+	| cert.ou	    | string | 									   |
+	| cert.c	    | string | 									   |
+	| cert.st	    | string | 									   |
+	| cert.gn	    | string | 									   |
+	| cert.sn	    | string | 									   |
+	| cert.title	    | string | 									   |
+	|												   |
+	| cert.issuer.cn    | string | consumer's certificate issuer details				   |
+	| cert.issuer.o	    | string | 									   |
+	| cert.issuer.email | string | 									   |
+	| cert.issuer.ou    | string |									   |
+	| cert.issuer.c     | string | 									   |
+	| cert.issuer.st    | string | 									   |
+	+--------------------------------------------------------------------------------------------------+
+
+<span class="Statement">Resource IDs in policies</span>:
+
+	The <span class="Constant">&quot;id&quot;</span> is the identifier of the resource <span class="rainbow_p0">(</span>a data-set<span class="rainbow_p0">)</span> the provider is interested in sharing with consumers.
+
+	Data consumers typically get these <span class="Constant">&quot;id&quot;</span>s from a catalogue server.
+
+	An example catalog server is: <a style="color:#F4D03F" href=https://varanasi.iudx.org.in>https://varanasi.iudx.org.in</a>
+
+	<span class="Statement">And an example query to get ids is</span>:
+		<a style="color:#F4D03F" href=https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem>https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem</a>
+
+	The resource <span class="Constant">&quot;id&quot;</span> consists of at least 4 parts seperated by a <span class="Constant">&quot;/&quot;</span> indicating:
+
+		<span class="Constant">1.</span> The email domain of the data provider.
+
+		<span class="Constant">2.</span> SHA-<span class="Constant">1</span> hash of the data provider's email-id <span class="rainbow_p0">(</span>to mask the provider's email<span class="rainbow_p0">)</span>.
+
+		<span class="Constant">3.</span> The hostname <span class="rainbow_p0">(</span>FQDN<span class="rainbow_p0">)</span> of the resource server where the resource is hosted.
+
+		<span class="Constant">4.</span> The name of the resource <span class="rainbow_p0">(</span>which may contain additional <span class="Constant">&quot;/&quot;</span>s<span class="rainbow_p0">)</span>.
+
+	<span class="Statement">For example</span>:
+		<span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/resource-name&quot;</span>
+
+	<span class="Statement">However while writing rules the first 2 fields should be skipped</span>:
+		<span class="Statement">for</span> example, in the above id, <span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c&quot;</span> can be skipped.
+
+	<span class="Statement">The rule would look like this</span>:
+		<span class="Constant">&quot;consumer@domain.com can access resource-server.com/resource-name&quot;</span>
+
+<span class="Statement">Using pyIUDX SDK</span>:
+
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
+
+	iudx_auth.set_policy<span class="rainbow_p0">(</span><span class="Constant">&quot;*@gov.in can access rs1.com/my-resource&quot;</span><span class="rainbow_p0">)</span>
+
+<span class="Statement">CURL example</span>:
+
+	<span class="Statement">Request</span>:
+
+		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/acl/set>https://auth.iudx.org.in/auth/v1/acl/set</a>
+
+			--cert certificate.pem --key private-key.pem
+
+			-H 'content-type: application/json'
+
+			-d '<span class="rainbow_p0">{</span><span class="Constant">&quot;policy&quot;</span>:<span class="Constant">&quot;*@gov.in can access rs1.com/my-resource&quot;</span><span class="rainbow_p0">}</span>'
+
+	<span class="Statement">Response</span>:
+
+		<span class="Constant">200</span> OK
+		content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+		<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;success&quot;</span> : <span class="Constant">true</span>
+		<span class="rainbow_p0">}</span>
+
+<span class="Statement">Known limitations</span>:
+
+	If the access control rules contain regex on <span class="Constant">&quot;id&quot;</span>s, then an authorized
+	consumer can get a token <span class="Statement">for</span> <span class="Constant">&quot;id&quot;</span>s which may not exist.
+
+	This is by design. Having regex makes writing rules easier.
+	Also, the provider doesn't have to remember all valid <span class="Constant">&quot;id&quot;</span>s.
+
+	This issue is expected to be handled by the resource server,
+	by rejecting any queries to invalid <span class="Constant">&quot;id&quot;</span>s.
+
+	To be able to exploit this, the authorized consumer must guess the regex.
+
+	<span class="Statement">As a safeguard</span>:
+
+	Auth server limits how many tokens can be generated per second; as well
+	as Auth server's firewall blocks a IP address <span class="Statement">for</span> some time <span class="Statement">if</span> number of
+	packets or connections cross a threshold.
+
+<span class="Statement">See also</span>:
+
+	<span class="Statement">acl API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/acl.html>http://auth.iudx.org.in/acl.html</a>
+
+	<span class="Statement">acl append API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/acl-append.html>http://auth.iudx.org.in/acl-append.html</a>
+
+	<span class="Statement">node aperture at github</span>:
+		<a style="color:#F4D03F" href=https://github.com/rbccps-iisc/node-aperture>https://github.com/rbccps-iisc/node-aperture</a>
+
+
+</pre>
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->
+

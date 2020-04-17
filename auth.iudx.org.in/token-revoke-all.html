@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>IUDX API documentation</title>
+<meta name="Generator" content="Vim/8.1">
+<meta name="plugin-version" content="vim8.1_v1">
+<meta name="syntax" content="c">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="colorscheme" content="delek">
+<style type="text/css">
+<!--
+pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+* { font-size: 1.1em; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
+.rainbow_p0 { color: #8080ff; font-weight: bold; }
+.Comment { color: #ff6060; }
+.Constant { color: #00ff00; }
+.Statement { color: #8080ff; font-weight: bold; }
+-->
+</style>
+</head>
+<body>
+<pre id='vimCodeElement'>
+
+<b>Revoke all valid tokens <span class="Statement">for</span> a given certificate</b>
+<b>-----------------------------------------------</b>
+
+<span class="Statement">Endpoint</span>:
+
+	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/token/revoke-all>https://&lt;auth-server&gt;/auth/v1/token/revoke-all</a>
+
+<span class="Statement">Description</span>:
+
+	This API can be used by a user to revoke all valid access tokens issued
+	to the consumer <span class="Statement">for</span> a given certificate.
+
+<span class="Statement">Called by</span>:
+
+	A user with a valid class-<span class="Constant">3</span> or above certificate.
+
+<span class="Statement">Methods</span>:
+
+	POST
+
+<span class="Statement">Body in JSON format</span>:
+
+	<span class="rainbow_p0">{</span>
+		<span class="Constant">&quot;serial&quot;</span>	: &lt;the serial number of the consumer's certificate&gt;		<span class="Comment">// required</span>
+		<span class="Constant">&quot;fingerprint&quot;</span>	: &lt;the fingerprint of the consumer's certificate&gt;		<span class="Comment">// required</span>
+	<span class="rainbow_p0">}</span>
+
+	<span class="Statement">Note</span>: the certificate <span class="Constant">&quot;serial&quot;</span> and <span class="Constant">&quot;fingerprint&quot;</span> may be obtained by using the <span class="Constant">&quot;audit/tokens&quot;</span> API.
+
+<span class="Statement">HTTP response codes</span>:
+
+	<span class="Constant">200</span>
+		If all the tokens have been successfully revoked.
+
+	<span class="Constant">400</span>
+		If the inputs are invalid
+
+<span class="Statement">Using pyIUDX SDK</span>:
+
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
+
+	# serial and fingerprint
+	iudx_auth.revoke_all <span class="rainbow_p0">(</span>
+		<span class="Constant">&quot;5badd8f2b7d2c8cb0413883c7d023624543e6802&quot;</span><span class="rainbow_o0">,</span>
+		<span class="Constant">&quot;8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70&quot;</span>
+	<span class="rainbow_p0">)</span>
+
+<span class="Statement">CURL example</span>:
+
+	<span class="Statement">Request</span>:
+
+		curl <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/token/revoke-all>https://auth.iudx.org.in/auth/v1/token/revoke-all</a>
+
+		--cert certificate.pem --key private-key.pem
+
+		-d '<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;serial&quot;</span>	: <span class="Constant">&quot;5badd8f2b7d2c8cb0413883c7d023624543e6802&quot;</span><span class="rainbow_o0">,</span>
+			<span class="Constant">&quot;fingerprint&quot;</span>	: <span class="Constant">&quot;8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70&quot;</span>
+		<span class="rainbow_p0">}</span>'
+
+	<span class="Statement">Response</span>:
+
+		<span class="Constant">200</span> OK
+		content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+		<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;num-tokens-revoked&quot;</span> : <span class="Constant">5</span>
+		<span class="rainbow_p0">}</span>
+
+<span class="Statement">See also</span>:
+
+	<span class="Statement">audit tokens API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/audit-tokens.html>http://auth.iudx.org.in/audit-tokens.html</a>
+
+	<span class="Statement">token revoke API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/token-revoke.html>http://auth.iudx.org.in/token-revoke.html</a>
+
+
+</pre>
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->
+

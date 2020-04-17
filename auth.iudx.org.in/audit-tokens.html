@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>IUDX API documentation</title>
+<meta name="Generator" content="Vim/8.1">
+<meta name="plugin-version" content="vim8.1_v1">
+<meta name="syntax" content="c">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="colorscheme" content="delek">
+<style type="text/css">
+<!--
+pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+* { font-size: 1.1em; }
+.rainbow_o1 { color: #ffff00; font-weight: bold; }
+.rainbow_p1 { color: #ffff00; font-weight: bold; }
+.rainbow_o2 { color: #00ffff; font-weight: bold; }
+.rainbow_p2 { color: #00ffff; font-weight: bold; }
+.rainbow_p3 { color: #ff40ff; font-weight: bold; }
+.Comment { color: #ff6060; }
+.Constant { color: #00ff00; }
+.Statement { color: #8080ff; font-weight: bold; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
+.rainbow_p0 { color: #8080ff; font-weight: bold; }
+-->
+</style>
+</head>
+<body>
+<pre id='vimCodeElement'>
+
+<b>Audit access tokens</b>
+<b>-------------------</b>
+
+<span class="Statement">Endpoint</span>:
+
+	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/audit/tokens>https://&lt;auth-server&gt;/auth/v1/audit/tokens</a>
+
+<span class="Statement">Description</span>:
+
+	This API allows a <span class="Constant">&quot;data consumer&quot;</span> or a <span class="Constant">&quot;data provider&quot;</span> to audit their
+	tokens.
+
+<span class="Statement">Called by</span>:
+
+	A user with a valid class-<span class="Constant">3</span> or above certificate.
+
+<span class="Statement">Methods</span>:
+
+	POST
+
+<span class="Statement">Body in JSON format</span>:
+
+	<span class="rainbow_p0">{</span>
+		<span class="Constant">&quot;hours&quot;</span> : &lt;number of hours <span class="Statement">for</span> which the audit-report has to be generated&gt;	<span class="Comment">// required</span>
+	<span class="rainbow_p0">}</span>
+
+<span class="Statement">HTTP response code</span>:
+
+	<span class="Constant">200</span>
+		If audit report has been successfully fetched.
+
+	<span class="Constant">403</span>
+		If the certificate class is &lt; <span class="Constant">3</span>
+
+<span class="Statement">Using pyIUDX SDK</span>:
+
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
+
+	iudx_auth.audit_tokens<span class="rainbow_p0">(</span><span class="Constant">5</span><span class="rainbow_p0">)</span> # audit report <span class="Statement">for</span> last <span class="Constant">5</span> hours
+
+<span class="Statement">CURL example</span>:
+
+	<span class="Statement">Request</span>:
+
+		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/audit/tokens>https://auth.iudx.org.in/auth/v1/audit/tokens</a>
+
+			--cert certificate.key --key private-key.key
+
+			-d '<span class="rainbow_p0">{</span><span class="Constant">&quot;hours&quot;</span>: <span class="Constant">5</span><span class="rainbow_p0">}</span>'
+
+	<span class="Statement">Response</span>:
+
+	<span class="Constant">200</span> OK
+	content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+	<span class="rainbow_p0">{</span>
+	   <span class="Constant">&quot;as-consumer&quot;</span> : <span class="rainbow_p1">[</span>
+	    <span class="rainbow_p2">{</span>
+		<span class="Constant">&quot;token-issued-at&quot;</span>		: <span class="Constant">&quot;2019-08-08T03:29:50.779Z&quot;</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;expiry&quot;</span>			: <span class="Constant">&quot;2019-08-08T04:29:50.779Z&quot;</span><span class="rainbow_o2">,</span>
+
+		<span class="Constant">&quot;introspected&quot;</span>			: <span class="Constant">true</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;revoked&quot;</span>			: <span class="Constant">false</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;expired&quot;</span>			: <span class="Constant">false</span><span class="rainbow_o2">,</span>
+
+		<span class="Constant">&quot;certificate-serial-number&quot;</span>	: <span class="Constant">&quot;5badd8f2b7d2c8cb0413883c7d023624543e6802&quot;</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;certificate-fingerprint&quot;</span>	: <span class="Constant">&quot;8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70&quot;</span><span class="rainbow_o2">,</span>
+
+		<span class="Constant">&quot;request&quot;</span>: <span class="rainbow_p3">[</span>
+		   <span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;id&quot;</span>: <span class="Constant">&quot;rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/resource-1&quot;</span><span class="rainbow_o0">,</span>
+
+			<span class="Constant">&quot;methods&quot;</span> : <span class="rainbow_p1">[</span>
+				<span class="Constant">&quot;GET&quot;</span>
+			<span class="rainbow_p1">]</span><span class="rainbow_o0">,</span>
+
+			<span class="Constant">&quot;apis&quot;</span> : <span class="rainbow_p1">[</span>
+				<span class="Constant">&quot;/latest&quot;</span>
+			<span class="rainbow_p1">]</span><span class="rainbow_o0">,</span>
+
+			<span class="Constant">&quot;body&quot;</span>: <span class="rainbow_p1">{</span>
+				<span class="Constant">&quot;key&quot;</span>: <span class="Constant">&quot;value&quot;</span>
+			<span class="rainbow_p1">}</span>
+		   <span class="rainbow_p0">}</span>
+		<span class="rainbow_p3">]</span>
+	    <span class="rainbow_p2">}</span><span class="rainbow_o1">,</span>
+	    ...
+	  <span class="rainbow_p1">]</span><span class="rainbow_o0">,</span>
+
+	  <span class="Constant">&quot;as-provider&quot;</span>	: <span class="rainbow_p1">[</span>
+	    <span class="rainbow_p2">{</span>
+		<span class="Constant">&quot;consumer&quot;</span>			: <span class="Constant">&quot;user@domain.com&quot;</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;token-hash&quot;</span>			: <span class="Constant">&quot;8be0e684cdf5f9f802704f580d7d39a11f6acec4b157afa1d20afd7497595105&quot;</span><span class="rainbow_o2">,</span>
+
+		<span class="Constant">&quot;token-issued-at&quot;</span>		: <span class="Constant">&quot;2019-08-08T03:29:50.779Z&quot;</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;expiry&quot;</span>			: <span class="Constant">&quot;2019-08-08T04:29:50.779Z&quot;</span><span class="rainbow_o2">,</span>
+
+		<span class="Constant">&quot;introspected&quot;</span>			: <span class="Constant">true</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;revoked&quot;</span>			: <span class="Constant">false</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;expired&quot;</span>			: <span class="Constant">false</span><span class="rainbow_o2">,</span>
+
+		<span class="Constant">&quot;certificate-serial-number&quot;</span>	: <span class="Constant">&quot;5badd8f2b7d2c8cb0413883c7d023624543e6802&quot;</span><span class="rainbow_o2">,</span>
+		<span class="Constant">&quot;certificate-fingerprint&quot;</span>	: <span class="Constant">&quot;8b:dd:a4:ab:24:88:21:6a:51:2f:13:49:00:26:1f:cb:dc:86:df:70&quot;</span><span class="rainbow_o2">,</span>
+
+		<span class="Constant">&quot;request&quot;</span>: <span class="rainbow_p3">[</span>
+		    <span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;id&quot;</span>: <span class="Constant">&quot;rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/resource-1&quot;</span><span class="rainbow_o0">,</span>
+
+			<span class="Constant">&quot;methods&quot;</span>: <span class="rainbow_p1">[</span>
+				<span class="Constant">&quot;GET&quot;</span>
+			<span class="rainbow_p1">]</span><span class="rainbow_o0">,</span>
+
+			<span class="Constant">&quot;apis&quot;</span> : <span class="rainbow_p1">[</span>
+				<span class="Constant">&quot;/latest&quot;</span>
+			<span class="rainbow_p1">]</span><span class="rainbow_o0">,</span>
+
+			<span class="Constant">&quot;body&quot;</span>: <span class="rainbow_p1">{</span>
+				<span class="Constant">&quot;key&quot;</span>: <span class="Constant">&quot;value&quot;</span>
+			<span class="rainbow_p1">}</span>
+		    <span class="rainbow_p0">}</span>
+		<span class="rainbow_p3">]</span>
+	    <span class="rainbow_p2">}</span><span class="rainbow_o1">,</span>
+	    ...
+	  <span class="rainbow_p1">]</span>
+	<span class="rainbow_p0">}</span>
+
+	<span class="Statement">Where</span>:
+		<span class="Constant">1.</span> <span class="Constant">&quot;certificate-fingerprint&quot;</span> is the sha1 fingerprint of the consumer certificate.
+
+		<span class="Constant">2.</span> <span class="Constant">&quot;token-hash&quot;</span> is the sha256 hash of the token.
+<span class="Statement">See also</span>:
+
+	<span class="Statement">token API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/token.html>http://auth.iudx.org.in/token.html</a>
+
+	<span class="Statement">token introspect API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/token-introspect.html>http://auth.iudx.org.in/token-introspect.html</a>
+
+	<span class="Statement">token revoke API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/token-revoke.html>http://auth.iudx.org.in/token-revoke.html</a>
+
+
+</pre>
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->
+

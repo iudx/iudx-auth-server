@@ -1,0 +1,267 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>IUDX API documentation</title>
+<meta name="Generator" content="Vim/8.1">
+<meta name="plugin-version" content="vim8.1_v1">
+<meta name="syntax" content="c">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="colorscheme" content="delek">
+<style type="text/css">
+<!--
+pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+* { font-size: 1.1em; }
+.rainbow_o1 { color: #ffff00; font-weight: bold; }
+.rainbow_p1 { color: #ffff00; font-weight: bold; }
+.rainbow_o2 { color: #00ffff; font-weight: bold; }
+.rainbow_p2 { color: #00ffff; font-weight: bold; }
+.rainbow_p3 { color: #ff40ff; font-weight: bold; }
+.Comment { color: #ff6060; }
+.Constant { color: #00ff00; }
+.Statement { color: #8080ff; font-weight: bold; }
+.Type { color: #8080ff; font-weight: bold; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
+.rainbow_p0 { color: #8080ff; font-weight: bold; }
+-->
+</style>
+</head>
+<body>
+<pre id='vimCodeElement'>
+
+<b>Token introspection</b>
+<b>-------------------</b>
+
+<span class="Statement">Endpoint</span>:
+
+	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/token/introspect>https://&lt;auth-server&gt;/auth/v1/token/introspect</a>
+
+<span class="Statement">Description</span>:
+
+	This API is used to validate an access token provided by a consumer.
+
+<span class="Statement">Called by</span>:
+
+	A <span class="Constant">&quot;resource-server&quot;</span> with a valid class-<span class="Constant">1</span> certificate.
+
+	<span class="rainbow_p0">[</span> Note 1 <span class="rainbow_p0">]</span>:
+
+	The <span class="Constant">&quot;CN&quot;</span> of the resource-server certificate should be valid hostname
+	<span class="rainbow_p0">(</span>FQDN<span class="rainbow_p0">)</span> or IP address. And it must be ensured that the IP address of the
+	<span class="Constant">&quot;CN&quot;</span> matches with the machine that makes the introspect call.
+
+	If you <span class="Statement">do</span> not have a domain yet and want to test the introspect API,
+	use <span class="Constant">&quot;example.com&quot;</span> as your resource-server.
+
+	<span class="rainbow_p0">[</span> Note 2 <span class="rainbow_p0">]</span>:
+
+	This API must be only called by the resource-server after ensuring that
+	the resource <span class="Constant">&quot;id&quot;</span>s requested by consumer is valid. This reduces the
+	number of API calls to the Auth server.
+
+<span class="Statement">Methods</span>:
+
+	POST
+
+<span class="Statement">Headers</span>:
+
+	content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+<span class="Statement">Body in JSON format</span>:
+
+	<span class="rainbow_p0">{</span>
+		<span class="Constant">&quot;token&quot;</span>	: &lt;token presented by the consumer&gt;		<span class="Comment">// required</span>
+		<span class="Constant">&quot;server-token&quot;</span>	: &lt;server token presented by the consumer&gt;	<span class="Comment">// optional</span>
+		<span class="Constant">&quot;request&quot;</span>	: &lt;the request that was sent by the consumer&gt;	<span class="Comment">// optional</span>
+	<span class="rainbow_p0">}</span>
+
+	<span class="Statement">Fields</span>:
+
+		<span class="Constant">1.</span> <span class="Constant">&quot;token&quot;</span>
+
+			The token which was presented by a consumer.
+
+		<span class="Constant">2.</span> <span class="Constant">&quot;server-token&quot;</span>
+
+			The server token presented by a consumer.
+
+			The server-token always starts with a resource-server
+			name and a <span class="Constant">&quot;/&quot;</span> and random bytes.
+
+			<span class="Statement">For example</span>:
+				<span class="Constant">&quot;example.org/ebd8ae1de4a3be9b26a6173625df3d3f&quot;</span>
+
+			server-token is only required <span class="Statement">if</span> a token is valid <span class="Statement">for</span>
+			multiple resource-servers.
+
+			As a <span class="Constant">&quot;token&quot;</span> can be valid of many resource-servers:
+			<span class="Constant">&quot;server-token&quot;</span>s are used to prevent a malicious resource
+			server from presenting a consumer's <span class="Constant">&quot;token&quot;</span> as its own
+			to another resource-server.
+
+		<span class="Constant">3.</span> <span class="Constant">&quot;request&quot;</span>
+
+			This is the exact data request sent by the consumer to
+			the resource-server.
+
+			<span class="Statement">If this field is presented</span>:
+
+				then the auth server will exactly match this <span class="Constant">&quot;request&quot;</span> field
+				with the <span class="Constant">&quot;request&quot;</span> that was presented by the consumer during
+				the /token API.
+
+			<span class="Statement">If this field is not presented</span>:
+
+				Then the auth server returns the <span class="Constant">&quot;request&quot;</span> <span class="Statement">for</span> which the
+				token is valid. The resource-server should then validate
+				the consumer's <span class="Constant">&quot;request&quot;</span> itself.
+
+				This is useful in cases where there may be <span class="Type">complex</span> regular
+				expressions in <span class="Constant">&quot;request&quot;</span> field.
+
+				Also in cases where the resource-server does not want to share
+				the user's request with Auth server <span class="Statement">for</span> privacy reasons.
+
+<span class="Statement">Checks before making the introspect API</span>:
+
+	A valid IUDX token consist of 3 fields <span class="rainbow_p0">(</span>delimited by <span class="Constant">'/'</span><span class="rainbow_p0">)</span>:
+
+		<span class="Constant">1.</span> Who has issued the token <span class="rainbow_p0">(</span>The Auth server<span class="rainbow_p0">)</span>
+		<span class="Constant">2.</span> To whom the token has been issued <span class="rainbow_p0">(</span>The consumer<span class="rainbow_p0">)</span>
+		<span class="Constant">3.</span> Random string
+
+	<span class="Statement">For example</span>:
+		<span class="Constant">&quot;auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee&quot;</span>
+
+	<span class="rainbow_p0">[</span>NOTE<span class="rainbow_p0">]</span> : It is important <span class="Statement">for</span> a resource-server to check <span class="Statement">if</span> the token
+	was issued by a trusted Auth server before making the introspect call.
+
+	That is - *NEVER* create the Auth server URL based on the token
+	provided by the consumer.
+
+<span class="Statement">HTTP response code</span>:
+
+	<span class="Constant">200</span>
+		If the token is valid
+
+	<span class="Constant">403</span>
+		If the token is invalid/expired
+
+			-OR-
+
+		The <span class="Constant">&quot;CN&quot;</span> of the resource-server certificate does not match the
+		IP address of the machine which is calling this API.
+
+	<span class="Constant">429</span>
+		If the resource-server makes too many requests
+
+<span class="Statement">Using pyIUDX SDK</span>:
+
+	<span class="Statement">Example 1</span>:
+
+		# simple example
+
+		from pyIUDX.auth import auth
+
+		iudx_auth = auth.Auth<span class="rainbow_p0">(</span>
+			<span class="Constant">&quot;resource-server-certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span>
+		<span class="rainbow_p0">)</span>
+
+		iudx_auth.introspect_token<span class="rainbow_p0">(</span>
+			<span class="Constant">&quot;auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90&quot;</span>
+		<span class="rainbow_p0">)</span>
+
+	<span class="Statement">Example 2</span>:
+
+		# dealing with multiple auth servers
+
+		from pyIUDX.auth import auth
+
+		cert = <span class="Constant">&quot;resource-server-certificate.pem&quot;</span>
+		key  = <span class="Constant">&quot;private-key.pem&quot;</span>
+
+		my_trusted_auth_servers = <span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;auth.iudx.org.in&quot;</span>		: auth.Auth<span class="rainbow_p1">(</span>cert<span class="rainbow_o1">,</span>key<span class="rainbow_o1">,</span><span class="Constant">&quot;auth.iudx.org.in&quot;</span><span class="rainbow_p1">)</span><span class="rainbow_o0">,</span>
+			<span class="Constant">&quot;my.auth.server.com&quot;</span>		: auth.Auth<span class="rainbow_p1">(</span>cert<span class="rainbow_o1">,</span>key<span class="rainbow_o1">,</span><span class="Constant">&quot;my.auth.server.com&quot;</span><span class="rainbow_p1">)</span><span class="rainbow_o0">,</span>
+			<span class="Constant">&quot;third.party.auth.com&quot;</span>	: auth.Auth<span class="rainbow_p1">(</span>cert<span class="rainbow_o1">,</span>key<span class="rainbow_o1">,</span><span class="Constant">&quot;third.party.auth.com&quot;</span><span class="rainbow_p1">)</span><span class="rainbow_o0">,</span>
+		<span class="rainbow_p0">}</span>
+
+		# received token from consumer
+		token = <span class="Constant">&quot;auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90&quot;</span>
+
+		<span class="Statement">try</span>:
+			token_auth_server	= token.split<span class="rainbow_p0">(</span><span class="Constant">&quot;/&quot;</span><span class="rainbow_p0">)[</span><span class="Constant">0</span><span class="rainbow_p0">]</span>
+			auth_server		= my_trusted_auth_servers <span class="rainbow_p0">[</span>token_auth_server<span class="rainbow_p0">]</span>
+
+			print<span class="rainbow_p0">(</span>valid_auth_server.introspect_token<span class="rainbow_p1">(</span>token<span class="rainbow_p1">)</span><span class="rainbow_p0">)</span>
+		<span class="Statement">except</span>:
+			print<span class="rainbow_p0">(</span><span class="Constant">&quot;Invalid token&quot;</span><span class="rainbow_p0">)</span>
+
+<span class="Statement">CURL example</span>:
+
+	<span class="Statement">Request</span>:
+
+		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/token/introspect>https://auth.iudx.org.in/auth/v1/token/introspect</a>
+
+			--cert resource-server-certificate.pem --key private-key.pem
+
+			-H 'content-type: application/json'
+
+			-d '<span class="rainbow_p0">{</span><span class="Constant">&quot;token&quot;</span>: <span class="Constant">&quot;auth.iudx.org.in/arun.babu@rbccps.org/2204adcbc990ffff234689aaabcdef90&quot;</span><span class="rainbow_p0">}</span>'
+
+	<span class="Statement">Response</span>:
+
+		<span class="Constant">200</span> OK
+		content-type : <span class="Constant">&quot;application/json&quot;</span>
+
+		<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;consumer&quot;</span>			: <span class="Constant">&quot;arun.babu@rbccps.org&quot;</span><span class="rainbow_o0">,</span>
+			<span class="Constant">&quot;consumer-certificate-class&quot;</span>	: <span class="Constant">3</span>
+
+			<span class="Constant">&quot;expiry&quot;</span>			: <span class="Constant">&quot;2019-12-12T04:29:50.779Z&quot;</span><span class="rainbow_o0">,</span>
+
+			<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">[</span>
+				<span class="rainbow_p2">{</span>
+					<span class="Constant">&quot;id&quot;</span>	: <span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r3&quot;</span><span class="rainbow_o2">,</span>
+
+					<span class="Constant">&quot;apis&quot;</span>	: <span class="rainbow_p3">[</span>
+						<span class="Constant">&quot;/*&quot;</span>
+					<span class="rainbow_p3">]</span><span class="rainbow_o2">,</span>
+
+					<span class="Constant">&quot;methods&quot;</span> : <span class="rainbow_p3">[</span>
+						<span class="Constant">&quot;*&quot;</span>
+					<span class="rainbow_p3">]</span><span class="rainbow_o2">,</span>
+
+					<span class="Constant">&quot;body&quot;</span>	: null
+				<span class="rainbow_p2">}</span>
+			<span class="rainbow_p1">]</span><span class="rainbow_o0">,</span>
+		<span class="rainbow_p0">}</span>
+
+	<span class="Statement">Response fields</span>:
+
+		<span class="Constant">1.</span> <span class="Constant">&quot;consumer&quot;</span>
+			The consumer's email-id.
+
+		<span class="Constant">2.</span> <span class="Constant">&quot;consumer-certificate-class&quot;</span>
+			The class of certificate used by the consumer to get the
+			token.
+
+		<span class="Constant">3.</span> <span class="Constant">&quot;expiry&quot;</span>
+			Indicates till what time the token is valid.
+
+		<span class="Constant">4.</span> <span class="Constant">&quot;request&quot;</span>
+			The list of resource id's, methods, and APIs <span class="Statement">for</span> which
+			the token is valid.
+
+<span class="Statement">See also</span>:
+
+	<span class="Statement">token API</span>:
+		<a style="color:#F4D03F" href=https://auth.iudx.org.in/token.html>http://auth.iudx.org.in/token.html</a>
+
+
+</pre>
+</body>
+</html>
+<!-- vim: set foldmethod=manual : -->
+
