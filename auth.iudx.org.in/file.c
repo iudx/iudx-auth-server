@@ -13,7 +13,7 @@ Description:
 
 Called_xxx_by:
 
-	A data consumer with a valid class-2 or above certificate.
+	A "data consumer" with a valid class-2 or above certificate.
 
 Methods:
 

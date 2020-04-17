@@ -1,6 +1,6 @@
 
-Token introspection
--------------------
+Verify an access token
+----------------------
 
 Endpoint:
 
@@ -8,26 +8,27 @@ Endpoint:
 
 Description:
 
-	This API is used to validate an access token provided by a consumer.
+	This API is used to verify an access token provided by a consumer.
 
 Called by:
 
 	A "resource-server" with a valid class-1 certificate.
 
-	[ Note 1 ]:
+	Note 1:
 
-	The "CN" of the resource-server certificate should be valid hostname
-	(FQDN) or IP address. And it must be ensured that the IP address of the
-	"CN" matches with the machine that makes the introspect call.
+		The "CN" of the resource-server certificate should be valid hostname
+		(FQDN) or IP address. And it must be ensured that the IP address of the
+		"CN" matches with the machine that makes the introspect call.
 
-	If you do not have a domain yet and want to test the introspect API,
-	use "example.com" as your resource-server.
+	Tip:
+		If you do not have a domain yet and want to test the introspect API,
+		use "example.com" as your resource-server.
 
-	[ Note 2 ]:
+	Note 2:
 
-	This API must be only called by the resource-server after ensuring that
-	the resource "id"s requested by consumer is valid. This reduces the
-	number of API calls to the Auth server.
+		This API must be only called by the resource-server after ensuring that
+		the resource "id"s requested by consumer is valid. This reduces the
+		number of API calls to the Auth server.
 
 Methods:
 
@@ -78,7 +79,7 @@ Body in JSON format:
 
 				then the auth server will exactly match this "request" field
 				with the "request" that was presented by the consumer during
-				the /token API. 
+				the "/token" API. 
 
 			If this field is not presented:
 
@@ -103,10 +104,11 @@ Checks before making the introspect API:
 	For example:
 		"auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee" 
 
-	[NOTE] : It is important for a resource-server to check if the token
+	NOTE:
+	It is important for a resource-server to check if the token
 	was issued by a trusted Auth server before making the introspect call.
 
-	That is - *NEVER* create the Auth server URL based on the token
+	That is - "NEVER" create the Auth server URL based on the token
 	provided by the consumer.
 
 HTTP response code:
@@ -117,7 +119,7 @@ HTTP response code:
 	403
 		If the token is invalid/expired
 
-			-OR-
+			"OR"
 
 		The "CN" of the resource-server certificate does not match the
 		IP address of the machine which is calling this API.

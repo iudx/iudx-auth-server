@@ -18,7 +18,7 @@ Description:
 
 Called by:
 
-	A data provider with a valid class-3 or above certificate.
+	A "data provider" with a valid class-3 or above certificate.
 
 Methods:
 

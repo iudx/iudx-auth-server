@@ -13,7 +13,7 @@ Description:
 
 Called by:
 
-	A user with a valid class-3 or above certificate.
+	A "data provider" or a "data consumer" with a valid class-3 or above certificate.
 
 Methods:
 
