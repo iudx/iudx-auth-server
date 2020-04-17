@@ -324,7 +324,7 @@ function END_ERROR (res, http_status, error, exception = null)
 		// error is already a JSON
 
 		if (error["invalid-input"])
-			error["comment"] = "All unsafe characters in 'invalid-input' have been replaced with '*'";
+			response.["//"] = "All unsafe characters in 'invalid-input' have been replaced with a '*'";
 
 		response.error = error;
 	}
@@ -503,7 +503,7 @@ function is_secure (req, res, cert, validate_email = true)
 		);
 
 		if (! origin_domain.endsWith(".iudx.org.in"))
-			return "Not a whitelisted 'origin'";
+			return "Invalid 'origin' header; this website is not whitelisted to call this API";
 
 		res.header("Access-Control-Allow-Origin",	req.headers.origin);
 		res.header("Access-Control-Allow-Methods",	"POST");

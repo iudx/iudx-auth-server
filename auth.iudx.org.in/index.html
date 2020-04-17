@@ -24,6 +24,13 @@
 body {
 	font-size: 110%
 }
+td, th {
+	border: 1px solid black;
+}
+table {
+	border-collapse:collapse;
+	margin-left:2cm;
+}
 </style>
 </head>
 <body>
@@ -74,44 +81,114 @@ body {
 		6. 429 on too many requests
 		7. 500 on internal error
 
-	Below are the list of Auth APIs.
+	Below are the list of Auth APIs:
 
-	 1. Get an access token (to be called by data consumers):
-		<a href="token.txt">/auth/v1/token</a> <a href="/ui/token.html" target="_blank"><font color=red>(try online)</font></a>
+	<table cellpadding=10>
+		<th>#</th>
+		<th>Endpoint</th>
+		<th>Description</th>
+		<th>Can be called by</th>
+		<th>Documentation</th>
+		<th>Try it on browser</th>
 
-	 2. Set access control polcies (to be called by data providers):
-		<a href="acl-set.txt">/auth/v1/acl/set</a> <a href="/ui/acl-set.html" target="_blank"><font color=red>(try online)</font></a>
+		<tr>
+			<td>1</td>
+			<td>/auth/v1/token</td>
+			<td>Request for an access token</td>
+			<td>Data consumer</td>
+			<td align=center><a href="/token.txt">link</a></td>
+			<td align=center><a href="/ui/token.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>2</td>
+			<td>/auth/v1/acl/set</td>
+	 		<td>Set access control polcies</td>
+			<td>Data provider</td>
+			<td align=center><a href="/acl-set.txt">link</a></td>
+			<td align=center><a href="/ui/acl-set.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>3</td>
+			<td>/auth/v1/acl/append</td>
+	 		<td>Append to existing access control polcies</td>
+			<td>Data provider</td>
+			<td align=center><a href="/acl-append.txt">link</a></td>
+			<td align=center><a href="/ui/acl-append.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>4</td>
+			<td>/auth/v1/acl</td>
+	 		<td>Get the current list of access control policies</td>
+			<td>Data provider</td>
+			<td align=center><a href="/acl.txt">link</a></td>
+			<td align=center><a href="/ui/acl.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>5</td>
+			<td>/auth/v1/token/introspect</td>
+	 		<td>Verify a token</td>
+			<td>Resource server</td>
+			<td align=center><a href="/token-introspect.txt">link</a></td>
+			<td align=center><a href="/ui/token-introspect.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>6</td>
+			<td>/auth/v1/token/revoke</td>
+	 		<td>Revoke a list of tokens</td>
+			<td>Both data providers and consumers</td>
+			<td align=center><a href="/token-revoke.txt">link</a></td>
+			<td align=center><a href="/ui/token-revoke.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>7</td>
+			<td>/auth/v1/token/revoke-all</td>
+	 		<td>Revoke all tokens associated with a certificate</td>
+			<td>Both data providers and consumers</td>
+			<td align=center><a href="/token-revoke-all.txt">link</a></td>
+			<td align=center><a href="/ui/token-revoke-all.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>8</td>
+			<td>/auth/v1/audit/tokens</td>
+	 		<td>Audit tokens</td>
+			<td>Both data providers and consumers</td>
+			<td align=center><a href="/audit-tokens.txt">link</a></td>
+			<td align=center><a href="/ui/audit-tokens.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>9</td>
+			<td>/auth/v1/group/add</td>
+	 		<td>Add a consumer to a group</td>
+			<td>Data provider</td>
+			<td align=center><a href="/group-add.txt">link</a></td>
+			<td align=center><a href="/ui/group-add.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>10</td>
+			<td>/auth/v1/group/delete</td>
+	 		<td>Delete a consumer from a group</td>
+			<td>Data provider</td>
+			<td align=center><a href="/group-delete.txt">link</a></td>
+			<td align=center><a href="/ui/group-delete.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>11</td>
+			<td>/auth/v1/group/list</td>
+	 		<td>List all valid members of a group</td>
+			<td>Data provider</td>
+			<td align=center><a href="/group-list.txt">link</a></td>
+			<td align=center><a href="/ui/group-list.html"><font color=red>link</font></a></td>
+		</tr>
+		<tr>
+			<td>12</td>
+			<td>/auth/v1/certificate-info</td>
+	 		<td>Get user's certificate details</td>
+			<td>Anyone</td>
+			<td align=center><a href="/certificate-info.txt">link</a></td>
+			<td align=center><a href="/ui/certificate-info.html"><font color=red>link</font></a></td>
+		</tr>
 
-	 3. Append to existing access control policies (to be called by data providers):
-		<a href="acl-append.txt">/auth/v1/acl/append</a> <a href="/ui/acl-append.html" target="_blank"><font color=red>(try online)</font></a>
-
-	 4. Get the current access control policies (to be called by data providers):
-		<a href="acl.txt">/auth/v1/acl</a> <a href="/ui/acl.html" target="_blank"><font color=red>(try online)</font></a>
-
-	 5. Validate an access token (to be called by resource servers):
-		<a href="token-introspect.txt">/auth/v1/token/introspect</a> <a href="/ui/token-introspect.html" target="_blank"><font color=red>(try online)</font></a>
-
-	 6. Revoke tokens (can be called by both data providers and consumers):
-		<a href="token-revoke.txt">/auth/v1/token/revoke</a> <a href="/ui/token-revoke.html" target="_blank"><font color=red>(try online)</font></a>
-
-	 7. Revoke all tokens for a given certificate (can be called by both data providers and consumers):
-		<a href="token-revoke-all.txt">/auth/v1/token/revoke-all</a> <a href="/ui/token-revoke-all.html" target="_blank"><font color=red>(try online)</font></a>
-
-	 8. Audit tokens (can be called by both data providers and consumers):		
-		<a href="audit-tokens.txt">/auth/v1/audit/tokens</a> <a href="/ui/audit-tokens.html" target="_blank"><font color=red>(try online)</font></a>
-
-	 9. Add a consumer to a group (to be called by a data provider):
-		<a href="group-add.txt">/auth/v1/group/add</a> <a href="/ui/group-add.html" target="_blank"><font color=red>(try online)</font></a>
-
-	10. Delete a consumer from a group (to be called by a data provider):
-		<a href="group-delete.txt">/auth/v1/group/delete</a> <a href="/ui/group-delete.html" target="_blank"><font color=red>(try online)</font></a>
-
-	11. List current consumers in a group (to be called by a data provider):
-		<a href="group-list.txt">/auth/v1/group/list</a> <a href="/ui/group-list.html" target="_blank"><font color=red>(try online)</font></a>
-
-	12. Get the user's certificate details (can be called by any user):
-		<a href="certificate-info.txt">/auth/v1/certificate-info</a> <a href="/ui/certificate-info.html" target="_blank"><font color=red>(try online)</font></a>
-
+	</table>
 
 <b>5. Authentication</b>
 
