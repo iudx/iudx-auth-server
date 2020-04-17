@@ -871,10 +871,11 @@ function security (req, res, next)
 
 				const can_access_regex		= user_notice["can-access"].split(";");
 
-				let i = 0;
+				let regex_number = 0;
+
 				for (const r of can_access_regex)
 				{
-					++i;
+					++regex_number;
 
 					const regex = r.trim();
 
@@ -890,7 +891,7 @@ function security (req, res, next)
 					{
 						const error_response = {
 							"message"	: "Unsafe 'can-access' RegEx in certificate",
-							"invalid-input"	: "RegEx no. " + i,
+							"invalid-input"	: "RegEx no. " + regex_number,
 						};
 
 						return END_ERROR (res, 400, error_response);
@@ -910,7 +911,7 @@ function security (req, res, next)
 					{
 						const error_response = {
 							"message"	: "Unsafe 'can-access' RegEx in certificate",
-							"invalid-input"	: "RegEx no. " + i,
+							"invalid-input"	: "RegEx no. " + regex_number,
 						};
 
 						return END_ERROR (res, 400, error_response);
