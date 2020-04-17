@@ -324,7 +324,7 @@ function END_ERROR (res, http_status, error, exception = null)
 		// error is already a JSON
 
 		if (error["invalid-input"])
-			response.["//"] = "All unsafe characters in 'invalid-input' have been replaced with a '*'";
+			response["//"] = "All unsafe characters in 'invalid-input' have been replaced with a '*'";
 
 		response.error = error;
 	}
