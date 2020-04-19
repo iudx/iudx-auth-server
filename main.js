@@ -2390,7 +2390,9 @@ app.post("/auth/v1/acl/set", (req, res) => {
 		{
 			query = "UPDATE policy"			+
 				" SET policy = $1::text,"	+
-				" policy_in_json = $2::jsonb"	+
+				" policy_in_json = $2::jsonb,"	+
+				" previous_policy = policy"	+
+				" last_updated = NOW()"	+
 				" WHERE id = $3::text";
 
 			parameters = [
@@ -2416,7 +2418,7 @@ app.post("/auth/v1/acl/set", (req, res) => {
 		else
 		{
 			query = "INSERT INTO policy"		+
-				" VALUES ($1::text, $2::text, $3::jsonb)";
+				" VALUES ($1::text, $2::text, $3::jsonb, NULL, NOW())";
 
 			parameters = [
 				provider_id_hash,		// 1
@@ -2522,7 +2524,9 @@ app.post("/auth/v1/acl/append", (req, res) => {
 
 			query = "UPDATE policy"			+
 				" SET policy = $1::text,"	+
-				" policy_in_json = $2::jsonb"	+
+				" policy_in_json = $2::jsonb,"	+
+				" previous_policy = policy"	+
+				" last_updated = NOW()"		+
 				" WHERE id = $3::text";
 
 			parameters = [
@@ -2552,7 +2556,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 						.toString("base64");
 
 			query = "INSERT INTO policy"	+
-				" VALUES ($1::text, $2::text, $3::jsonb)";
+				" VALUES ($1::text, $2::text, $3::jsonb, NULL, NOW())";
 
 			parameters = [
 				provider_id_hash,		// 1
@@ -2588,7 +2592,10 @@ app.post("/auth/v1/acl", (req, res) => {
 
 	pool.query (
 
-		"SELECT policy FROM policy WHERE id = $1::text LIMIT 1",
+		"SELECT policy,previous_policy,last_updated "	+
+		" FROM policy"					+
+		" WHERE id = $1::text "				+
+		" LIMIT 1",
 		[
 			provider_id_hash	// 1
 		],
@@ -2601,14 +2608,101 @@ app.post("/auth/v1/acl", (req, res) => {
 		if (results.rows.length === 0)
 			return END_ERROR (res, 400, "No policies set yet!");
 
-		const response = {
-			"policy" : Buffer
+		const policy	= Buffer
 					.from(results.rows[0].policy,"base64")
 					.toString("ascii")
-					.split(";")
+					.split(";");
+
+		let previous_policy = [];
+
+		if (results.rows[0].previous_policy)
+		{
+			previous_policy = Buffer
+						.from(results.rows[0].previous_policy,"base64")
+						.toString("ascii")
+						.split(";");
+		} 
+
+		const response = {
+			"policy"		: policy, 
+			"previous-policy"	: previous_policy, 
+			"last-updated"		: results.rows[0].last_updated
 		};
 
 		return END_SUCCESS (res,response);
+	});
+});
+
+app.post("/auth/v1/acl/revert", (req, res) => {
+
+	const provider_id	= res.locals.email;
+
+	const email_domain	= provider_id.split("@")[1];
+	const sha1_of_email	= sha1(provider_id);
+
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
+
+	pool.query (
+
+		"SELECT previous_policy FROM policy"	+
+		" WHERE id = $1::text"			+
+		" AND previous_policy NOT NULL LIMIT 1",
+		[
+			provider_id_hash	// 1
+		],
+
+	(error, results) =>
+	{
+		if (error)
+			return END_ERROR (res, 500, "Internal error!", error);
+
+		if (results.rows.length === 0)
+			return END_ERROR (res, 400, "No previous policies found!");
+
+		const previous_policy = Buffer
+					.from(results.rows[0].previous_policy,"base64")
+					.toString("ascii")
+					.split(";");
+
+		let policy_in_json;
+
+		try {
+			policy_in_json = previous_policy.map (
+				(r) => {
+					return (parser.parse(r.trim()));
+				}
+			);
+		}
+		catch (x) {
+			const err = String(x);
+			return END_ERROR (res, 400, "Syntax error in previous-policy. " + err);
+		}
+
+		const query = "UPDATE policy"				+
+				" SET policy = previous_policy,"	+
+				" policy_in_json = $1::jsonb,"		+
+				" previous_policy = NULL"		+
+				" last_updated = NOW()"			+
+				" WHERE id = $2::text";
+
+		const parameters = [
+			JSON.stringify(policy_in_json),			// 2
+			provider_id_hash				// 3
+		];
+
+		pool.query (query, parameters, (error_1, results_1) =>
+		{
+			if (error_1 || results_1.rowCount === 0)
+			{
+				return END_ERROR (
+					res, 500,
+						"Internal error!",
+						error_1
+				);
+			}
+
+			return END_SUCCESS (res);
+		});
 	});
 });
 

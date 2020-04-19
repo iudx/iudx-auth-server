@@ -55,7 +55,9 @@ ALTER TABLE public.groups OWNER TO postgres;
 CREATE TABLE public.policy (
     id character varying PRIMARY KEY,
     policy character varying(3145728) NOT NULL,
-    policy_in_json jsonb NOT NULL
+    policy_in_json jsonb NOT NULL,
+    previous_policy character varying(3145728),
+    last_updated timestamp without time zone NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_policy_id ON public.policy(id);
