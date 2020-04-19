@@ -94,9 +94,6 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 	"/auth/v1/group/list"			: 3,
 });
 
-/* --- we will further drop worker privileges when we start serving APIs --- */
-let has_started_serving_apis	= false;
-
 /* --- time zone --- */
 process.env.TZ= "Asia/Kolkata";
 
@@ -713,6 +710,11 @@ function body_to_json (body)
 	}
 }
 
+/* --- a variable to indicate if a worker has started serving APIs.
+	We will further drop worker privileges when we start serving APIs --- */
+
+let has_started_serving_apis = false;
+
 /* --- basic security checks to be done at every API call --- */
 
 function security (req, res, next)
@@ -1273,7 +1275,7 @@ app.post("/auth/v1/token", (req, res) => {
 			const error_response = {
 				"message"	:"Invalid 'id'; no access"	+
 						" control policies have been"	+
-						" set for this id by the data provider",
+						" set for this 'id' by the data provider",
 				"invalid-input"	: xss_safe(resource)
 			};
 

@@ -12,7 +12,19 @@ Description:
 
 Called by:
 
-	A "data provider" with a valid class-3 or above certificate.
+	A data provider with a valid class-3 or above certificate.
+
+Warning:
+	
+	The "old" policies will be "overwritten"; and currently there is no way to get the old policies back.
+	
+	To solve this issue:
+
+		1. Either call "acl/get" before calling the "acl/set" API.
+
+				-OR-
+
+		2. Use the "acl/append" API to append to existing policies. 
 
 Methods:
 
