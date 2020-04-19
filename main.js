@@ -2388,10 +2388,10 @@ app.post("/auth/v1/acl/set", (req, res) => {
 
 		if (results.rows.length > 0)
 		{
-			query = "UPDATE policy"			+
-				" SET policy = $1::text,"	+
-				" policy_in_json = $2::jsonb,"	+
-				" previous_policy = policy"	+
+			query = "UPDATE policy"				+
+				" SET policy = $1::text,"		+
+				" policy_in_json = $2::jsonb,"		+
+				" previous_policy = policy,"		+
 				" last_updated = NOW()"	+
 				" WHERE id = $3::text";
 
@@ -2522,11 +2522,11 @@ app.post("/auth/v1/acl/append", (req, res) => {
 						.from(new_policy)
 						.toString("base64");
 
-			query = "UPDATE policy"			+
-				" SET policy = $1::text,"	+
-				" policy_in_json = $2::jsonb,"	+
-				" previous_policy = policy"	+
-				" last_updated = NOW()"		+
+			query = "UPDATE policy"				+
+				" SET policy = $1::text,"		+
+				" policy_in_json = $2::jsonb,"		+
+				" previous_policy = policy,"		+
+				" last_updated = NOW()"			+
 				" WHERE id = $3::text";
 
 			parameters = [
@@ -2592,12 +2592,12 @@ app.post("/auth/v1/acl", (req, res) => {
 
 	pool.query (
 
-		"SELECT policy,previous_policy,last_updated "	+
+		"SELECT policy, previous_policy, last_updated"	+
 		" FROM policy"					+
 		" WHERE id = $1::text "				+
 		" LIMIT 1",
 		[
-			provider_id_hash	// 1
+			provider_id_hash			// 1
 		],
 
 	(error, results) =>
@@ -2681,7 +2681,7 @@ app.post("/auth/v1/acl/revert", (req, res) => {
 		const query = "UPDATE policy"				+
 				" SET policy = previous_policy,"	+
 				" policy_in_json = $1::jsonb,"		+
-				" previous_policy = NULL"		+
+				" previous_policy = NULL,"		+
 				" last_updated = NOW()"			+
 				" WHERE id = $2::text";
 
