@@ -16,6 +16,8 @@ for l in d:
 
 	l = l.replace('<span class="Statement">Warning</span>','<span class="Statement"><font color=red>Warning</font></span>') 
 
+	#l = re.sub('\t<span class="Statement">(.*)</span>',r'\t<span class="Statement"><font color=red>\1</font></span>',l) 
+
 	if l.startswith("<title>"):
 		l = "<title>IUDX API documentation</title>"
 

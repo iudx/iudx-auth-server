@@ -21,7 +21,7 @@ Methods:
 HTTP response code:
 
 	200
-		If the policy has been successfully appended.
+		If the policy has been successfully reverted.
 
 	400
 		If there are no saved "previous" policy 

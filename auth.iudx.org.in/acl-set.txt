@@ -49,8 +49,7 @@ HTTP response code:
 
 Aperture policy language:
 
-	The authorization rules are in aperture policy language,
-	and are in the format:
+	The authorization rules are in "aperture" policy language, and is in the format:
 
 		<consumer(s)>
 			CAN access <resource id(s)>
@@ -84,9 +83,13 @@ Aperture policy language:
 
 	    all can access anything
 
-	Several rules could be combined together using semicolons:
+	Multiple rules could be combined together using semicolons:
 
 		rule-1; rule-2; .... ; rule-n
+
+	Note:
+		In case of multiple rules, the first rule which matches will
+		apply.
 
 Variables in policy language:
 
@@ -153,7 +156,8 @@ Resource IDs in policies:
 		"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/resource-name"
 
 	However while writing rules the first 2 fields should be skipped:
-		for example, in the above id, "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c" can be skipped.
+		for example, in the above id, "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c"
+		can be skipped.
 
 	The rule would look like this:
 		"consumer@domain.com can access resource-server.com/resource-name"
