@@ -4,7 +4,7 @@
 
 Endpoint:
 
-	$HTTPS$<auth-server>/auth/v1/token
+	$HTTPS$auth.iudx.org.in/auth/v1/token
 
 Description:
 

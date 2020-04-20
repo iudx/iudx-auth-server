@@ -4,7 +4,7 @@ Verify an access token
 
 Endpoint:
 
-	https://<auth-server>/auth/v1/token/introspect
+	https://auth.iudx.org.in/auth/v1/token/introspect
 
 Description:
 

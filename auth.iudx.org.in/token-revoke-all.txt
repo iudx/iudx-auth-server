@@ -1,10 +1,10 @@
 
 Revoke all valid tokens for a given certificate
------------------------------------------------
+------------------------------------------------
 
 Endpoint:
 
-	https://<auth-server>/auth/v1/token/revoke-all
+	https://auth.iudx.org.in/auth/v1/token/revoke-all
 
 Description:
 

@@ -1,14 +1,14 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
 <html>
 <head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="ISO-8859-1">
 <title>IUDX API documentation</title>
-<meta name="Generator" content="Vim/8.1">
-<meta name="plugin-version" content="vim8.1_v1">
+<meta name="Generator" content="Vim/8.2">
+<meta name="plugin-version" content="vim8.1_v2">
 <meta name="syntax" content="c">
-<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=">
+<meta name="settings" content="use_css,pre_wrap,no_foldcolumn,prevent_copy=,use_input_for_pc=fallback">
 <meta name="colorscheme" content="delek">
-<style type="text/css">
+<style>
 <!--
 pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
 body { font-family: monospace; color: #ffffff; background-color: #000000; }
@@ -30,7 +30,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 <span class="Statement">Endpoint</span>:
 
-	<a style="color:#F4D03F" href=https://&lt;auth-server&gt;/auth/v1/acl/set>https://&lt;auth-server&gt;/auth/v1/acl/set</a>
+	<a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/acl/set>https://auth.iudx.org.in/auth/v1/acl/set</a>
 
 <span class="Statement">Description</span>:
 
@@ -38,19 +38,18 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 <span class="Statement">Called by</span>:
 
-	A data provider with a valid class-<span class="Constant">3</span> or above certificate.
+	A <span class="Constant">&quot;data provider&quot;</span> with a valid class-<span class="Constant">3</span> or above certificate.
 
-<span class="Statement">Warning</span>:
+<span class="Statement"><font color=red>Warning</font></span>:
 
-	The <span class="Constant">&quot;old&quot;</span> policies will be <span class="Constant">&quot;overwritten&quot;</span>; and currently there is no way to get the old policies back.
+	The <span class="Constant">&quot;previous&quot;</span> policies will be <span class="Constant">&quot;overwritten&quot;</span>!
 
-	<span class="Statement">To solve this issue</span>:
+	The <span class="Constant">&quot;previous&quot;</span> policy can be retrived by using the <span class="Constant">&quot;acl/get&quot;</span> API.
 
-		<span class="Constant">1.</span> Either call <span class="Constant">&quot;acl/get&quot;</span> before calling the <span class="Constant">&quot;acl/set&quot;</span> API.
+	Also, the <span class="Constant">&quot;acl/revert&quot;</span> API can be used to revert to <span class="Constant">&quot;previous&quot;</span> policy.
 
-				-OR-
-
-		<span class="Constant">2.</span> Use the <span class="Constant">&quot;acl/append&quot;</span> API to append to existing policies.
+	Please use the <span class="Constant">&quot;acl/append&quot;</span> API instead to <span class="Constant">&quot;acl/set&quot;</span> <span class="Statement">if</span> you wish to
+	add a policy to the existing set of policies.
 
 <span class="Statement">Methods</span>:
 
@@ -240,6 +239,9 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 	<span class="Statement">acl append API</span>:
 		<a style="color:#F4D03F" href=http://auth.iudx.org.in/acl-append.html>http://auth.iudx.org.in/acl-append.html</a>
+
+	<span class="Statement">acl revert API</span>:
+		<a style="color:#F4D03F" href=http://auth.iudx.org.in/acl-revert.html>http://auth.iudx.org.in/acl-revert.html</a>
 
 	<span class="Statement">node aperture at github</span>:
 		<a style="color:#F4D03F" href=https://github.com/rbccps-iisc/node-aperture>https://github.com/rbccps-iisc/node-aperture</a>

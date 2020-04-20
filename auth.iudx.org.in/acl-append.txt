@@ -4,7 +4,7 @@ Append access control policy
 
 Endpoint:
 
-	https://<auth-server>/auth/v1/acl/append
+	https://auth.iudx.org.in/auth/v1/acl/append
 
 Description:
 
@@ -91,6 +91,9 @@ See also:
 
 	acl set API:
 		http://auth.iudx.org.in/acl-set.html
+
+	acl revert API:
+		http://auth.iudx.org.in/acl-revert.html
 
 	node aperture at github:
 		https://github.com/rbccps-iisc/node-aperture

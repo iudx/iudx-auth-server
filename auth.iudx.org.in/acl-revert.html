@@ -13,8 +13,6 @@
 pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
 body { font-family: monospace; color: #ffffff; background-color: #000000; }
 * { font-size: 1.1em; }
-.rainbow_o1 { color: #ffff00; font-weight: bold; }
-.rainbow_p1 { color: #ffff00; font-weight: bold; }
 .rainbow_o0 { color: #8080ff; font-weight: bold; }
 .rainbow_p0 { color: #8080ff; font-weight: bold; }
 .Constant { color: #00ff00; }
@@ -25,16 +23,16 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 <body>
 <pre id='vimCodeElement'>
 
-<b>Get access control list</b>
-<b>-----------------------</b>
+<b>Revert to previous access control policy</b>
+<b>----------------------------------------</b>
 
 <span class="Statement">Endpoint</span>:
 
-	<a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/acl>https://auth.iudx.org.in/auth/v1/acl</a>
+	<a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/acl/revert>https://auth.iudx.org.in/auth/v1/acl/revert</a>
 
 <span class="Statement">Description</span>:
 
-	This API is used to get previously set access control policies.
+	This API is used to revert to <span class="Constant">&quot;previous&quot;</span> access control policy.
 
 <span class="Statement">Called by</span>:
 
@@ -47,10 +45,11 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 <span class="Statement">HTTP response code</span>:
 
 	<span class="Constant">200</span>
-		If the policy has been successfully retrieved.
+		If the policy has been successfully appended.
 
 	<span class="Constant">400</span>
-		If no policies have been set yet.
+		If there are no saved <span class="Constant">&quot;previous&quot;</span> policy
+
 
 <span class="Statement">Using pyIUDX SDK</span>:
 
@@ -58,13 +57,13 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 	iudx_auth = auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
 
-	iudx_auth.get_policy<span class="rainbow_p0">()</span>
+	iudx_auth.revert_policy<span class="rainbow_p0">()</span>
 
 <span class="Statement">CURL example</span>:
 
 	<span class="Statement">Request</span>:
 
-		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/acl>https://auth.iudx.org.in/auth/v1/acl</a> --cert certificate.pem --key private-key.pem
+		curl -XPOST <a style="color:#F4D03F" href=https://auth.iudx.org.in/auth/v1/acl/revert>https://auth.iudx.org.in/auth/v1/acl/revert</a> --cert certificate.pem --key private-key.pem
 
 	<span class="Statement">Response</span>:
 
@@ -72,13 +71,13 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 		content-type : <span class="Constant">&quot;application/json&quot;</span>
 
 		<span class="rainbow_p0">{</span>
-			<span class="Constant">&quot;policy&quot;</span> : <span class="rainbow_p1">[</span>
-				<span class="Constant">&quot;*@iisc.ac.in can access rs1.com/my-resource-name for 3 hours&quot;</span><span class="rainbow_o1">,</span>
-				<span class="Constant">&quot;arun@iisc.ac.in can access *.com/rs1 if tokens_per_day &lt; 100&quot;</span>
-			<span class="rainbow_p1">]</span>
+			<span class="Constant">&quot;success&quot;</span> : <span class="Constant">true</span>
 		<span class="rainbow_p0">}</span>
 
 <span class="Statement">See also</span>:
+
+	<span class="Statement">acl API</span>:
+		<a style="color:#F4D03F" href=http://auth.iudx.org.in/acl.html>http://auth.iudx.org.in/acl.html</a>
 
 	<span class="Statement">acl set API</span>:
 		<a style="color:#F4D03F" href=http://auth.iudx.org.in/acl-set.html>http://auth.iudx.org.in/acl-set.html</a>

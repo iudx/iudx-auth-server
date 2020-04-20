@@ -1,14 +1,14 @@
 
-Get access control list
------------------------
+Revert to previous access control policy
+----------------------------------------
 
 Endpoint:
 
-	https://auth.iudx.org.in/auth/v1/acl
+	https://auth.iudx.org.in/auth/v1/acl/revert
 
 Description:
 
-	This API is used to get previously set access control policies.
+	This API is used to revert to "previous" access control policy.
 
 Called by:
 
@@ -16,15 +16,16 @@ Called by:
 
 Methods:
 
-	POST	
+	POST
 
 HTTP response code:
 
 	200
-		If the policy has been successfully retrieved.
+		If the policy has been successfully appended.
 
 	400
-		If no policies have been set yet.
+		If there are no saved "previous" policy 
+			
 
 Using pyIUDX SDK:
 
@@ -32,13 +33,13 @@ Using pyIUDX SDK:
 	
 	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
 
-	iudx_auth.get_policy()
+	iudx_auth.revert_policy()
 
 CURL example:
 
 	Request:
 
-		curl -XPOST https://auth.iudx.org.in/auth/v1/acl --cert certificate.pem --key private-key.pem
+		curl -XPOST https://auth.iudx.org.in/auth/v1/acl/revert --cert certificate.pem --key private-key.pem
 
 	Response:
 
@@ -46,13 +47,13 @@ CURL example:
 		content-type : "application/json"
 
 		{
-			"policy" : [
-				"*@iisc.ac.in can access rs1.com/my-resource-name for 3 hours",
-				"arun@iisc.ac.in can access *.com/rs1 if tokens_per_day < 100"
-			]
+			"success" : true
 		}
 
 See also:
+
+	acl API:
+		http://auth.iudx.org.in/acl.html
 
 	acl set API:
 		http://auth.iudx.org.in/acl-set.html

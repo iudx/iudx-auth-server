@@ -4,7 +4,7 @@ Set access control policy
 
 Endpoint:
 
-	https://<auth-server>/auth/v1/acl/set
+	https://auth.iudx.org.in/auth/v1/acl/set
 
 Description:
 
@@ -12,19 +12,18 @@ Description:
 
 Called by:
 
-	A data provider with a valid class-3 or above certificate.
+	A "data provider" with a valid class-3 or above certificate.
 
 Warning:
 	
-	The "old" policies will be "overwritten"; and currently there is no way to get the old policies back.
+	The "previous" policies will be "overwritten"!
 	
-	To solve this issue:
+	The "previous" policy can be retrived by using the "acl/get" API.
 
-		1. Either call "acl/get" before calling the "acl/set" API.
+	Also, the "acl/revert" API can be used to revert to "previous" policy.
 
-				-OR-
-
-		2. Use the "acl/append" API to append to existing policies. 
+	Please use the "acl/append" API instead to "acl/set" if you wish to
+	add a policy to the existing set of policies. 
 
 Methods:
 
@@ -214,6 +213,9 @@ See also:
 
 	acl append API:
 		http://auth.iudx.org.in/acl-append.html
+
+	acl revert API:
+		http://auth.iudx.org.in/acl-revert.html
 
 	node aperture at github:
 		https://github.com/rbccps-iisc/node-aperture
