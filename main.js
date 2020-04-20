@@ -1283,7 +1283,7 @@ app.post("/auth/v1/token", (req, res) => {
 			return END_ERROR (res, 400, error_response);
 		}
 
-		const policy_in_text = Buffer.from (
+		const policy_lowercase = Buffer.from (
 						rows[0].policy, "base64"
 					)
 					.toString("ascii")
@@ -1296,7 +1296,7 @@ app.post("/auth/v1/token", (req, res) => {
 
 		context.conditions.groups = "";
 
-		if (policy_in_text.search(" consumer-in-group") > 0)
+		if (policy_lowercase.search(" consumer-in-group") > 0)
 		{
 			const rows = pg.querySync (
 
@@ -1320,7 +1320,7 @@ app.post("/auth/v1/token", (req, res) => {
 
 		context.conditions.tokens_per_day = 0;
 
-		if (policy_in_text.search(" tokens_per_day ") > 0)
+		if (policy_lowercase.search(" tokens_per_day ") > 0)
 		{
 			const resource_true = {};
 				resource_true [resource] = true;
@@ -1344,7 +1344,7 @@ app.post("/auth/v1/token", (req, res) => {
 
 		let CTX = context;
 
-		if (row.body && policy_in_text.search(" body.") > 0)
+		if (row.body && policy_lowercase.search(" body.") > 0)
 		{
 			// deep copy
 			CTX = JSON.parse(JSON.stringify(context));
@@ -2348,8 +2348,13 @@ app.post("/auth/v1/acl/set", (req, res) => {
 	if (typeof body.policy !== "string")
 		return END_ERROR (res, 400, "Invalid 'policy'; must be a string");
 
-	const policy	= body.policy.trim();
-	const rules	= policy.split(";");
+	const policy		= body.policy.trim();
+	const policy_lowercase	= policy.toLowerCase();
+
+	if (policy_lowercase.search(" like ") > 0 || policy_lowercase.search("::regex"))
+		return END_ERROR (res, 400, "RegEx in 'policy' is not supported");
+
+	const rules = policy.split(";");
 
 	let policy_in_json;
 
@@ -2441,8 +2446,13 @@ app.post("/auth/v1/acl/append", (req, res) => {
 	if (typeof body.policy !== "string")
 		return END_ERROR (res, 400, "Invalid 'policy'; must be a string");
 
-	const policy	= body.policy.trim();
-	const rules	= policy.split(";");
+	const policy		= body.policy.trim();
+	const policy_lowercase	= policy.toLowerCase();
+
+	if (policy_lowercase.search(" like ") > 0 || policy_lowercase.search("::regex"))
+		return END_ERROR (res, 400, "RegEx in 'policy' is not supported");
+
+	const rules = policy.split(";");
 
 	let policy_in_json;
 
