@@ -39,5 +39,5 @@ r = provider.get_policy()
 assert r['success'] is True 
 reverted_policy = r['response']['policy']
 
-assert len(reverted_policy) == 0
+assert len(reverted_policy) == 1
 assert reverted_policy[0] == policy

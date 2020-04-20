@@ -2619,7 +2619,7 @@ app.post("/auth/v1/acl/revert", (req, res) => {
 
 		"SELECT previous_policy FROM policy"	+
 		" WHERE id = $1::text"			+
-		" AND previous_policy NOT NULL LIMIT 1",
+		" AND previous_policy IS NOT NULL LIMIT 1",
 		[
 			provider_id_hash	// 1
 		],
