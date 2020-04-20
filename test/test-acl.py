@@ -41,3 +41,7 @@ reverted_policy = r['response']['policy']
 
 assert len(reverted_policy) == 1
 assert reverted_policy[0] == policy
+
+# reverting twice should not work
+r = provider.revert_policy()
+assert r['success'] is False
