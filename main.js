@@ -87,6 +87,7 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map({
 
 	"/auth/v1/acl"				: 3,
 	"/auth/v1/acl/set"			: 3,
+	"/auth/v1/acl/revert"			: 3,
 	"/auth/v1/acl/append"			: 3,
 
 	"/auth/v1/group/add"			: 3,
@@ -2400,46 +2401,32 @@ app.post("/auth/v1/acl/set", (req, res) => {
 				JSON.stringify(policy_in_json),		// 2
 				provider_id_hash			// 3
 			];
-
-			pool.query (query, parameters, (error_1, results_1) =>
-			{
-				if (error_1 || results_1.rowCount === 0)
-				{
-					return END_ERROR (
-						res, 500,
-							"Internal error!",
-							error_1
-					);
-				}
-
-				return END_SUCCESS (res);
-			});
 		}
 		else
 		{
-			query = "INSERT INTO policy"		+
-				" VALUES ($1::text, $2::text, $3::jsonb, NULL, NOW())";
+			query = "INSERT INTO policy VALUES"		+
+				"($1::text, $2::text, $3::jsonb, NULL, NOW())";
 
 			parameters = [
-				provider_id_hash,		// 1
-				base64policy,			// 2
-				JSON.stringify(policy_in_json)	// 3
+				provider_id_hash,			// 1
+				base64policy,				// 2
+				JSON.stringify(policy_in_json)		// 3
 			];
-
-			pool.query (query, parameters, (error_1, results_1) =>
-			{
-				if (error_1 || results_1.rowCount === 0)
-				{
-					return END_ERROR (
-						res, 500,
-							"Internal error!",
-							error_1
-					);
-				}
-
-				return END_SUCCESS (res);
-			});
 		}
+
+		pool.query (query, parameters, (error_1, results_1) =>
+		{
+			if (error_1 || results_1.rowCount === 0)
+			{
+				return END_ERROR (
+					res, 500,
+						"Internal error!",
+						error_1
+				);
+			}
+
+			return END_SUCCESS (res);
+		});
 	});
 });
 
@@ -2534,20 +2521,6 @@ app.post("/auth/v1/acl/append", (req, res) => {
 				JSON.stringify(policy_in_json),		// 2
 				provider_id_hash			// 3
 			];
-
-			pool.query (query, parameters, (error_1, results_1) =>
-			{
-				if (error_1 || results_1.rowCount === 0)
-				{
-					return END_ERROR (
-						res, 500,
-							"Internal error!",
-							error_1
-					);
-				}
-
-				return END_SUCCESS (res);
-			});
 		}
 		else
 		{
@@ -2555,29 +2528,29 @@ app.post("/auth/v1/acl/append", (req, res) => {
 						.from(policy)
 						.toString("base64");
 
-			query = "INSERT INTO policy"	+
-				" VALUES ($1::text, $2::text, $3::jsonb, NULL, NOW())";
+			query = "INSERT INTO policy VALUES"		+
+				"($1::text, $2::text, $3::jsonb, NULL, NOW())";
 
 			parameters = [
-				provider_id_hash,		// 1
-				base64policy,			// 2
-				JSON.stringify(policy_in_json)	// 3
+				provider_id_hash,			// 1
+				base64policy,				// 2
+				JSON.stringify(policy_in_json)		// 3
 			];
-
-			pool.query (query, parameters, (error_1, results_1) =>
-			{
-				if (error_1 || results_1.rowCount === 0)
-				{
-					return END_ERROR (
-						res, 500,
-							"Internal error!",
-							error_1
-					);
-				}
-
-				return END_SUCCESS (res);
-			});
 		}
+
+		pool.query (query, parameters, (error_1, results_1) =>
+		{
+			if (error_1 || results_1.rowCount === 0)
+			{
+				return END_ERROR (
+					res, 500,
+						"Internal error!",
+						error_1
+				);
+			}
+
+			return END_SUCCESS (res);
+		});
 	});
 });
 

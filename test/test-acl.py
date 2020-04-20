@@ -22,3 +22,22 @@ rules = [
 for rule in rules:
 	r = provider.set_policy(rule)
 	assert r['success'] is True 
+
+	
+policy = "x can access x"
+r = provider.set_policy(policy)
+assert r['success'] is True 
+
+new_policy = "y can access y"  
+r = provider.set_policy(policy)
+assert r['success'] is True 
+
+r = provider.revert_policy()
+assert r['success'] is True 
+
+r = provider.get_policy()
+assert r['success'] is True 
+reverted_policy = r['response']['policy']
+
+assert len(reverted_policy) == 0
+assert reverted_policy[0] == policy
