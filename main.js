@@ -1296,7 +1296,7 @@ app.post("/auth/v1/token", (req, res) => {
 
 		context.conditions.groups = "";
 
-		if (policy_lowercase.search(" consumer-in-group") > 0)
+		if (policy_lowercase.search(" consumer-in-group") >= 0)
 		{
 			const rows = pg.querySync (
 
@@ -1320,7 +1320,7 @@ app.post("/auth/v1/token", (req, res) => {
 
 		context.conditions.tokens_per_day = 0;
 
-		if (policy_lowercase.search(" tokens_per_day ") > 0)
+		if (policy_lowercase.search(" tokens_per_day ") >= 0)
 		{
 			const resource_true = {};
 				resource_true [resource] = true;
@@ -1344,7 +1344,7 @@ app.post("/auth/v1/token", (req, res) => {
 
 		let CTX = context;
 
-		if (row.body && policy_lowercase.search(" body.") > 0)
+		if (row.body && policy_lowercase.search(" body.") >= 0)
 		{
 			// deep copy
 			CTX = JSON.parse(JSON.stringify(context));
@@ -2352,13 +2352,12 @@ app.post("/auth/v1/acl/set", (req, res) => {
 	const policy_lowercase	= policy.toLowerCase();
 
 	if (
-		(policy_lowercase.search(" like ")  > 0) ||
-		(policy_lowercase.search("::regex") > 0)
+		(policy_lowercase.search(" like ")  >= 0) ||
+		(policy_lowercase.search("::regex") >= 0)
 	)
 	{
 		return END_ERROR (res, 400, "RegEx in 'policy' is not supported");
 	}
-
 
 	const rules = policy.split(";");
 
@@ -2456,8 +2455,8 @@ app.post("/auth/v1/acl/append", (req, res) => {
 	const policy_lowercase	= policy.toLowerCase();
 
 	if (
-		(policy_lowercase.search(" like ")  > 0) ||
-		(policy_lowercase.search("::regex") > 0)
+		(policy_lowercase.search(" like ")  >= 0) ||
+		(policy_lowercase.search("::regex") >= 0)
 	)
 	{
 		return END_ERROR (res, 400, "RegEx in 'policy' is not supported");

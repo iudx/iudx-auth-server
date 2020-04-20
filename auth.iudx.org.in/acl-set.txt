@@ -64,6 +64,9 @@ Aperture policy language:
 
 		all can access resource-server.com/public.* if api = "/latest" AND country = "IN"
 
+	Aperture vs RegEx:
+		"*" in Aperture is equivalent to ".*" in RegEx 
+
 	Aperture also supports conditions such as:
 
 		ip = 10.0.0.1

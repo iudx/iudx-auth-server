@@ -45,3 +45,21 @@ assert reverted_policy[0] == policy
 # reverting twice should not work
 r = provider.revert_policy()
 assert r['success'] is False
+
+# RegEx should not work supported
+
+r = provider.get_policy()
+assert r['success'] is True 
+policy = r['response']['policy']
+
+regex_policy = "x can access y if z like /someregex*/i" 
+r = provider.set_policy(regex_policy)
+assert r['success'] is False 
+
+regex_policy = "x can access /fred(dy)?/i::regex" 
+r = provider.set_policy(regex_policy)
+assert r['success'] is False 
+
+r = provider.get_policy()
+assert r['success'] is True 
+assert policy == r['response']['policy']
