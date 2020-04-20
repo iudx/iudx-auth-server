@@ -91,6 +91,10 @@ Aperture policy language:
 		In case of multiple rules, the first rule which matches will
 		apply.
 
+	RegEx:
+		Though, Aperture policy language supports RegEx, the "acl/set" or "acl/append" APIs 
+		"DO NOT" accept RegEx in policies.
+
 Variables in policy language:
 
 	Below are the variables available in rules, and its type.

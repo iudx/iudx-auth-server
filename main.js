@@ -2351,8 +2351,14 @@ app.post("/auth/v1/acl/set", (req, res) => {
 	const policy		= body.policy.trim();
 	const policy_lowercase	= policy.toLowerCase();
 
-	if (policy_lowercase.search(" like ") > 0 || policy_lowercase.search("::regex"))
+	if (
+		(policy_lowercase.search(" like ")  > 0) ||
+		(policy_lowercase.search("::regex") > 0)
+	)
+	{
 		return END_ERROR (res, 400, "RegEx in 'policy' is not supported");
+	}
+
 
 	const rules = policy.split(";");
 
@@ -2449,8 +2455,13 @@ app.post("/auth/v1/acl/append", (req, res) => {
 	const policy		= body.policy.trim();
 	const policy_lowercase	= policy.toLowerCase();
 
-	if (policy_lowercase.search(" like ") > 0 || policy_lowercase.search("::regex"))
+	if (
+		(policy_lowercase.search(" like ")  > 0) ||
+		(policy_lowercase.search("::regex") > 0)
+	)
+	{
 		return END_ERROR (res, 400, "RegEx in 'policy' is not supported");
+	}
 
 	const rules = policy.split(";");
 
