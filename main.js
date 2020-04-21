@@ -228,7 +228,7 @@ const trusted_CAs = [
 	fs.readFileSync("ca.iudx.org.in.crt"),
 	fs.readFileSync("CCAIndia2015.cer"),
 	fs.readFileSync("CCAIndia2014.cer"),
-	system_trusted_certs
+	fs.readFileSync(system_trusted_certs)
 ];
 
 const https_options = {
