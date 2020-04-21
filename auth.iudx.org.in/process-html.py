@@ -1,4 +1,5 @@
 import re
+import sys
 
 f="file.c.html"
 
@@ -19,7 +20,7 @@ for l in d:
 	#l = re.sub('\t<span class="Statement">(.*)</span>',r'\t<span class="Statement"><font color=red>\1</font></span>',l) 
 
 	if l.startswith("<title>"):
-		l = "<title>IUDX API documentation</title>"
+		l = "<title>IUDX Auth API documentation - /" + sys.argv[1] + "</title>"
 
 	if l.startswith("*") and l.endswith("*"):
 		l = "<b>" + l[1:][:-1] + "</b>"

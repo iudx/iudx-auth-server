@@ -9,7 +9,9 @@ do
 
 	vim -c 'colorscheme delek' -c TOhtml -c wqa file.c
 
-	python2 ./process-html.py > tmp
+	api=`cat acl-set.txt | grep -a2 Endpoint: | tail -1 |  cut -f4- -d'/'`
+
+	python2 ./process-html.py "$api" > tmp
 
 	ff=`echo $f | cut -f1 -d'.'`
 

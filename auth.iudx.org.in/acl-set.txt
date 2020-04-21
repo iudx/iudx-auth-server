@@ -77,8 +77,7 @@ Aperture policy language:
 
 		consumer-in-group(confidential)
 
-	You may use a single "*", or "all", "everything", or "anything" to match
-	any identifier.
+	You may use a single "*", or "all", "everything", or "anything" to match any identifier.
 	
 	For example:
 
@@ -91,8 +90,7 @@ Aperture policy language:
 		rule-1; rule-2; .... ; rule-n
 
 	Note:
-		In case of multiple rules, the first rule which matches will
-		apply.
+		In case of multiple rules, the first rule which matches will apply.
 
 	RegEx:
 		Though, Aperture policy language supports RegEx, the "acl/set" or "acl/append" APIs 
@@ -162,9 +160,12 @@ Resource IDs in policies:
 	For example:
 		"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/resource-name"
 
-	However while writing rules the first 2 fields should be skipped:
-		for example, in the above id, "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c"
-		can be skipped.
+	However while writing rules the first 2 fields should be skipped
+	for example, in the above id
+
+			"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c"
+
+	should be skipped.
 
 	The rule would look like this:
 		"consumer@domain.com can access resource-server.com/resource-name"

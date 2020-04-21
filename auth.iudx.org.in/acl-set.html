@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="ISO-8859-1">
-<title>IUDX API documentation</title>
+<title>IUDX Auth API documentation - /auth/v1/acl/set</title>
 <meta name="Generator" content="Vim/8.2">
 <meta name="plugin-version" content="vim8.1_v2">
 <meta name="syntax" content="c">
@@ -90,6 +90,9 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 		all can access resource-server.com/public.* <span class="Statement">if</span> api = <span class="Constant">&quot;/latest&quot;</span> AND country = <span class="Constant">&quot;IN&quot;</span>
 
+	<span class="Statement">Aperture vs RegEx</span>:
+		<span class="Constant">&quot;*&quot;</span> in Aperture is equivalent to <span class="Constant">&quot;.*&quot;</span> in RegEx
+
 	<span class="Statement">Aperture also supports conditions such as</span>:
 
 		ip = <span class="Constant">10.0.0.1</span>
@@ -100,8 +103,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 		consumer-in-group<span class="rainbow_p0">(</span>confidential<span class="rainbow_p0">)</span>
 
-	You may use a single <span class="Constant">&quot;*&quot;</span>, or <span class="Constant">&quot;all&quot;</span>, <span class="Constant">&quot;everything&quot;</span>, or <span class="Constant">&quot;anything&quot;</span> to match
-	any identifier.
+	You may use a single <span class="Constant">&quot;*&quot;</span>, or <span class="Constant">&quot;all&quot;</span>, <span class="Constant">&quot;everything&quot;</span>, or <span class="Constant">&quot;anything&quot;</span> to match any identifier.
 
 	<span class="Statement">For example</span>:
 
@@ -114,8 +116,11 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 		rule-<span class="Constant">1</span>; rule-<span class="Constant">2</span>; .... ; rule-n
 
 	<span class="Statement">Note</span>:
-		In <span class="Statement">case</span> of multiple rules, the first rule which matches will
-		apply.
+		In <span class="Statement">case</span> of multiple rules, the first rule which matches will apply.
+
+	<span class="Statement">RegEx</span>:
+		Though, Aperture policy language supports RegEx, the <span class="Constant">&quot;acl/set&quot;</span> or <span class="Constant">&quot;acl/append&quot;</span> APIs
+		<span class="Constant">&quot;DO NOT&quot;</span> accept RegEx in policies.
 
 <span class="Statement">Variables in policy language</span>:
 
@@ -181,9 +186,12 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 	<span class="Statement">For example</span>:
 		<span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/resource-server.com/resource-name&quot;</span>
 
-	<span class="Statement">However while writing rules the first 2 fields should be skipped</span>:
-		<span class="Statement">for</span> example, in the above id, <span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c&quot;</span>
-		can be skipped.
+	However <span class="Statement">while</span> writing rules the first <span class="Constant">2</span> fields should be skipped
+	<span class="Statement">for</span> example, in the above id
+
+			<span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c&quot;</span>
+
+	should be skipped.
 
 	<span class="Statement">The rule would look like this</span>:
 		<span class="Constant">&quot;consumer@domain.com can access resource-server.com/resource-name&quot;</span>

@@ -18,6 +18,11 @@ Methods:
 
 	POST
 
+Known limitations:
+
+	This API can only revert policies once. No history of policies are saved
+	at the server.
+
 HTTP response code:
 
 	200
