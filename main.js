@@ -1686,7 +1686,8 @@ app.post("/auth/v1/token", (req, res) => {
 				"false,"				+
 				"$8::int,"				+
 				"$9::jsonb,"				+
-				"$10::jsonb"				+
+				"$10::jsonb,"				+
+				"$11::jsonb"				+
 			")";
 
 		parameters = [
@@ -1700,6 +1701,7 @@ app.post("/auth/v1/token", (req, res) => {
 			cert_class,					// 8
 			JSON.stringify(sha256_of_resource_server_token),// 9
 			JSON.stringify(providers)			// 10
+			JSON.stringify(geo)				// 11
 		];
 
 		pool.query (query, parameters, (error,results) =>
@@ -2752,7 +2754,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 	pool.query (
 
 		"SELECT issued_at,expiry,request,cert_serial,"	+
-		" cert_fingerprint,introspected,revoked,"	+
+		" cert_fingerprint,introspected,revoked,geo"	+
 		" expiry < NOW() as expired"			+
 		" FROM token"					+
 		" WHERE id = $1::text"				+
@@ -2779,6 +2781,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 				"certificate-serial-number"	: row.cert_serial,
 				"certificate-fingerprint"	: row.cert_fingerprint,
 				"request"			: row.request,
+				"geo"				: row.geo
 			});
 		}
 
@@ -2794,7 +2797,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 			" revoked,introspected,"			+
 			" providers-> $1::text"				+
 			" AS is_valid_token_for_provider,"		+
-			" expiry < NOW() as expired"			+
+			" expiry < NOW() as expired,geo"		+
 			" FROM token"					+
 			" WHERE providers-> $1::text"			+
 			" IS NOT NULL"					+
@@ -2831,6 +2834,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 					"certificate-serial-number"	: row.cert_serial,
 					"certificate-fingerprint"	: row.cert_fingerprint,
 					"request"			: row.request,
+					"geo"				: row.geo
 				});
 			}
 
