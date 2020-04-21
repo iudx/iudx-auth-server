@@ -2754,8 +2754,8 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 	pool.query (
 
 		"SELECT issued_at,expiry,request,cert_serial,"	+
-		" cert_fingerprint,introspected,revoked,geo"	+
-		" expiry < NOW() as expired"			+
+		" cert_fingerprint,introspected,revoked,"	+
+		" expiry < NOW() as expired,geo"		+
 		" FROM token"					+
 		" WHERE id = $1::text"				+
 		" AND issued_at >= (NOW() - $2::interval)"	+
