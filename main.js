@@ -2781,7 +2781,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 				"certificate-serial-number"	: row.cert_serial,
 				"certificate-fingerprint"	: row.cert_fingerprint,
 				"request"			: row.request,
-				"geo"				: row.geo
+				"geoip"				: row.geo
 			});
 		}
 
@@ -2834,7 +2834,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 					"certificate-serial-number"	: row.cert_serial,
 					"certificate-fingerprint"	: row.cert_fingerprint,
 					"request"			: row.request,
-					"geo"				: row.geo
+					"geoip"				: row.geo
 				});
 			}
 
