@@ -67,7 +67,7 @@ const MAX_TOKEN_HASH_LEN	= 64;
 
 const MAX_SAFE_STRING_LEN	= 512;
 
-const MIN_CERT_CLASS_REQUIRED = immutable.Map({
+const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 
 	"/auth/v1/token/introspect"		: 1,
 	"/auth/v1/certificate-info"		: 1,
@@ -322,7 +322,11 @@ function END_ERROR (res, http_status, error, exception = null)
 		// error is already a JSON
 
 		if (error["invalid-input"])
-			response["//"] = "All unsafe characters in 'invalid-input' have been replaced with a '*'";
+		{
+			response["//"] ="Unsafe characters in"			+
+					" 'invalid-input' have been replaced"	+
+					" with '*'";
+		}
 
 		response.error = error;
 	}
@@ -711,8 +715,12 @@ function body_to_json (body)
 	}
 }
 
-/* --- a variable to indicate if a worker has started serving APIs.
-	We will further drop worker privileges when we start serving APIs --- */
+/* ---
+	A variable to indicate if a worker has started serving APIs.
+
+	We will further drop privileges when a worker is about to 
+	serve its first API.
+				--- */
 
 let has_started_serving_apis = false;
 
@@ -868,13 +876,14 @@ function security (req, res, next)
 							.emailAddress
 							.toLowerCase();
 
+
 			if (user_notice["can-access"])
 			{
 				res.locals.can_access_regex	= [];
 
-				const can_access_regex		= user_notice["can-access"].split(";");
-
-				let regex_number = 0;
+				const can_access_regex		= user_notice["can-access"]
+									.split(";");
+				let regex_number		= 0;
 
 				for (const r of can_access_regex)
 				{
@@ -897,7 +906,10 @@ function security (req, res, next)
 							"invalid-input"	: "RegEx no. " + regex_number,
 						};
 
-						return END_ERROR (res, 400, error_response);
+						return END_ERROR (
+							res, 400,
+								error_response
+						);
 					}
 
 					/*
@@ -917,10 +929,15 @@ function security (req, res, next)
 							"invalid-input"	: "RegEx no. " + regex_number,
 						};
 
-						return END_ERROR (res, 400, error_response);
+						return END_ERROR (
+							res, 400,
+								error_response
+						);
 					}
 
-					res.locals.can_access_regex.push(new RegExp(final_regex));
+					res.locals.can_access_regex.push (
+						new RegExp(final_regex)
+					);
 				}
 			}
 
@@ -1037,7 +1054,7 @@ app.post("/auth/v1/token", (req, res) => {
 	{
 		return END_ERROR (
 			res, 400,
-				"'request' field must be a valid JSON array " +
+				"'request' must be a valid JSON array " +
 				"with at least 1 element"
 		);
 	}
@@ -1144,7 +1161,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
 			const error_response = {
-				"message"	: "id contains unsafe characters",
+				"message"	: "'id' contains unsafe characters",
 				"invalid-input"	: xss_safe(resource),
 			};
 
@@ -1160,7 +1177,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if ( ! (row.methods instanceof Array))
 		{
 			const error_response = {
-				"message"	: "Invalid 'methods'; must be a valid JSON array",
+				"message"	: "'methods' must be a valid JSON array",
 				"invalid-input"	: {
 					"id"		: xss_safe(resource),
 					"methods" 	: xss_safe(row.methods)
@@ -1182,7 +1199,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if ( ! (row.apis instanceof Array))
 		{
 			const error_response = {
-				"message"	: "Invalid 'apis'; must be a valid JSON array",
+				"message"	: "'apis' must be a valid JSON array",
 				"invalid-input"	: {
 					"id"	: xss_safe(resource),
 					"apis" 	: xss_safe(row.apis)
@@ -1195,7 +1212,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if ((resource.match(/\//g) || []).length < 3)
 		{
 			const error_response = {
-				"message"	: "Invalid 'id'; must have at least 3 '/' characters.",
+				"message"	: "'id' must have at least 3 '/' characters.",
 				"invalid-input"	: xss_safe(resource)
 			};
 
@@ -1206,7 +1223,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if (row.body && (! (row.body instanceof Object)))
 		{
 			const error_response = {
-				"message"	: "Invalid 'body'; must be a valid JSON object",
+				"message"	: "'body' must be a valid JSON object",
 				"invalid-input"	: {
 					"id"	: xss_safe(resource),
 					"body"	: xss_safe(row.body)
@@ -1274,9 +1291,12 @@ app.post("/auth/v1/token", (req, res) => {
 		if (rows.length === 0)
 		{
 			const error_response = {
+
 				"message"	:"Invalid 'id'; no access"	+
 						" control policies have been"	+
-						" set for this 'id' by the data provider",
+						" set for this 'id'"		+
+						" by the data provider",
+
 				"invalid-input"	: xss_safe(resource)
 			};
 
@@ -1358,7 +1378,7 @@ app.post("/auth/v1/token", (req, res) => {
 			if (typeof api !== "string")
 			{
 				const error_response = {
-					"message"	: "Invalid 'api'; must be a string",
+					"message"	: "'api' must be a string",
 					"invalid-input"	: {
 						"id"	: xss_safe(resource),
 						"api"	: xss_safe(api)
@@ -1375,7 +1395,7 @@ app.post("/auth/v1/token", (req, res) => {
 				if (typeof method !== "string")
 				{
 					const error_response = {
-						"message"	: "Invalid 'method'; must be a string",
+						"message"	: "'method' must be a string",
 						"invalid-input"	: {
 							"id"		: xss_safe(resource),
 							"method"	: xss_safe(method)
@@ -1751,7 +1771,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 		{
 			return END_ERROR (
 				res, 400,
-				"'request' field must be an valid JSON array"
+				"'request' must be an valid JSON array"
 			);
 		}
 	}
@@ -1958,7 +1978,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					if (! (r1 instanceof Object))
 					{
 						const error_response = {
-							"message"	: "Invalid 'request'; must be a valid JSON object",
+							"message"	: "'request' must be a valid JSON object",
 							"invalid-input"	: xss_safe(r1)
 						};
 
@@ -2077,7 +2097,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 		// user is a consumer
 
 		if (! (tokens instanceof Array))
-			return END_ERROR (res, 400, "Invalid 'tokens'; must be a valid JSON array");
+			return END_ERROR (res, 400, "'tokens' must be a valid JSON array");
 
 		for (const token of tokens)
 		{
@@ -2163,7 +2183,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 		// user is a provider
 
 		if (! (token_hashes instanceof Array))
-			return END_ERROR (res, 400, "Invalid 'token-hashes'; must be a valid JSON array");
+			return END_ERROR (res, 400, "'token-hashes' must be a valid JSON array");
 
 		const email_domain	= id.split("@")[1];
 		const sha1_of_email	= sha1(id);
@@ -2346,7 +2366,7 @@ app.post("/auth/v1/acl/set", (req, res) => {
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
 	if (typeof body.policy !== "string")
-		return END_ERROR (res, 400, "Invalid 'policy'; must be a string");
+		return END_ERROR (res, 400, "'policy' must be a string");
 
 	const policy		= body.policy.trim();
 	const policy_lowercase	= policy.toLowerCase();
@@ -2363,14 +2383,16 @@ app.post("/auth/v1/acl/set", (req, res) => {
 
 	let policy_in_json;
 
-	try {
+	try
+	{
 		policy_in_json = rules.map (
 			(r) => {
 				return (parser.parse(r.trim()));
 			}
 		);
 	}
-	catch (x) {
+	catch (x)
+	{
 		const err = String(x);
 		return END_ERROR (res, 400, "Syntax error in policy. " + err);
 	}
@@ -2449,7 +2471,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 		return END_ERROR (res, 400, "No 'policy' found in request");
 
 	if (typeof body.policy !== "string")
-		return END_ERROR (res, 400, "Invalid 'policy'; must be a string");
+		return END_ERROR (res, 400, "'policy' must be a string");
 
 	const policy		= body.policy.trim();
 	const policy_lowercase	= policy.toLowerCase();
@@ -2466,14 +2488,16 @@ app.post("/auth/v1/acl/append", (req, res) => {
 
 	let policy_in_json;
 
-	try {
+	try
+	{
 		policy_in_json = rules.map (
 			(r) => {
 				return (parser.parse(r.trim()));
 			}
 		);
 	}
-	catch (x) {
+	catch (x)
+	{
 		const err = String(x);
 		return END_ERROR (res, 400, "Syntax error in policy. " + err);
 	}
@@ -2508,7 +2532,8 @@ app.post("/auth/v1/acl/append", (req, res) => {
 			const new_policy	= old_policy + ";" + policy;
 			const new_rules		= new_policy.split(";");
 
-			try {
+			try
+			{
 				policy_in_json = new_rules.map (
 					(r) => {
 						return (parser.parse(r.trim()));
@@ -2639,7 +2664,8 @@ app.post("/auth/v1/acl/revert", (req, res) => {
 
 		"SELECT previous_policy FROM policy"	+
 		" WHERE id = $1::text"			+
-		" AND previous_policy IS NOT NULL LIMIT 1",
+		" AND previous_policy IS NOT NULL"	+
+		" LIMIT 1",
 		[
 			provider_id_hash	// 1
 		],
@@ -2659,16 +2685,22 @@ app.post("/auth/v1/acl/revert", (req, res) => {
 
 		let policy_in_json;
 
-		try {
+		try
+		{
 			policy_in_json = previous_policy.map (
 				(r) => {
 					return (parser.parse(r.trim()));
 				}
 			);
 		}
-		catch (x) {
+		catch (x)
+		{
 			const err = String(x);
-			return END_ERROR (res, 400, "Syntax error in previous-policy. " + err);
+
+			return END_ERROR (
+				res, 400,
+					"Syntax error in previous-policy. " + err
+			);
 		}
 
 		const query = "UPDATE policy"				+
@@ -2711,7 +2743,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 
 	// 5 yrs max
 	if (isNaN(hours) || hours < 1 || hours > 43800) {
-		return END_ERROR (res, 400, "Invalid 'hours'; must be a positive number");
+		return END_ERROR (res, 400, "'hours' must be a positive number");
 	}
 
 	const as_consumer = [];
@@ -2821,7 +2853,7 @@ app.post("/auth/v1/group/add", (req, res) => {
 		return END_ERROR (res, 400, "No 'consumer' found in the body");
 
 	if (! is_valid_email(body.consumer))
-		return END_ERROR (res, 400, "Invalid 'consumer'; must be an e-mail");
+		return END_ERROR (res, 400, "'consumer' must be an e-mail");
 
 	const consumer_id = body.consumer.toLowerCase();
 
@@ -2839,8 +2871,11 @@ app.post("/auth/v1/group/add", (req, res) => {
 	const valid_till = parseInt(body["valid-till"],10);
 
 	// 1 year max
-	if (isNaN(valid_till) || valid_till < 1 || valid_till > 8760) {
-		return END_ERROR (res, 400, "Invalid 'valid-till'; must be a positive number");
+	if (isNaN(valid_till) || valid_till < 1 || valid_till > 8760)
+	{
+		return END_ERROR (
+			res, 400, "'valid-till' must be a positive number"
+		);
 	}
 
 	const email_domain	= provider_id.split("@")[1];
@@ -2851,8 +2886,7 @@ app.post("/auth/v1/group/add", (req, res) => {
 	pool.query (
 
 		"INSERT INTO groups"				+
-		" VALUES ($1::text, $2::text, $3::text,"	+
-		" NOW() + $4::interval)",
+		" VALUES ($1::text, $2::text, $3::text, NOW() + $4::interval)",
 		[
 			provider_id_hash,			// 1
 			consumer_id,				// 2
@@ -2968,10 +3002,14 @@ app.post("/auth/v1/group/delete", (req, res) => {
 	if (body.consumer !== "*")
 	{
 		if (! is_valid_email(body.consumer))
-			return END_ERROR (res, 400, "Invalid 'consumer'; must be an e-mail");
+		{
+			return END_ERROR (
+				res, 400, "'consumer' must be an e-mail"
+			);
+		}
 	}
 
-	const consumer_id = body.consumer ? body.consumer.toLowerCase() : null;
+	const consumer_id = body.consumer.toLowerCase();
 
 	if (! body.group)
 		return END_ERROR (res, 400, "No 'group' found in the body");

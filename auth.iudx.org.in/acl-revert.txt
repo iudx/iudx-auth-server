@@ -20,8 +20,8 @@ Methods:
 
 Known limitations:
 
-	This API can only revert policies once. No history of policies are saved
-	at the server.
+	This API can only revert to the previous policy.
+	Older history of policies are "NOT" saved at the server.
 
 HTTP response code:
 
