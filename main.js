@@ -1700,7 +1700,7 @@ app.post("/auth/v1/token", (req, res) => {
 			JSON.stringify(resource_id_dict),		// 7
 			cert_class,					// 8
 			JSON.stringify(sha256_of_resource_server_token),// 9
-			JSON.stringify(providers)			// 10
+			JSON.stringify(providers),			// 10
 			JSON.stringify(geo)				// 11
 		];
 
