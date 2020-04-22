@@ -3,9 +3,11 @@ skinparam monochrome true
 hide circle
 
 entity policy {
-	id				varchar			PRIMARY KEY	// The id of the provider in the format : domain-of-email/hex-of-sha1-of-email-id in lower case
-	policy			varchar(3145728)	NOT NULL		// The access control policy in aperture language; base64 encoded
-	policy_in_json		jsonb				NOT NULL		// The complied version of aperture access control policy in json format
+	id				varchar			PRIMARY KEY	// the id of the provider in the format : domain-of-email/hex-of-sha1-of-email-id in lower case
+	policy			varchar(3145728)	NOT NULL		// the access control policy in aperture language; base64 encoded
+	policy_in_json		jsonb				NOT NULL		// the complied version of aperture access control policy in json format
+	previous_policy		varchar(3145728)	NOT NULL		// the previous access control policy in aperture language; base64 encoded
+	last_updated		timestamp			NOT NULL		// the time when the policy was last updated 
 }
 
 entity token {
@@ -22,10 +24,11 @@ entity token {
 	cert_class			integer		NOT NULL		// the certificate class of the consumer which was used to request this token
 	server_token		jsonb			NOT NULL		// a dictionary of sha256 hashes of server-tokens
 	providers			jsonb			NOT NULL		// a dictionary of providers for which this token is valid. providers[P] = false if the token was revoked by the provider P
+	geoip				jsonb			NOT NULL		// the output of geoip lookup using the npm package : geoip-lite
 }
 
 entity groups {
-	id			varchar		NOT NULL		// The id of the provider in the format : domain-of-email/hex-of-sha1-of-email-id in lower case
+	id			varchar		NOT NULL		// the id of the provider in the format : domain-of-email/hex-of-sha1-of-email-id in lower case
 	consumer		varchar		NOT NULL		// the consumer's email in lower case
 	group_name	varchar		NOT NULL		// the name of the group in lower case
 	valid_till		timestamp		NOT NULL		// indicates how long a consumer is to be in the group
