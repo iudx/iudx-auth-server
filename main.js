@@ -2755,7 +2755,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 
 		"SELECT issued_at,expiry,request,cert_serial,"	+
 		" cert_fingerprint,introspected,revoked,"	+
-		" expiry < NOW() as expired,geo"		+
+		" expiry < NOW() as expired,geoip"		+
 		" FROM token"					+
 		" WHERE id = $1::text"				+
 		" AND issued_at >= (NOW() - $2::interval)"	+
@@ -2781,7 +2781,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 				"certificate-serial-number"	: row.cert_serial,
 				"certificate-fingerprint"	: row.cert_fingerprint,
 				"request"			: row.request,
-				"geoip"				: row.geo
+				"geoip"				: row.geoip
 			});
 		}
 
@@ -2797,7 +2797,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 			" revoked,introspected,"			+
 			" providers-> $1::text"				+
 			" AS is_valid_token_for_provider,"		+
-			" expiry < NOW() as expired,geo"		+
+			" expiry < NOW() as expired,geoip"		+
 			" FROM token"					+
 			" WHERE providers-> $1::text"			+
 			" IS NOT NULL"					+
@@ -2834,7 +2834,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 					"certificate-serial-number"	: row.cert_serial,
 					"certificate-fingerprint"	: row.cert_fingerprint,
 					"request"			: row.request,
-					"geoip"				: row.geo
+					"geoip"				: row.geoip
 				});
 			}
 

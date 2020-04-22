@@ -82,7 +82,7 @@ CREATE TABLE public.token (
     cert_class integer NOT NULL,
     server_token jsonb NOT NULL,
     providers jsonb NOT NULL,
-    geo jsonb NOT NULL,
+    geoip jsonb NOT NULL,
     PRIMARY KEY(id, token)
 );
 
