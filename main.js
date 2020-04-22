@@ -1741,7 +1741,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	const token		= body.token.toLowerCase();
 	let server_token	= body["server-token"] || true;
 
-	if (server_token === true || server_token === "true")
+	if (server_token === true || server_token === "" || server_token === "true")
 	{
 		server_token = true;
 	}
