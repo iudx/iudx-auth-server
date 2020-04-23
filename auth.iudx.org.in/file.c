@@ -98,7 +98,7 @@ Body_xxx_in_xxx_JSON_xxx_format:
 		Instead of "methods", just "method" (a string) could also be used.
 
 		For example: ["GET", "POST"]
-		As the field is optional, the default value of "apis" is: ["*"]
+		As the field is optional, the default value of "methods" is: ["*"]
 
 	4._xxx_body:
 
