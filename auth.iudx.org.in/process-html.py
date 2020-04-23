@@ -15,11 +15,11 @@ for l in d:
 	l = re.sub(r'\$HTTP\$([^\s]+)',r'<a style="color:#F4D03F" href=http://\g<1>>http://\g<1></a>',l)
 
 
-	l = l.replace('<span class="Statement">Warning</span>','<span class="Statement"><font color=red>Warning</font></span>') 
+	l = l.replace('<span class="Statement">Warning</span>','<span class="Statement" style="color:red"><b>Warning</b></span>') 
 
-	#l = re.sub('\t<span class="Statement">(.*)</span>',r'\t<span class="Statement"><font color=red>\1</font></span>',l) 
+	#l = re.sub('\t<span class="Statement">(.*)</span>',r'\t<span class="Statement"><span style="color:red">\1</font></span>',l) 
 
-	l = l.replace("// optional","<font color=#A3E7D6>// optional</font>")
+	l = l.replace('<span class="Comment">// optional</span>','<span class="Comment" style="color:#A3E7D6">// optional</span>')
 
 	if l.startswith("<title>"):
 		l = "<title>IUDX Auth API documentation - /" + sys.argv[1] + "</title>"
