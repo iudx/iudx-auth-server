@@ -1021,7 +1021,7 @@ function security (req, res, next)
 	}
 }
 
-function object_to_array (o)
+function to_array (o)
 {
 	if (o instanceof Object)
 	{
@@ -1030,8 +1030,10 @@ function object_to_array (o)
 		else
 			return [o];
 	}
-
-	return null;
+	else
+	{
+		return [o];
+	}
 }
 
 /* --- Auth APIs --- */
@@ -1047,7 +1049,7 @@ app.post("/auth/v1/token", (req, res) => {
 	const resource_server_token		= {};
 	const sha256_of_resource_server_token	= {};
 
-	const request_array			= object_to_array(body.request);
+	const request_array			= to_array(body.request);
 	const processed_request_array		= [];
 
 	if ((! request_array) || (request_array.length < 1))
@@ -1162,12 +1164,10 @@ app.post("/auth/v1/token", (req, res) => {
 		{
 			resource = r;
 
-			// resource is a string, make it an object
+			// request is a string, make it an object
 
 			r = {
-				"id"		: resource,
-				"methods"	: ["*"],
-				"apis"		: ["/*"],
+				"id" : resource,
 			};
 		}
 		else if (r instanceof Object)
