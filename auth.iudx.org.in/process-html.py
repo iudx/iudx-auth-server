@@ -19,6 +19,8 @@ for l in d:
 
 	#l = re.sub('\t<span class="Statement">(.*)</span>',r'\t<span class="Statement"><font color=red>\1</font></span>',l) 
 
+	l = l.replace("// optional","<font color=#A3E7D6>// optional</font>")
+
 	if l.startswith("<title>"):
 		l = "<title>IUDX Auth API documentation - /" + sys.argv[1] + "</title>"
 

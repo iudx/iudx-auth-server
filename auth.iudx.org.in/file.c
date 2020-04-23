@@ -32,31 +32,31 @@ Body_xxx_in_xxx_JSON_xxx_format:
 	1._xxx_simple:
 
 		{
-			"request" : 		: <a resource id(s) for which access is requested>			// required
-			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
-			"existing-token"	: <a valid token a data consumer already has>				// optional
+			"request"  		: <resource id(s) for which access is requested>		// required
+			"token-time"		: <the time in seconds, till which the token should be valid>	// optional
+			"existing-token"	: <a valid token a data consumer already has>			// optional
 		}
 
 	2._xxx_complex:
 
 		{
-			"request" : {											// required
-				"id"		: <a resource id for which access is requested>				// required
-				"apis"		: <a list of APIs a consumer wishes to access on the resource id>	// optional
-				"methods"	: <a list of methods a consumer wishes to call on the APIs>		// optional
-				"body"		: <a dictionary of body variables to be called with the API>		// optional
+			"request" : {										// required
+				"id"		: <a resource id for which access is requested>			// required
+				"apis"		: <a list of APIs for which access is requestd>			// optional
+				"methods"	: <a list of methods a consumer wishes to call on the APIs>	// optional
+				"body"		: <a dictionary of body variables to be called with the API>	// optional
 			},
 
-			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
-			"existing-token"	: <a valid token a data consumer already has>				// optional
+			"token-time"		: <the time in seconds, till which the token should be valid>	// optional
+			"existing-token"	: <a valid token a data consumer already has>			// optional
 		}
 
 	Note:
+
 	The "request" field could also be an "array" of strings/objects.
 
-	The "existing-token" header field is used to indicate that new token
-	should NOT be created; i.e. the existing token will be used to access
-	the new requested list of resource ids.
+	The "existing-token" header field is used to indicate that new token "SHOULD NOT" be generated;
+	i.e. the existing-token will be used to access the new requested list of resource ids.
 
 	The_xxx_"request"_xxx_fields_xxx_are:
 

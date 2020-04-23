@@ -60,31 +60,31 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 	<span class="Constant">1.</span> simple:
 
 		<span class="rainbow_p0">{</span>
-			<span class="Constant">&quot;request&quot;</span> : 		: &lt;a resource id<span class="rainbow_p1">(</span>s<span class="rainbow_p1">)</span> <span class="Statement">for</span> which access is requested&gt;			<span class="Comment">// required</span>
-			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;		<span class="Comment">// optional</span>
-			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;				<span class="Comment">// optional</span>
+			<span class="Constant">&quot;request&quot;</span>  		: &lt;resource id<span class="rainbow_p1">(</span>s<span class="rainbow_p1">)</span> <span class="Statement">for</span> which access is requested&gt;		<span class="Comment">// required</span>
+			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;	<span class="Comment"><font color=#A3E7D6>// optional</font></span>
+			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;			<span class="Comment"><font color=#A3E7D6>// optional</font></span>
 		<span class="rainbow_p0">}</span>
 
 	<span class="Constant">2.</span> complex:
 
 		<span class="rainbow_p0">{</span>
-			<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">{</span>											<span class="Comment">// required</span>
-				<span class="Constant">&quot;id&quot;</span>		: &lt;a resource id <span class="Statement">for</span> which access is requested&gt;				<span class="Comment">// required</span>
-				<span class="Constant">&quot;apis&quot;</span>		: &lt;a list of APIs a consumer wishes to access on the resource id&gt;	<span class="Comment">// optional</span>
-				<span class="Constant">&quot;methods&quot;</span>	: &lt;a list of methods a consumer wishes to call on the APIs&gt;		<span class="Comment">// optional</span>
-				<span class="Constant">&quot;body&quot;</span>		: &lt;a dictionary of body variables to be called with the API&gt;		<span class="Comment">// optional</span>
+			<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">{</span>										<span class="Comment">// required</span>
+				<span class="Constant">&quot;id&quot;</span>		: &lt;a resource id <span class="Statement">for</span> which access is requested&gt;			<span class="Comment">// required</span>
+				<span class="Constant">&quot;apis&quot;</span>		: &lt;a list of APIs <span class="Statement">for</span> which access is requestd&gt;			<span class="Comment"><font color=#A3E7D6>// optional</font></span>
+				<span class="Constant">&quot;methods&quot;</span>	: &lt;a list of methods a consumer wishes to call on the APIs&gt;	<span class="Comment"><font color=#A3E7D6>// optional</font></span>
+				<span class="Constant">&quot;body&quot;</span>		: &lt;a dictionary of body variables to be called with the API&gt;	<span class="Comment"><font color=#A3E7D6>// optional</font></span>
 			<span class="rainbow_p1">}</span><span class="rainbow_o0">,</span>
 
-			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;		<span class="Comment">// optional</span>
-			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;				<span class="Comment">// optional</span>
+			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;	<span class="Comment"><font color=#A3E7D6>// optional</font></span>
+			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;			<span class="Comment"><font color=#A3E7D6>// optional</font></span>
 		<span class="rainbow_p0">}</span>
 
 	<span class="Statement">Note</span>:
+
 	The <span class="Constant">&quot;request&quot;</span> field could also be an <span class="Constant">&quot;array&quot;</span> of strings/objects.
 
-	The <span class="Constant">&quot;existing-token&quot;</span> header field is used to indicate that new token
-	should NOT be created; i.e. the existing token will be used to access
-	the new requested list of resource ids.
+	The <span class="Constant">&quot;existing-token&quot;</span> header field is used to indicate that new token <span class="Constant">&quot;SHOULD NOT&quot;</span> be generated;
+	i.e. the existing-token will be used to access the new requested list of resource ids.
 
 	The <span class="Constant">&quot;request&quot;</span> fields are:
 
