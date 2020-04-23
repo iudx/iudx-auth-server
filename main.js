@@ -718,7 +718,7 @@ function body_to_json (body)
 /* ---
 	A variable to indicate if a worker has started serving APIs.
 
-	We will further drop privileges when a worker is about to 
+	We will further drop privileges when a worker is about to
 	serve its first API.
 				--- */
 
@@ -876,7 +876,6 @@ function security (req, res, next)
 							.emailAddress
 							.toLowerCase();
 
-
 			if (user_notice["can-access"])
 			{
 				res.locals.can_access_regex	= [];
@@ -941,13 +940,70 @@ function security (req, res, next)
 				}
 			}
 
-			return next();
+			if (res.local.cert_class > 1)
+				return next();
+			else
+			{
+				if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
+					return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
+
+				const	ip				= req.connection.remoteAddress;
+				let	ip_matched			= false;
+				const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
+
+				dns.lookup (
+					resource_server_name_in_cert,
+					{all:true},
+					(error, ip_addresses) =>
+					{
+						/*
+							No dns checks for "example.com"
+							this for developer's testing purposes.
+						*/
+
+						if (resource_server_name_in_cert === "example.com")
+						{
+							error		= null;
+							ip_matched	= true;
+							ip_addresses	= [];
+						}
+
+						if (error)
+						{
+							const error_response = {
+								"message"	: "Invalid 'hostname' in certificate",
+								"invalid-input"	: xss_safe(resource_server_name_in_cert)
+							};
+
+							return END_ERROR (res, 400, error_response);
+						}
+
+						for (const a of ip_addresses)
+						{
+							if (a.address === ip)
+							{
+								ip_matched = true;
+								break;
+							}
+						}
+
+						if (! ip_matched)
+						{
+							return END_ERROR (res, 403,
+								"Your certificate's hostname in CN and " +
+								"your IP does not match!"
+							);
+						}
+
+						next();  // dns check passed
+					}
+				);
+			}
 		});
 	}
 	else
 	{
-		ocsp.check(
-			{cert:cert.raw, issuer:cert.issuerCertificate.raw},
+		ocsp.check({cert:cert.raw, issuer:cert.issuerCertificate.raw},
 		(ocsp_error, ocsp_response) =>
 		{
 			if (ocsp_error)
@@ -1016,7 +1072,65 @@ function security (req, res, next)
 
 			res.locals.cert	= cert;
 
-			return next();
+			if (res.local.cert_class > 1)
+				return next();
+			else
+			{
+				if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
+					return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
+
+				const	ip				= req.connection.remoteAddress;
+				let	ip_matched			= false;
+				const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
+
+				dns.lookup (
+					resource_server_name_in_cert,
+					{all:true},
+					(error, ip_addresses) =>
+					{
+						/*
+							No dns checks for "example.com"
+							this for developer's testing purposes.
+						*/
+
+						if (resource_server_name_in_cert === "example.com")
+						{
+							error		= null;
+							ip_matched	= true;
+							ip_addresses	= [];
+						}
+
+						if (error)
+						{
+							const error_response = {
+								"message"	: "Invalid 'hostname' in certificate",
+								"invalid-input"	: xss_safe(resource_server_name_in_cert)
+							};
+
+							return END_ERROR (res, 400, error_response);
+						}
+
+						for (const a of ip_addresses)
+						{
+							if (a.address === ip)
+							{
+								ip_matched = true;
+								break;
+							}
+						}
+
+						if (! ip_matched)
+						{
+							return END_ERROR (res, 403,
+								"Your certificate's hostname in CN and " +
+								"your IP does not match!"
+							);
+						}
+
+						next();  // dns check passed
+					}
+				);
+			}
 		});
 	}
 }
@@ -1751,9 +1865,6 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	const cert	= res.locals.cert;
 	const body	= res.locals.body;
 
-	if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
-		return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
-
 	const resource_server_name_in_cert = cert.subject.CN.toLowerCase();
 
 	if (! body.token)
@@ -1819,69 +1930,22 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 		return END_ERROR (res, 400, "Invalid 'token'");
 	}
 
-	const	ip		= req.connection.remoteAddress;
-	let	ip_matched	= false;
+	const sha256_of_token = sha256(token);
 
-	dns.lookup(resource_server_name_in_cert, {all:true},
-	(error, ip_addresses) =>
-	{
-		/*
-			No dns checks for "example.com"
-			this for developer's testing purposes.
-		*/
+	pool.query (
 
-		if (resource_server_name_in_cert === "example.com")
-		{
-			error		= null;
-			ip_matched	= true;
-			ip_addresses	= [];
-		}
-
-		if (error)
-		{
-			const error_response = {
-				"message"	: "Invalid 'hostname' in certificate",
-				"invalid-input"	: xss_safe(resource_server_name_in_cert)
-			};
-
-			return END_ERROR (res, 400, error_response);
-		}
-
-		for (const a of ip_addresses)
-		{
-			if (a.address === ip)
-			{
-				ip_matched = true;
-				break;
-			}
-		}
-
-		if (! ip_matched)
-		{
-			return END_ERROR (res, 403,
-				"Your certificate's hostname in CN and " +
-				"your IP does not match!"
-			);
-		}
-
-		// TODO select payment_required from token table
-
-		const sha256_of_token = sha256(token);
-
-		pool.query (
-
-			"SELECT expiry,request,cert_class,"	+
-			" server_token,providers"		+
-			" FROM token"				+
-			" WHERE id = $1::text"			+
-			" AND token = $2::text"			+
-			" AND revoked = false"			+
-			" AND expiry > NOW()"			+
-			" LIMIT 1",
-			[
-				issued_to,			// 1
-				sha256_of_token			// 2
-			],
+		"SELECT expiry,request,cert_class,"	+
+		" server_token,providers"		+
+		" FROM token"				+
+		" WHERE id = $1::text"			+
+		" AND token = $2::text"			+
+		" AND revoked = false"			+
+		" AND expiry > NOW()"			+
+		" LIMIT 1",
+		[
+			issued_to,			// 1
+			sha256_of_token			// 2
+		],
 
 		(error, results) =>
 		{
@@ -2091,8 +2155,8 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					return END_SUCCESS (res,response);
 				}
 			);
-		});
-	});
+		}
+	);
 });
 
 app.post("/auth/v1/token/revoke", (req, res) => {
@@ -2668,11 +2732,11 @@ app.post("/auth/v1/acl", (req, res) => {
 						.from(results.rows[0].previous_policy,"base64")
 						.toString("ascii")
 						.split(";");
-		} 
+		}
 
 		const response = {
-			"policy"		: policy, 
-			"previous-policy"	: previous_policy, 
+			"policy"		: policy,
+			"previous-policy"	: previous_policy,
 			"last-updated"		: results.rows[0].last_updated
 		};
 
