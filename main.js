@@ -1209,7 +1209,7 @@ app.post("/auth/v1/token", (req, res) => {
 	}
 
 	const ip	= req.connection.remoteAddress;
-	const geo	= geoip_lite.lookup(ip) || {ll:[]};
+	const geoip	= geoip_lite.lookup(ip) || {ll:[]};
 	const issuer	= cert.issuer;
 
 	const context = {
@@ -1238,12 +1238,12 @@ app.post("/auth/v1/token", (req, res) => {
 			"cert.issuer.c"		: issuer.C		|| "",
 			"cert.issuer.st"	: issuer.ST		|| "",
 
-			country			: geo.country		|| "",
-			region			: geo.region		|| "",
-			timezone		: geo.timezone		|| "",
-			city			: geo.city		|| "",
-			latitude		: geo.ll[0]		|| 0,
-			longitude		: geo.ll[1]		|| 0,
+			country			: geoip.country		|| "",
+			region			: geoip.region		|| "",
+			timezone		: geoip.timezone	|| "",
+			city			: geoip.city		|| "",
+			latitude		: geoip.ll[0]		|| 0,
+			longitude		: geoip.ll[1]		|| 0,
 		}
 	};
 
@@ -1822,6 +1822,11 @@ app.post("/auth/v1/token", (req, res) => {
 	}
 	else
 	{
+		delete geoip.eu;
+		delete geoip.area;
+		delete geoip.metro;
+		delete geoip.range;
+
 		query = "INSERT INTO token VALUES("			+
 				"$1::text,"				+
 				"$2::text,"				+
@@ -1850,7 +1855,7 @@ app.post("/auth/v1/token", (req, res) => {
 			cert_class,					// 8
 			JSON.stringify(sha256_of_resource_server_token),// 9
 			JSON.stringify(providers),			// 10
-			JSON.stringify(geo)				// 11
+			JSON.stringify(geoip)				// 11
 		];
 
 		pool.query (query, parameters, (error,results) =>
