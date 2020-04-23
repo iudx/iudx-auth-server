@@ -70,7 +70,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 		<span class="rainbow_p0">{</span>
 			<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">{</span>										<span class="Comment">// required</span>
 				<span class="Constant">&quot;id&quot;</span>		: &lt;a resource id <span class="Statement">for</span> which access is requested&gt;			<span class="Comment">// required</span>
-				<span class="Constant">&quot;apis&quot;</span>		: &lt;a list of APIs <span class="Statement">for</span> which access is requestd&gt;			<span class="Comment">// optional</span>
+				<span class="Constant">&quot;apis&quot;</span>		: &lt;a list of APIs <span class="Statement">for</span> which access is requested&gt;		<span class="Comment">// optional</span>
 				<span class="Constant">&quot;methods&quot;</span>	: &lt;a list of methods a consumer wishes to call on the APIs&gt;	<span class="Comment">// optional</span>
 				<span class="Constant">&quot;body&quot;</span>		: &lt;a dictionary of body variables to be called with the API&gt;	<span class="Comment">// optional</span>
 			<span class="rainbow_p1">}</span><span class="rainbow_o0">,</span>
@@ -83,7 +83,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 	The <span class="Constant">&quot;request&quot;</span> field could also be an <span class="Constant">&quot;array&quot;</span> of strings/objects.
 
-	The <span class="Constant">&quot;existing-token&quot;</span> header field is used to indicate that new token <span class="Constant">&quot;SHOULD NOT&quot;</span> be generated;
+	The <span class="Constant">&quot;existing-token&quot;</span> field is used to indicate that new token <span class="Constant">&quot;SHOULD NOT&quot;</span> be generated;
 	i.e. the existing-token will be used to access the new requested list of resource ids.
 
 	The_xxx_<span class="Constant">&quot;request&quot;</span>_xxx_fields_xxx_are:
@@ -187,7 +187,11 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 			<span class="rainbow_p0">{</span>
 				<span class="Constant">&quot;token&quot;</span>	: <span class="Constant">&quot;auth.iudx.org.in/user@domain.com/2204adcbc990ffff234689aaabcdef90&quot;</span><span class="rainbow_o0">,</span>
 				<span class="Constant">&quot;token-type&quot;</span>	: <span class="Constant">&quot;IUDX&quot;</span><span class="rainbow_o0">,</span>
-				<span class="Constant">&quot;expires-in&quot;</span>	: <span class="Constant">3600</span>
+				<span class="Constant">&quot;expires-in&quot;</span>	: <span class="Constant">3600</span><span class="rainbow_o0">,</span>
+
+				<span class="Constant">&quot;server-token&quot;</span>	: <span class="rainbow_p1">{</span>
+					<span class="Constant">&quot;domain.com&quot;</span> : <span class="Constant">true</span>
+				<span class="rainbow_p1">}</span>
 			<span class="rainbow_p0">}</span>
 
 		<span class="Statement">Response_xxx_fields</span>:
@@ -207,6 +211,12 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 		<span class="Constant">2.</span> expires-in
 			Indicates how <span class="Type">long</span> the token is valid in seconds.
+
+		<span class="Constant">3.</span> server-token
+			This is the token <span class="Statement">for</span> the resource server, it can be ignored <span class="Statement">if</span>
+			request contains <span class="Constant">&quot;id&quot;</span>s from a single resource-server.
+
+			In the above example, there is only <span class="Constant">1</span> resource-server : <span class="Constant">&quot;rs.com&quot;</span>.
 
 	<span class="Constant">2.</span> Requesting token <span class="Statement">for</span> data from multiple resource servers
 
@@ -233,6 +243,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 				<span class="Constant">&quot;token&quot;</span>	: <span class="Constant">&quot;auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee&quot;</span><span class="rainbow_o0">,</span>
 				<span class="Constant">&quot;token-type&quot;</span>	: <span class="Constant">&quot;IUDX&quot;</span><span class="rainbow_o0">,</span>
 				<span class="Constant">&quot;expires-in&quot;</span>	: <span class="Constant">3600</span><span class="rainbow_o0">,</span>
+
 				<span class="Constant">&quot;server-token&quot;</span>	: <span class="rainbow_p1">{</span>
 					<span class="Constant">&quot;rs1.com&quot;</span> : <span class="Constant">&quot;rs1.com/91834abcd323924339ab&quot;</span><span class="rainbow_o1">,</span>
 					<span class="Constant">&quot;rs2.com&quot;</span> : <span class="Constant">&quot;rs2.com/52338cdfff3222699900&quot;</span>
@@ -243,7 +254,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 			<span class="Constant">3.</span> server-token
 
-				The <span class="Constant">&quot;server-token&quot;</span> field is sent only <span class="Statement">if</span> the request body
+				The <span class="Constant">&quot;server-token&quot;</span> field is meaningful <span class="Statement">if</span> the request body
 				contains id's from multiple resource servers
 
 				<span class="Statement">In_xxx_this_xxx_example</span>:
@@ -264,11 +275,12 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 				The <span class="Constant">&quot;server-token&quot;</span> ensures that only a genuine resource server can access its token.
 
-				<span class="Statement">NOTE</span>:
+				<span class="Statement">Important_xxx_note</span>:
 
-				The <span class="Constant">&quot;server-token&quot;</span>s may change <span class="Statement">if</span> <span class="Constant">&quot;existing-token&quot;</span> is used with
-				multiple resource servers. Hence, consumers must update their
-				<span class="Constant">&quot;server-token&quot;</span>s as in the API response.
+					The <span class="Constant">&quot;server-token&quot;</span>s may change <span class="Statement">if</span> <span class="Constant">&quot;existing-token&quot;</span> is used with
+					multiple resource servers.
+
+					Hence, consumers must update their <span class="Constant">&quot;server-token&quot;</span>s as in the API response.
 
 <span class="Statement">See_xxx_also</span>:
 

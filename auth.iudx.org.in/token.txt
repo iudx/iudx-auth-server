@@ -42,7 +42,7 @@ Body in JSON format:
 		{
 			"request" : {										// required
 				"id"		: <a resource id for which access is requested>			// required
-				"apis"		: <a list of APIs for which access is requestd>			// optional
+				"apis"		: <a list of APIs for which access is requested>		// optional
 				"methods"	: <a list of methods a consumer wishes to call on the APIs>	// optional
 				"body"		: <a dictionary of body variables to be called with the API>	// optional
 			},
@@ -55,7 +55,7 @@ Body in JSON format:
 
 	The "request" field could also be an "array" of strings/objects.
 
-	The "existing-token" header field is used to indicate that new token "SHOULD NOT" be generated;
+	The "existing-token" field is used to indicate that new token "SHOULD NOT" be generated;
 	i.e. the existing-token will be used to access the new requested list of resource ids.
 
 	The "request" fields are:
@@ -159,7 +159,11 @@ CURL examples:
 			{
 				"token"	: "auth.iudx.org.in/user@domain.com/2204adcbc990ffff234689aaabcdef90",
 				"token-type"	: "IUDX",
-				"expires-in"	: 3600
+				"expires-in"	: 3600,
+
+				"server-token"	: {
+					"domain.com" : true
+				}
 			}
 
 		Response fields:
@@ -179,6 +183,12 @@ CURL examples:
 
 		2. expires-in
 			Indicates how long the token is valid in seconds.
+
+		3. server-token
+			This is the token for the resource server, it can be ignored if
+			request contains "id"s from a single resource-server.
+			
+			In the above example, there is only 1 resource-server : "rs.com".
 
 	2. Requesting token for data from multiple resource servers
 
@@ -205,6 +215,7 @@ CURL examples:
 				"token"	: "auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee",
 				"token-type"	: "IUDX",
 				"expires-in"	: 3600,
+
 				"server-token"	: {
 					"rs1.com" : "rs1.com/91834abcd323924339ab",
 					"rs2.com" : "rs2.com/52338cdfff3222699900"
@@ -215,7 +226,7 @@ CURL examples:
 
 			3. server-token
 
-				The "server-token" field is sent only if the request body
+				The "server-token" field is meaningful if the request body
 				contains id's from multiple resource servers
 
 				In this example:
@@ -236,11 +247,12 @@ CURL examples:
 
 				The "server-token" ensures that only a genuine resource server can access its token.
 
-				NOTE:
+				Important note:
 
-				The "server-token"s may change if "existing-token" is used with
-				multiple resource servers. Hence, consumers must update their
-				"server-token"s as in the API response.
+					The "server-token"s may change if "existing-token" is used with
+					multiple resource servers.
+
+					Hence, consumers must update their "server-token"s as in the API response.
 
 See also:
 
