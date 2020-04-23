@@ -1012,17 +1012,16 @@ function security (req, res, next)
 					"Something is wrong with your client/browser !"
 				);
 			}
-
-			// XXX need to fix this issue; currently throws an ocsp re
-
-			return END_ERROR (
-				res, 400,
-				"Something is wrong with your client/browser !"
-			);
 		}
 
-		ocsp.check({cert : cert.raw, issuer : cert.issuerCertificate.raw},
-		(ocsp_error, ocsp_response) =>
+		const ocsp_request = {
+			cert : cert.raw
+		};
+
+		if (cert.issuerCertificate && cert.issuerCertificate.raw)
+			ocsp_request.issuer = cert.issuerCertificate.raw;
+
+		ocsp.check (ocsp_request, (ocsp_error, ocsp_response) =>
 		{
 			if (ocsp_error)
 			{
