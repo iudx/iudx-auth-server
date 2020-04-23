@@ -129,6 +129,11 @@ function call(endpoint)
 			}
 			else
 			{
+				if (value.charAt(0) === '"' && value.charAt(value.length - 1) === '"')
+				{
+    					value = value.substr(1, value.length -2);
+				}
+
 				value = value.replace(/\n/g,";");
 			}
 
