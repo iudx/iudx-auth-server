@@ -98,7 +98,7 @@ function update_crl (body)
 		}
 	}
 
-	if (updated === true)
+	if (updated)
 	{
 		const results = pg.querySync (
 			"UPDATE crl SET crl = $1::json",

@@ -14,13 +14,12 @@ pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-
 body { font-family: monospace; color: #ffffff; background-color: #000000; }
 * { font-size: 1.1em; }
 .rainbow_o1 { color: #ffff00; font-weight: bold; }
-.rainbow_o0 { color: #8080ff; font-weight: bold; }
-.Type { color: #8080ff; font-weight: bold; }
 .rainbow_p1 { color: #ffff00; font-weight: bold; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
 .rainbow_p0 { color: #8080ff; font-weight: bold; }
 .Comment { color: #ff6060; }
 .Constant { color: #00ff00; }
-.rainbow_p2 { color: #00ffff; font-weight: bold; }
+.Type { color: #8080ff; font-weight: bold; }
 .Statement { color: #8080ff; font-weight: bold; }
 -->
 </style>
@@ -56,25 +55,38 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 <span class="Statement">Body in JSON format</span>:
 
-	<span class="rainbow_p0">{</span>
-		<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">{</span>											<span class="Comment">// required</span>
-			<span class="Constant">&quot;id&quot;</span>		: &lt;a resource id <span class="Statement">for</span> which access is requested&gt;<span class="rainbow_o1">,</span>			<span class="Comment">// required</span>
-			<span class="Constant">&quot;apis&quot;</span>		: &lt;a list of APIs a consumer wishes to access on the resource id&gt;	<span class="Comment">// optional</span>
-			<span class="Constant">&quot;methods&quot;</span>	: &lt;a list of methods a consumer wishes to call on the APIs&gt;		<span class="Comment">// optional</span>
-			<span class="Constant">&quot;body&quot;</span>		: &lt;a dictionary of body variables to be called with the API&gt;		<span class="Comment">// optional</span>
-		<span class="rainbow_p1">}</span><span class="rainbow_o0">,</span>
+	<span class="Statement">There are two ways of giving inputs to this API</span>:
 
-		<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;		<span class="Comment">// optional</span>
-		<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;				<span class="Comment">// optional</span>
-	<span class="rainbow_p0">}</span>
+	<span class="Constant">1.</span> simple: 
 
-	The 'request' field may also be an array of objects.
+		<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;request&quot;</span> : 		: &lt;a resource id <span class="Statement">for</span> which access is requested&gt;				<span class="Comment">// required </span>
+			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;		<span class="Comment">// optional</span>
+			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;				<span class="Comment">// optional</span>
+		<span class="rainbow_p0">}</span>
+
+	<span class="Constant">2.</span> complex: 
+
+		<span class="rainbow_p0">{</span>
+			<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">{</span>											<span class="Comment">// required</span>
+				<span class="Constant">&quot;id&quot;</span>		: &lt;a resource id <span class="Statement">for</span> which access is requested&gt;				<span class="Comment">// required</span>
+				<span class="Constant">&quot;apis&quot;</span>		: &lt;a list of APIs a consumer wishes to access on the resource id&gt;	<span class="Comment">// optional</span>
+				<span class="Constant">&quot;methods&quot;</span>	: &lt;a list of methods a consumer wishes to call on the APIs&gt;		<span class="Comment">// optional</span>
+				<span class="Constant">&quot;body&quot;</span>		: &lt;a dictionary of body variables to be called with the API&gt;		<span class="Comment">// optional</span>
+			<span class="rainbow_p1">}</span><span class="rainbow_o0">,</span>
+
+			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;		<span class="Comment">// optional</span>
+			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;				<span class="Comment">// optional</span>
+		<span class="rainbow_p0">}</span>
+
+	<span class="Statement">Note</span>:
+	The <span class="Constant">&quot;request&quot;</span> field could also be an <span class="Constant">&quot;array&quot;</span> of strings/objects.
 
 	The <span class="Constant">&quot;existing-token&quot;</span> header field is used to indicate that new token
 	should NOT be created; i.e. the existing token will be used to access
 	the new requested list of resource ids.
 
-	The 'request' fields are:
+	The <span class="Constant">&quot;request&quot;</span> fields are:
 
 	<span class="Constant">1.</span> id:
 
@@ -88,7 +100,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 		<span class="Statement">And an example query to get ids is</span>:
 			<a style="color:#F4D03F" href=https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem>https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem</a>
 
-		The resource 'id' consists of at least 4 parts seperated by a <span class="Constant">'/'</span> indicating:
+		The resource <span class="Constant">&quot;id&quot;</span> consists of at least 4 parts seperated by a <span class="Constant">'/'</span> indicating:
 
 			<span class="Constant">1.</span> The email domain of the data provider.
 
@@ -102,26 +114,26 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 	<span class="Constant">2.</span> apis:
 
-		The 'apis' is the set of APIs a consumer wants to access on a 'id'.
-		Instead of 'apis', just 'api' <span class="rainbow_p0">(</span>a string<span class="rainbow_p0">)</span> could also be used.
+		The <span class="Constant">&quot;apis&quot;</span> is the set of APIs a consumer wants to access on a <span class="Constant">&quot;id&quot;</span>.
+		Instead of <span class="Constant">&quot;apis&quot;</span>, just <span class="Constant">&quot;api&quot;</span> <span class="rainbow_p0">(</span>a string<span class="rainbow_p0">)</span> could also be used.
 
 		For example: <span class="rainbow_p0">[</span><span class="Constant">&quot;/latest&quot;</span><span class="rainbow_o0">,</span> <span class="Constant">&quot;/query&quot;</span><span class="rainbow_p0">]</span>
-		As the field is optional, the <span class="Statement">default</span> value of 'apis' is: <span class="rainbow_p0">[</span><span class="Constant">&quot;/*&quot;</span><span class="rainbow_p0">]</span>
+		As the field is optional, the <span class="Statement">default</span> value of <span class="Constant">&quot;apis&quot;</span> is: <span class="rainbow_p0">[</span><span class="Constant">&quot;/*&quot;</span><span class="rainbow_p0">]</span>
 
 	<span class="Constant">3.</span> methods:
 
-		The 'methods' is the set of methods a consumer wants to access on an 'api'.
-		Instead of 'methods', just 'method' <span class="rainbow_p0">(</span>a string<span class="rainbow_p0">)</span> could also be used.
+		The <span class="Constant">&quot;methods&quot;</span> is the set of methods a consumer wants to access on an 'api'.
+		Instead of <span class="Constant">&quot;methods&quot;</span>, just <span class="Constant">&quot;method&quot;</span> <span class="rainbow_p0">(</span>a string<span class="rainbow_p0">)</span> could also be used.
 
 		For example: <span class="rainbow_p0">[</span><span class="Constant">&quot;GET&quot;</span><span class="rainbow_o0">,</span> <span class="Constant">&quot;POST&quot;</span><span class="rainbow_p0">]</span>
-		As the field is optional, the <span class="Statement">default</span> value of 'apis' is: <span class="rainbow_p0">[</span><span class="Constant">&quot;*&quot;</span><span class="rainbow_p0">]</span>
+		As the field is optional, the <span class="Statement">default</span> value of <span class="Constant">&quot;apis&quot;</span> is: <span class="rainbow_p0">[</span><span class="Constant">&quot;*&quot;</span><span class="rainbow_p0">]</span>
 
 	<span class="Constant">4.</span> body:
 
-		The body indicates the JSON body to be passed with the 'apis'.
+		The body indicates the JSON body to be passed with the <span class="Constant">&quot;apis&quot;</span>.
 
 		For example: <span class="rainbow_p0">{</span><span class="Constant">&quot;operation&quot;</span> : <span class="Constant">&quot;select&quot;</span><span class="rainbow_o0">,</span> <span class="Constant">&quot;on&quot;</span> : <span class="Constant">&quot;all&quot;</span><span class="rainbow_p0">}</span>
-		As the field is optional, the <span class="Statement">default</span> value of 'body' is: null
+		As the field is optional, the <span class="Statement">default</span> value of <span class="Constant">&quot;body&quot;</span> is: null
 
 
 <span class="Statement">HTTP response code</span>:
@@ -142,8 +154,8 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 	iudx_auth = auth.Auth<span class="rainbow_p0">(</span><span class="Constant">&quot;certificate.pem&quot;</span><span class="rainbow_o0">,</span><span class="Constant">&quot;private-key.pem&quot;</span><span class="rainbow_p0">)</span>
 
 	request = <span class="rainbow_p0">[</span>
-		<span class="rainbow_p1">{</span><span class="Constant">&quot;id&quot;</span>: <span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1&quot;</span><span class="rainbow_p1">}</span><span class="rainbow_o0">,</span>
-		<span class="rainbow_p1">{</span><span class="Constant">&quot;id&quot;</span>: <span class="Constant">&quot;example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2&quot;</span><span class="rainbow_p1">}</span>
+		<span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1&quot;</span><span class="rainbow_o0">,</span>
+		<span class="Constant">&quot;example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2&quot;</span>
 	<span class="rainbow_p0">]</span>
 
 	iudx_auth.get_token<span class="rainbow_p0">(</span>request<span class="rainbow_p0">)</span>
@@ -162,8 +174,8 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 			-d '<span class="rainbow_p0">{</span>
 				<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">[</span>
-					<span class="rainbow_p2">{</span><span class="Constant">&quot;id&quot;</span>: <span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1&quot;</span><span class="rainbow_p2">}</span><span class="rainbow_o1">,</span>
-					<span class="rainbow_p2">{</span><span class="Constant">&quot;id&quot;</span>: <span class="Constant">&quot;example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2&quot;</span><span class="rainbow_p2">}</span>
+					<span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1&quot;</span><span class="rainbow_o1">,</span>
+					<span class="Constant">&quot;example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2&quot;</span>
 				<span class="rainbow_p1">]</span>
 			<span class="rainbow_p0">}</span>'
 
@@ -208,8 +220,8 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 				-d '<span class="rainbow_p0">{</span>
 					<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">[</span>
-						<span class="rainbow_p2">{</span><span class="Constant">&quot;id&quot;</span>: <span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r1&quot;</span><span class="rainbow_p2">}</span>
-						<span class="rainbow_p2">{</span><span class="Constant">&quot;id&quot;</span>: <span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2.com/r2&quot;</span><span class="rainbow_p2">}</span>
+						<span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r1&quot;</span>
+						<span class="Constant">&quot;example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2.com/r2&quot;</span>
 					<span class="rainbow_p1">]</span>
 				<span class="rainbow_p0">}</span>'
 		<span class="Statement">Response</span>:

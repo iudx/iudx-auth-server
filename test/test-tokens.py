@@ -257,3 +257,21 @@ body = [
 r = restricted_consumer.get_token(body)
 assert r['success']	is False 
 assert r['status_code']	== 401
+
+
+# new api tests
+
+body = [
+	"rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1",
+	"rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/r2"
+]
+r = consumer.get_token(body)
+assert r['success']	is True 
+
+body = "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1";
+r = consumer.get_token(body)
+assert r['success']	is True 
+
+body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
+r = consumer.get_token(body)
+assert r['success']	is True 

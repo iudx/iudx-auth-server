@@ -27,25 +27,38 @@ Headers:
 
 Body_xxx_in_xxx_JSON_xxx_format:
 
-	{
-		"request" : {											// required
-			"id"		: <a resource id for which access is requested>,			// required
-			"apis"		: <a list of APIs a consumer wishes to access on the resource id>	// optional
-			"methods"	: <a list of methods a consumer wishes to call on the APIs>		// optional
-			"body"		: <a dictionary of body variables to be called with the API>		// optional
-		},
+	There_xxx_are_xxx_two_xxx_ways_xxx_of_xxx_giving_xxx_inputs_xxx_to_xxx_this_xxx_API:
 
-		"token-time"		: <the time in seconds, till which the token should be valid>		// optional
-		"existing-token"	: <a valid token a data consumer already has>				// optional
-	}
+	1._xxx_simple:_xxx_
 
-	The 'request' field may also be an array of objects.
+		{
+			"request" : 		: <a resource id for which access is requested>				// required 
+			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
+			"existing-token"	: <a valid token a data consumer already has>				// optional
+		}
+
+	2._xxx_complex:_xxx_
+
+		{
+			"request" : {											// required
+				"id"		: <a resource id for which access is requested>				// required
+				"apis"		: <a list of APIs a consumer wishes to access on the resource id>	// optional
+				"methods"	: <a list of methods a consumer wishes to call on the APIs>		// optional
+				"body"		: <a dictionary of body variables to be called with the API>		// optional
+			},
+
+			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
+			"existing-token"	: <a valid token a data consumer already has>				// optional
+		}
+
+	Note:
+	The "request" field could also be an "array" of strings/objects.
 
 	The "existing-token" header field is used to indicate that new token
 	should NOT be created; i.e. the existing token will be used to access
 	the new requested list of resource ids.
 
-	The_xxx_'request'_xxx_fields_xxx_are:
+	The_xxx_"request"_xxx_fields_xxx_are:
 
 	1._xxx_id:
 
@@ -59,7 +72,7 @@ Body_xxx_in_xxx_JSON_xxx_format:
 		And_xxx_an_xxx_example_xxx_query_xxx_to_xxx_get_xxx_ids_xxx_is:
 			$HTTPS$varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem
 
-		The_xxx_resource_xxx_'id'_xxx_consists_xxx_of_xxx_at_xxx_least_xxx_4_xxx_parts_xxx_seperated_xxx_by_xxx_a_xxx_'/'_xxx_indicating:
+		The_xxx_resource_xxx_"id"_xxx_consists_xxx_of_xxx_at_xxx_least_xxx_4_xxx_parts_xxx_seperated_xxx_by_xxx_a_xxx_'/'_xxx_indicating:
 
 			1. The email domain of the data provider.
 
@@ -73,26 +86,26 @@ Body_xxx_in_xxx_JSON_xxx_format:
 
 	2._xxx_apis:
 
-		The 'apis' is the set of APIs a consumer wants to access on a 'id'.
-		Instead of 'apis', just 'api' (a string) could also be used.
+		The "apis" is the set of APIs a consumer wants to access on a "id".
+		Instead of "apis", just "api" (a string) could also be used.
 
 		For example: ["/latest", "/query"]
-		As the field is optional, the default value of 'apis' is: ["/*"]
+		As the field is optional, the default value of "apis" is: ["/*"]
 
 	3._xxx_methods:
 
-		The 'methods' is the set of methods a consumer wants to access on an 'api'.
-		Instead of 'methods', just 'method' (a string) could also be used.
+		The "methods" is the set of methods a consumer wants to access on an 'api'.
+		Instead of "methods", just "method" (a string) could also be used.
 
 		For example: ["GET", "POST"]
-		As the field is optional, the default value of 'apis' is: ["*"]
+		As the field is optional, the default value of "apis" is: ["*"]
 
 	4._xxx_body:
 
-		The body indicates the JSON body to be passed with the 'apis'.
+		The body indicates the JSON body to be passed with the "apis".
 
 		For example: {"operation" : "select", "on" : "all"}
-		As the field is optional, the default value of 'body' is: null
+		As the field is optional, the default value of "body" is: null
 
 
 HTTP_xxx_response_xxx_code:
@@ -113,8 +126,8 @@ Using_xxx_pyIUDX_xxx_SDK:
 	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	request = [
-		{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1"},
-		{"id": "example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2"}
+		"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1",
+		"example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2"
 	]
 
 	iudx_auth.get_token(request)
@@ -133,8 +146,8 @@ CURL_xxx_examples:
 
 			-d '{
 				"request" : [
-					{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1"},
-					{"id": "example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2"}
+					"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1",
+					"example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2"
 				]
 			}'
 
@@ -179,8 +192,8 @@ CURL_xxx_examples:
 
 				-d '{
 					"request" : [
-						{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r1"}
-						{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2.com/r2"}
+						"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r1"
+						"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2.com/r2"
 					]
 				}'
 		Response:

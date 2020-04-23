@@ -51,6 +51,7 @@ Body in JSON format:
 			"existing-token"	: <a valid token a data consumer already has>				// optional
 		}
 
+	Note:
 	The "request" field could also be an "array" of strings/objects.
 
 	The "existing-token" header field is used to indicate that new token
