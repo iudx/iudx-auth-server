@@ -27,25 +27,37 @@ Headers:
 
 Body in JSON format:
 
-	{
-		"request" : {											// required
-			"id"		: <a resource id for which access is requested>,			// required
-			"apis"		: <a list of APIs a consumer wishes to access on the resource id>	// optional
-			"methods"	: <a list of methods a consumer wishes to call on the APIs>		// optional
-			"body"		: <a dictionary of body variables to be called with the API>		// optional
-		},
+	There are two ways of giving inputs to this API:
 
-		"token-time"		: <the time in seconds, till which the token should be valid>		// optional
-		"existing-token"	: <a valid token a data consumer already has>				// optional
-	}
+	1. simple: 
 
-	The 'request' field may also be an array of objects.
+		{
+			"request" : 		: <a resource id for which access is requested>				// required 
+			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
+			"existing-token"	: <a valid token a data consumer already has>				// optional
+		}
+
+	2. complex: 
+
+		{
+			"request" : {											// required
+				"id"		: <a resource id for which access is requested>				// required
+				"apis"		: <a list of APIs a consumer wishes to access on the resource id>	// optional
+				"methods"	: <a list of methods a consumer wishes to call on the APIs>		// optional
+				"body"		: <a dictionary of body variables to be called with the API>		// optional
+			},
+
+			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
+			"existing-token"	: <a valid token a data consumer already has>				// optional
+		}
+
+	The "request" field could also be an "array" of strings/objects.
 
 	The "existing-token" header field is used to indicate that new token
 	should NOT be created; i.e. the existing token will be used to access
 	the new requested list of resource ids.
 
-	The 'request' fields are:
+	The "request" fields are:
 
 	1. id:
 
@@ -59,7 +71,7 @@ Body in JSON format:
 		And an example query to get ids is:
 			https://varanasi.iudx.org.in/catalogue/v1/search?item-type=resourceItem
 
-		The resource 'id' consists of at least 4 parts seperated by a '/' indicating:
+		The resource "id" consists of at least 4 parts seperated by a '/' indicating:
 
 			1. The email domain of the data provider.
 
@@ -73,26 +85,26 @@ Body in JSON format:
 
 	2. apis:
 
-		The 'apis' is the set of APIs a consumer wants to access on a 'id'.
-		Instead of 'apis', just 'api' (a string) could also be used.
+		The "apis" is the set of APIs a consumer wants to access on a "id".
+		Instead of "apis", just "api" (a string) could also be used.
 
 		For example: ["/latest", "/query"]
-		As the field is optional, the default value of 'apis' is: ["/*"]
+		As the field is optional, the default value of "apis" is: ["/*"]
 
 	3. methods:
 
-		The 'methods' is the set of methods a consumer wants to access on an 'api'.
-		Instead of 'methods', just 'method' (a string) could also be used.
+		The "methods" is the set of methods a consumer wants to access on an 'api'.
+		Instead of "methods", just "method" (a string) could also be used.
 
 		For example: ["GET", "POST"]
-		As the field is optional, the default value of 'apis' is: ["*"]
+		As the field is optional, the default value of "apis" is: ["*"]
 
 	4. body:
 
-		The body indicates the JSON body to be passed with the 'apis'.
+		The body indicates the JSON body to be passed with the "apis".
 
 		For example: {"operation" : "select", "on" : "all"}
-		As the field is optional, the default value of 'body' is: null
+		As the field is optional, the default value of "body" is: null
 
 
 HTTP response code:
@@ -113,8 +125,8 @@ Using pyIUDX SDK:
 	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	request = [
-		{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1"},
-		{"id": "example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2"}
+		"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1",
+		"example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2"
 	]
 
 	iudx_auth.get_token(request)
@@ -133,8 +145,8 @@ CURL examples:
 
 			-d '{
 				"request" : [
-					{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1"},
-					{"id": "example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2"}
+					"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/r1",
+					"example.com/5332dabcd033fffca0a3332abcdefe7a143a109c/rs.com/r2"
 				]
 			}'
 
@@ -179,8 +191,8 @@ CURL examples:
 
 				-d '{
 					"request" : [
-						{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r1"}
-						{"id": "example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2.com/r2"}
+						"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1.com/r1"
+						"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2.com/r2"
 					]
 				}'
 		Response:
