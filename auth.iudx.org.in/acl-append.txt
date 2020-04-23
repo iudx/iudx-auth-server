@@ -38,9 +38,9 @@ HTTP response code:
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	iudx_auth.append_policy("*@gov.in can access rs1.com/my-resource")
 
@@ -48,7 +48,7 @@ CURL example:
 
 	Request:
 
-		curl -XPOST https://auth.iudx.org.in/auth/v1/acl/append	
+		curl -XPOST https://auth.iudx.org.in/auth/v1/acl/append
 
 			--cert certificate.pem --key private-key.pem
 
@@ -74,7 +74,7 @@ Known limitations:
 	Also, the provider doesn't have to remember all valid "id"s.
 
 	This issue is expected to be handled by the resource server,
-	by rejecting any queries to invalid "id"s. 
+	by rejecting any queries to invalid "id"s.
 
 	To be able to exploit this, the authorized consumer must guess the regex.
 

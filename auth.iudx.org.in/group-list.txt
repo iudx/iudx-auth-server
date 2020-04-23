@@ -9,7 +9,7 @@ Endpoint:
 Description:
 
 	This API is used get the list of members in a group.
-	This group must have been already created by the provider. 
+	This group must have been already created by the provider.
 
 Called by:
 
@@ -31,9 +31,9 @@ Body in JSON format:
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	iudx_auth.list_group("confidential")
 

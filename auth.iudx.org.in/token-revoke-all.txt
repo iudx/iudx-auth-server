@@ -34,13 +34,13 @@ HTTP response codes:
 		If all the tokens have been successfully revoked.
 
 	400
-		If the inputs are invalid 
+		If the inputs are invalid
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	# serial and fingerprint
 	iudx_auth.revoke_all (

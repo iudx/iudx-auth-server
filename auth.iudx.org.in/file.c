@@ -29,15 +29,15 @@ Body_xxx_in_xxx_JSON_xxx_format:
 
 	There_xxx_are_xxx_two_xxx_ways_xxx_of_xxx_giving_xxx_inputs_xxx_to_xxx_this_xxx_API:
 
-	1._xxx_simple:_xxx_
+	1._xxx_simple:
 
 		{
-			"request" : 		: <a resource id for which access is requested>				// required 
+			"request" : 		: <a resource id(s) for which access is requested>				// required
 			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
 			"existing-token"	: <a valid token a data consumer already has>				// optional
 		}
 
-	2._xxx_complex:_xxx_
+	2._xxx_complex:
 
 		{
 			"request" : {											// required
@@ -228,7 +228,7 @@ CURL_xxx_examples:
 				In_xxx_the_xxx_above_xxx_example:
 					token = "auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee"
 
-				and_xxx_the_xxx_"server-token"_xxx_when_xxx_a_xxx_consumer_xxx_requests_xxx_data_xxx_from:_xxx_
+				and_xxx_the_xxx_"server-token"_xxx_when_xxx_a_xxx_consumer_xxx_requests_xxx_data_xxx_from:
 
 					"rs1.com" is "rs1.com/91834abcd323924339ab",
 							and

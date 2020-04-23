@@ -13,9 +13,9 @@
 pre { white-space: pre-wrap; font-family: monospace; color: #ffffff; background-color: #000000; }
 body { font-family: monospace; color: #ffffff; background-color: #000000; }
 * { font-size: 1.1em; }
+.rainbow_o0 { color: #8080ff; font-weight: bold; }
 .rainbow_o1 { color: #ffff00; font-weight: bold; }
 .rainbow_p1 { color: #ffff00; font-weight: bold; }
-.rainbow_o0 { color: #8080ff; font-weight: bold; }
 .rainbow_p0 { color: #8080ff; font-weight: bold; }
 .Comment { color: #ff6060; }
 .Constant { color: #00ff00; }
@@ -57,15 +57,15 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 	<span class="Statement">There are two ways of giving inputs to this API</span>:
 
-	<span class="Constant">1.</span> simple: 
+	<span class="Constant">1.</span> simple:
 
 		<span class="rainbow_p0">{</span>
-			<span class="Constant">&quot;request&quot;</span> : 		: &lt;a resource id <span class="Statement">for</span> which access is requested&gt;				<span class="Comment">// required </span>
+			<span class="Constant">&quot;request&quot;</span> : 		: &lt;a resource id<span class="rainbow_p1">(</span>s<span class="rainbow_p1">)</span> <span class="Statement">for</span> which access is requested&gt;				<span class="Comment">// required</span>
 			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;		<span class="Comment">// optional</span>
 			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;				<span class="Comment">// optional</span>
 		<span class="rainbow_p0">}</span>
 
-	<span class="Constant">2.</span> complex: 
+	<span class="Constant">2.</span> complex:
 
 		<span class="rainbow_p0">{</span>
 			<span class="Constant">&quot;request&quot;</span> : <span class="rainbow_p1">{</span>											<span class="Comment">// required</span>
@@ -256,7 +256,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 				<span class="Statement">In the above example</span>:
 					token = <span class="Constant">&quot;auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee&quot;</span>
 
-				and the <span class="Constant">&quot;server-token&quot;</span> when a consumer requests data from: 
+				and the <span class="Constant">&quot;server-token&quot;</span> when a consumer requests data from:
 
 					<span class="Constant">&quot;rs1.com&quot;</span> is <span class="Constant">&quot;rs1.com/91834abcd323924339ab&quot;</span>,
 							and

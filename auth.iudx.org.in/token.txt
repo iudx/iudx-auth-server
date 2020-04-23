@@ -29,15 +29,15 @@ Body in JSON format:
 
 	There are two ways of giving inputs to this API:
 
-	1. simple: 
+	1. simple:
 
 		{
-			"request" : 		: <a resource id for which access is requested>				// required 
+			"request" : 		: <a resource id(s) for which access is requested>				// required
 			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
 			"existing-token"	: <a valid token a data consumer already has>				// optional
 		}
 
-	2. complex: 
+	2. complex:
 
 		{
 			"request" : {											// required
@@ -228,7 +228,7 @@ CURL examples:
 				In the above example:
 					token = "auth.iudx.org.in/user@domain.com/1802a84d157ff4d113150aeca8bdacee"
 
-				and the "server-token" when a consumer requests data from: 
+				and the "server-token" when a consumer requests data from:
 
 					"rs1.com" is "rs1.com/91834abcd323924339ab",
 							and

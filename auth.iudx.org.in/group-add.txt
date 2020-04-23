@@ -40,9 +40,9 @@ Body in JSON format:
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	# add user@domain.com to confidential group for 1 hour
 	iudx_auth.add_consumer_to_group("user@domain.com","confidential",1)

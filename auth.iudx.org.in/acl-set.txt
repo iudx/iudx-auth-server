@@ -15,15 +15,15 @@ Called by:
 	A "data provider" with a valid class-3 or above certificate.
 
 Warning:
-	
+
 	The "previous" policies will be "overwritten"!
-	
+
 	The "previous" policy can be retrived by using the "acl/get" API.
 
 	Also, the "acl/revert" API can be used to revert to "previous" policy.
 
 	Please use the "acl/append" API instead to "acl/set" if you wish to
-	add a policy to the existing set of policies. 
+	add a policy to the existing set of policies.
 
 Methods:
 
@@ -65,7 +65,7 @@ Aperture policy language:
 		all can access resource-server.com/public.* if api = "/latest" AND country = "IN"
 
 	Aperture vs RegEx:
-		"*" in Aperture is equivalent to ".*" in RegEx 
+		"*" in Aperture is equivalent to ".*" in RegEx
 
 	Aperture also supports conditions such as:
 
@@ -78,7 +78,7 @@ Aperture policy language:
 		consumer-in-group(confidential)
 
 	You may use a single "*", or "all", "everything", or "anything" to match any identifier.
-	
+
 	For example:
 
 	    barun@iisc.ac.in can access *
@@ -93,7 +93,7 @@ Aperture policy language:
 		In case of multiple rules, the first rule which matches will apply.
 
 	RegEx:
-		Though, Aperture policy language supports RegEx, the "acl/set" or "acl/append" APIs 
+		Though, Aperture policy language supports RegEx, the "acl/set" or "acl/append" APIs
 		"DO NOT" accept RegEx in policies.
 
 Variables in policy language:

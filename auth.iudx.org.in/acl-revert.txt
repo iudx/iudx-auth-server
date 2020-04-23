@@ -29,14 +29,14 @@ HTTP response code:
 		If the policy has been successfully reverted.
 
 	400
-		If there are no saved "previous" policy 
-			
+		If there are no saved "previous" policy
+
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	iudx_auth.revert_policy()
 

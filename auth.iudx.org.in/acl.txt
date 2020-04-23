@@ -16,7 +16,7 @@ Called by:
 
 Methods:
 
-	POST	
+	POST
 
 HTTP response code:
 
@@ -28,9 +28,9 @@ HTTP response code:
 
 Using pyIUDX SDK:
 
-	from pyIUDX.auth import auth	
-	
-	iudx_auth = auth.Auth("certificate.pem","private-key.pem") 
+	from pyIUDX.auth import auth
+
+	iudx_auth = auth.Auth("certificate.pem","private-key.pem")
 
 	iudx_auth.get_policy()
 
