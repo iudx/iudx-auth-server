@@ -163,7 +163,7 @@ CURL examples:
 				"expires-in"	: 3600,
 
 				"server-token"	: {
-					"domain.com" : true
+					"rs.com" : true
 				}
 			}
 
@@ -171,7 +171,7 @@ CURL examples:
 
 		1. token
 			Is the access token required to access data from a resource server
-			(rs.com in this case), and is in the format: 'auth-server/consumer/random-bytes'
+			("rs.com" in this case), and is in the format: 'auth-server/consumer/random-bytes'
 
 			A valid IUDX token consist of 3 fields (delimited by '/'):
 
@@ -186,8 +186,8 @@ CURL examples:
 			Indicates how long the token is valid in seconds.
 
 		3. server-token
-			This is the token for the resource server, it can be ignored if
-			request contains "id"s from a single resource-server.
+			This is the token for the resource server, it can be ignored
+			if request only contains "id"s from a single resource-server.
 			
 			In the above example, there is only 1 resource-server : "rs.com".
 

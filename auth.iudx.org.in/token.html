@@ -191,7 +191,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 				<span class="Constant">&quot;expires-in&quot;</span>	: <span class="Constant">3600</span><span class="rainbow_o0">,</span>
 
 				<span class="Constant">&quot;server-token&quot;</span>	: <span class="rainbow_p1">{</span>
-					<span class="Constant">&quot;domain.com&quot;</span> : <span class="Constant">true</span>
+					<span class="Constant">&quot;rs.com&quot;</span> : <span class="Constant">true</span>
 				<span class="rainbow_p1">}</span>
 			<span class="rainbow_p0">}</span>
 
@@ -199,7 +199,7 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 
 		<span class="Constant">1.</span> token
 			Is the access token required to access data from a resource server
-			<span class="rainbow_p0">(</span>rs.com in this <span class="Statement">case</span><span class="rainbow_p0">)</span>, and is in the format: 'auth-server/consumer/random-bytes'
+			<span class="rainbow_p0">(</span><span class="Constant">&quot;rs.com&quot;</span> in this <span class="Statement">case</span><span class="rainbow_p0">)</span>, and is in the format: 'auth-server/consumer/random-bytes'
 
 			A valid IUDX token consist of 3 fields <span class="rainbow_p0">(</span>delimited by <span class="Constant">'/'</span><span class="rainbow_p0">)</span>:
 
@@ -214,8 +214,8 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 			Indicates how <span class="Type">long</span> the token is valid in seconds.
 
 		<span class="Constant">3.</span> server-token
-			This is the token <span class="Statement">for</span> the resource server, it can be ignored <span class="Statement">if</span>
-			request contains <span class="Constant">&quot;id&quot;</span>s from a single resource-server.
+			This is the token <span class="Statement">for</span> the resource server, it can be ignored
+			<span class="Statement">if</span> request only contains <span class="Constant">&quot;id&quot;</span>s from a single resource-server.
 
 			In the above example, there is only <span class="Constant">1</span> resource-server : <span class="Constant">&quot;rs.com&quot;</span>.
 
