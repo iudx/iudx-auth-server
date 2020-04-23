@@ -1005,9 +1005,19 @@ function security (req, res, next)
 	{
 		if ( (! cert) || (! cert.raw) || (! cert.issuerCertificate) || (! cert.issuerCertificate.raw))
 		{
+			if (! req.socket.isSessionReused())
+			{
+				return END_ERROR (
+					res, 400,
+					"Something is wrong with your client/browser !"
+				);
+			}
+
+			// XXX need to fix this issue; currently throws an ocsp re
+
 			return END_ERROR (
 				res, 400,
-				"Something is wrong with your certificate!"
+				"Something is wrong with your client/browser !"
 			);
 		}
 
