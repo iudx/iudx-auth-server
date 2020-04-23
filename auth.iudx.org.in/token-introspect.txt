@@ -222,7 +222,7 @@ CURL example:
 			Indicates till what time the token is valid.
 
 		4. "request"
-			The list of resource id's, methods, and APIs for which
+			The array of resource id's, methods, and APIs for which
 			the token is valid.
 
 See also:

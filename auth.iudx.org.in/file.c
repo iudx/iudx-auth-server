@@ -42,8 +42,8 @@ Body_xxx_in_xxx_JSON_xxx_format:
 		{
 			"request" : {										// required
 				"id"		: <a resource id for which access is requested>			// required
-				"apis"		: <a list of APIs for which access is requested>		// optional
-				"methods"	: <a list of methods a consumer wishes to call on the APIs>	// optional
+				"apis"		: <an array of APIs for which access is requested>		// optional
+				"methods"	: <an array of methods a consumer wishes to call on the APIs>	// optional
 				"body"		: <a dictionary of body variables to be called with the API>	// optional
 			},
 
@@ -82,9 +82,10 @@ Body_xxx_in_xxx_JSON_xxx_format:
 
 			4. The name of the resource (which may contain additional '/'s).
 
-		For example: example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/resource-name
+		For_xxx_example:
+			"example.com/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs.com/resource-name"
 
-	2._xxx_apis:
+	2. apis
 
 		The "apis" is the set of APIs a consumer wants to access on a "id".
 		Instead of "apis", just "api" (a string) could also be used.
@@ -92,7 +93,7 @@ Body_xxx_in_xxx_JSON_xxx_format:
 		For example: ["/latest", "/query"]
 		As the field is optional, the default value of "apis" is: ["/*"]
 
-	3._xxx_methods:
+	3. methods
 
 		The "methods" is the set of methods a consumer wants to access on an 'api'.
 		Instead of "methods", just "method" (a string) could also be used.
@@ -100,7 +101,7 @@ Body_xxx_in_xxx_JSON_xxx_format:
 		For example: ["GET", "POST"]
 		As the field is optional, the default value of "methods" is: ["*"]
 
-	4._xxx_body:
+	4. body
 
 		The body indicates the JSON body to be passed with the "apis".
 

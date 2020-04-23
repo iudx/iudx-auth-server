@@ -25,11 +25,13 @@ Headers:
 Body in JSON format:
 
 	{
-		"tokens"	: <list of tokens to be revoked>	(to be sent by a data consumer)		// optional
-		"token-hashes"	: <list of token-hashes to be revoked>	(to be sent by a data provider)		// optional
+		"tokens"	: <array of tokens to be revoked>	(to be sent by a data consumer)		// required 
+		"token-hashes"	: <array of token-hashes to be revoked>	(to be sent by a data provider)		// required 
 	}
 
-	Note: a data provider can get the "token-hashes" using the "audit/tokens" API.
+	Note: Either of "tokens" or "token-hashes" must be provided; not both. 
+
+	Note: Data providers can get the "token-hashes" using the "audit/tokens" API.
 
 HTTP response codes:
 
