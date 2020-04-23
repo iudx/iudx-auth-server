@@ -1003,7 +1003,15 @@ function security (req, res, next)
 	}
 	else
 	{
-		ocsp.check({cert:cert.raw, issuer:cert.issuerCertificate.raw},
+		if ( (! cert) || (! cert.raw) || (! cert.issuerCertificate) || (! cert.issuerCertificate.raw))
+		{
+			return END_ERROR (
+				res, 400,
+				"Something is wrong with your certificate!"
+			);
+		}
+
+		ocsp.check({cert : cert.raw, issuer : cert.issuerCertificate.raw},
 		(ocsp_error, ocsp_response) =>
 		{
 			if (ocsp_error)
