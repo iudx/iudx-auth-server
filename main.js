@@ -1154,9 +1154,36 @@ app.post("/auth/v1/token", (req, res) => {
 
 	const can_access_regex		= res.locals.can_access_regex;
 
-	for (const row of request_array)
+	for (let r of request_array)
 	{
-		const resource = row.id;
+		let resource;
+
+		if (typeof r === "string")
+		{
+			resource = r;
+
+			// resource is a string, make it an object
+
+			r = {
+				"id"		: resource,
+				"methods"	: ["*"],
+				"apis"		: ["/*"],
+			};
+		}
+		else if (r instanceof Object)
+		{
+			if (! r.id)
+			{
+				const error_response = {
+					"message"	: "no resource 'id' found in request",
+					"invalid-input"	: xss_safe(r),
+				};
+
+				return END_ERROR (res, 400, error_response);
+			}
+
+			resource = r.id;
+		}
 
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
@@ -1168,41 +1195,41 @@ app.post("/auth/v1/token", (req, res) => {
 			return END_ERROR (res, 400, error_response);
 		}
 
-		if (typeof row.method === "string")
-			row.methods = [row.method];
+		if (typeof r.method === "string")
+			r.methods = [r.method];
 
-		if (! row.methods)
-			row.methods = ["*"];
+		if (! r.methods)
+			r.methods = ["*"];
 
-		if ( ! (row.methods instanceof Array))
+		if ( ! (r.methods instanceof Array))
 		{
 			const error_response = {
 				"message"	: "'methods' must be a valid JSON array",
 				"invalid-input"	: {
 					"id"		: xss_safe(resource),
-					"methods" 	: xss_safe(row.methods)
+					"methods" 	: xss_safe(r.methods)
 				}
 			};
 
 			return END_ERROR (res, 400, error_response);
 		}
 
-		if (row.api && typeof row.api === "string")
-			row.apis = [row.api];
+		if (r.api && typeof r.api === "string")
+			r.apis = [r.api];
 
-		if (! row.apis)
-			row.apis = ["/*"];
+		if (! r.apis)
+			r.apis = ["/*"];
 
-		if (! row.body)
-			row.body = null;
+		if (! r.body)
+			r.body = null;
 
-		if ( ! (row.apis instanceof Array))
+		if ( ! (r.apis instanceof Array))
 		{
 			const error_response = {
 				"message"	: "'apis' must be a valid JSON array",
 				"invalid-input"	: {
 					"id"	: xss_safe(resource),
-					"apis" 	: xss_safe(row.apis)
+					"apis" 	: xss_safe(r.apis)
 				}
 			};
 
@@ -1220,13 +1247,13 @@ app.post("/auth/v1/token", (req, res) => {
 		}
 
 		// if body is given but is not a valid object
-		if (row.body && (! (row.body instanceof Object)))
+		if (r.body && (! (r.body instanceof Object)))
 		{
 			const error_response = {
 				"message"	: "'body' must be a valid JSON object",
 				"invalid-input"	: {
 					"id"	: xss_safe(resource),
-					"body"	: xss_safe(row.body)
+					"body"	: xss_safe(r.body)
 				}
 			};
 
@@ -1364,16 +1391,16 @@ app.post("/auth/v1/token", (req, res) => {
 
 		let CTX = context;
 
-		if (row.body && policy_lowercase.search(" body.") >= 0)
+		if (r.body && policy_lowercase.search(" body.") >= 0)
 		{
 			// deep copy
 			CTX = JSON.parse(JSON.stringify(context));
 
-			for (const key in row.body)
-				CTX.conditions["body." + key] = row.body[key];
+			for (const key in r.body)
+				CTX.conditions["body." + key] = r.body[key];
 		}
 
-		for (const api of row.apis)
+		for (const api of r.apis)
 		{
 			if (typeof api !== "string")
 			{
@@ -1390,7 +1417,7 @@ app.post("/auth/v1/token", (req, res) => {
 
 			CTX.conditions.api = api;
 
-			for (const method of row.methods)
+			for (const method of r.methods)
 			{
 				if (typeof method !== "string")
 				{
@@ -1470,9 +1497,9 @@ app.post("/auth/v1/token", (req, res) => {
 
 		processed_request_array.push ({
 			"id"		: resource,
-			"methods"	: row.methods,
-			"apis"		: row.apis,
-			"body"		: row.body,
+			"methods"	: r.methods,
+			"apis"		: r.apis,
+			"body"		: r.body,
 		});
 
 		resource_id_dict[resource] = true;
