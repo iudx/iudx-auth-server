@@ -32,7 +32,7 @@ Body in JSON format:
 	1. simple:
 
 		{
-			"request" : 		: <a resource id(s) for which access is requested>				// required
+			"request" : 		: <a resource id(s) for which access is requested>			// required
 			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
 			"existing-token"	: <a valid token a data consumer already has>				// optional
 		}

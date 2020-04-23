@@ -32,7 +32,7 @@ Body_xxx_in_xxx_JSON_xxx_format:
 	1._xxx_simple:
 
 		{
-			"request" : 		: <a resource id(s) for which access is requested>				// required
+			"request" : 		: <a resource id(s) for which access is requested>			// required
 			"token-time"		: <the time in seconds, till which the token should be valid>		// optional
 			"existing-token"	: <a valid token a data consumer already has>				// optional
 		}
