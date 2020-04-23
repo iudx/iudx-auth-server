@@ -940,7 +940,7 @@ function security (req, res, next)
 				}
 			}
 
-			if (res.local.cert_class > 1)
+			if (res.locals.cert_class > 1)
 				return next();
 			else
 			{
@@ -1072,7 +1072,7 @@ function security (req, res, next)
 
 			res.locals.cert	= cert;
 
-			if (res.local.cert_class > 1)
+			if (res.locals.cert_class > 1)
 				return next();
 			else
 			{
