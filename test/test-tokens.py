@@ -256,8 +256,7 @@ body = [
 
 r = restricted_consumer.get_token(body)
 assert r['success']	is False 
-assert r['status_code']	== 401
-
+assert r['status_code']	== 403
 
 # new api tests
 

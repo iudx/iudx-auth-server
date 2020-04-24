@@ -224,14 +224,14 @@ const evaluator	= aperture.createEvaluator	(apertureOpts);
 /* --- https --- */
 
 const system_trusted_certs = is_openbsd ?
-				"/etc/ssl/cert.pem" :
-				"/etc/ssl/certs/ca-certificates.crt";
+					"/etc/ssl/cert.pem" :
+					"/etc/ssl/certs/ca-certificates.crt";
 
 const trusted_CAs = [
 	fs.readFileSync("ca.iudx.org.in.crt"),
+	fs.readFileSync(system_trusted_certs),
 	fs.readFileSync("CCAIndia2015.cer"),
-	fs.readFileSync("CCAIndia2014.cer"),
-	fs.readFileSync(system_trusted_certs)
+	fs.readFileSync("CCAIndia2014.cer")
 ];
 
 const https_options = {
@@ -326,9 +326,9 @@ function END_ERROR (res, http_status, error, exception = null)
 
 		if (error["invalid-input"])
 		{
-			response["//"] ="Unsafe characters in"			+
-					" 'invalid-input' have been replaced"	+
-					" with '*'";
+			response["//"] ="Unsafe characters (if any) in"		+
+					" 'invalid-input' field have been"	+
+					" replaced with '*'";
 		}
 
 		response.error = error;
@@ -511,10 +511,13 @@ function is_secure (req, res, cert, validate_email = true)
 		);
 
 		if (! origin_domain.endsWith(".iudx.org.in"))
-			return "Invalid 'origin' header; this website is not whitelisted to call this API";
+		{
+			return "Invalid 'origin' header; this website is not"	+
+				" whitelisted to call this API";
+		}
 
-		res.header("Access-Control-Allow-Origin",	req.headers.origin);
-		res.header("Access-Control-Allow-Methods",	"POST");
+		res.header("Access-Control-Allow-Origin", req.headers.origin);
+		res.header("Access-Control-Allow-Methods","POST");
 	}
 
 	const error = is_certificate_ok (req,cert,validate_email);
@@ -779,7 +782,7 @@ function basic_security_check (req, res, next)
 
 		for (const s of split)
 		{
-			const	ss	= s.split(":");	// split of split
+			const	ss	= s.split(":");	// ss = split of split
 
 			let	key	= ss[0];
 			let	value	= ss[1];
@@ -800,7 +803,7 @@ function basic_security_check (req, res, next)
 			if (api.startsWith("/marketplace"))
 			{
 				return END_ERROR (
-					res, 401,
+					res, 403,
 					"Untrusted Apps cannot call "	+
 					"marketplace APIs"
 				);
@@ -1030,56 +1033,53 @@ function dns_check (req, res, next)
 	if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
 		return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
 
-	const	ip				= req.connection.remoteAddress;
-	let	ip_matched			= false;
-	const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
+	const	ip			= req.connection.remoteAddress;
+	let	ip_matched		= false;
+	const	hostname_in_certificate	= cert.subject.CN.toLowerCase();
 
-	dns.lookup (
-		resource_server_name_in_cert, {all:true},
-		(error, ip_addresses) =>
+	dns.lookup (hostname_in_certificate, {all:true}, (error, ip_addresses) =>
+	{
+		/*
+			No dns checks for "example.com"
+			this for developer's testing purposes.
+		*/
+
+		if (hostname_in_certificate === "example.com")
 		{
-			/*
-				No dns checks for "example.com"
-				this for developer's testing purposes.
-			*/
-
-			if (resource_server_name_in_cert === "example.com")
-			{
-				error		= null;
-				ip_matched	= true;
-				ip_addresses	= [];
-			}
-
-			if (error)
-			{
-				const error_response = {
-					"message"	: "Invalid 'hostname' in certificate",
-					"invalid-input"	: xss_safe(resource_server_name_in_cert)
-				};
-
-				return END_ERROR (res, 400, error_response);
-			}
-
-			for (const a of ip_addresses)
-			{
-				if (a.address === ip)
-				{
-					ip_matched = true;
-					break;
-				}
-			}
-
-			if (! ip_matched)
-			{
-				return END_ERROR (res, 403,
-					"Your certificate's hostname in CN "	+
-					"and your IP does not match!"
-				);
-			}
-
-			return next();  // dns check passed
+			error		= null;
+			ip_matched	= true;
+			ip_addresses	= [];
 		}
-	);
+
+		if (error)
+		{
+			const error_response = {
+				"message"	: "Invalid 'hostname' in certificate",
+				"invalid-input"	: xss_safe(hostname_in_certificate)
+			};
+
+			return END_ERROR (res, 400, error_response);
+		}
+
+		for (const a of ip_addresses)
+		{
+			if (a.address === ip)
+			{
+				ip_matched = true;
+				break;
+			}
+		}
+
+		if (! ip_matched)
+		{
+			return END_ERROR (res, 403,
+				"Your certificate's hostname in CN "	+
+				"and your IP does not match!"
+			);
+		}
+
+		return next();  // dns check passed
+	});
 }
 
 function ocsp_check (req, res, next)
@@ -1095,7 +1095,7 @@ function ocsp_check (req, res, next)
 	{
 		if (req.socket.isSessionReused())
 		{
-			return next(); // previously ocsp check was passed ! 
+			return next(); // previously ocsp check was passed !
 		}
 		else
 		{
@@ -1130,6 +1130,8 @@ function ocsp_check (req, res, next)
 				"revoked by your certificate issuer"
 			);
 		}
+
+		return next();	// ocsp check passed
 	});
 }
 
@@ -1175,13 +1177,13 @@ app.post("/auth/v1/token", (req, res) => {
 
 	const rows = pg.querySync (
 
-		"SELECT COUNT(*)/60.0"	+
-		" AS rate"		+
-		" FROM token"		+
-		" WHERE id = $1::text"	+
+		"SELECT COUNT(*)/60.0"		+
+		" AS rate"			+
+		" FROM token"			+
+		" WHERE id = $1::text"		+
 		" AND issued_at >= (NOW() - interval '60 seconds')",
 		[
-			consumer_id,	// 1
+			consumer_id,		// 1
 		],
 	);
 
@@ -1319,7 +1321,7 @@ app.post("/auth/v1/token", (req, res) => {
 				"message"	: "'methods' must be a valid JSON array",
 				"invalid-input"	: {
 					"id"		: xss_safe(resource),
-					"methods" 	: xss_safe(r.methods)
+					"methods"	: xss_safe(r.methods)
 				}
 			};
 
@@ -1341,7 +1343,7 @@ app.post("/auth/v1/token", (req, res) => {
 				"message"	: "'apis' must be a valid JSON array",
 				"invalid-input"	: {
 					"id"	: xss_safe(resource),
-					"apis" 	: xss_safe(r.apis)
+					"apis"	: xss_safe(r.apis)
 				}
 			};
 
@@ -1394,7 +1396,7 @@ app.post("/auth/v1/token", (req, res) => {
 					}
 				};
 
-				return END_ERROR (res, 401, error_response);
+				return END_ERROR (res, 403, error_response);
 			}
 		}
 
@@ -1721,7 +1723,7 @@ app.post("/auth/v1/token", (req, res) => {
 		if (res.locals.untrusted)
 		{
 			return END_ERROR (
-				res, 401,
+				res, 403,
 				"Untrusted Apps cannot get tokens requiring credits"
 			);
 		}
@@ -1865,10 +1867,10 @@ app.post("/auth/v1/token", (req, res) => {
 
 app.post("/auth/v1/token/introspect", (req, res) => {
 
-	const cert	= res.locals.cert;
-	const body	= res.locals.body;
+	const cert			= res.locals.cert;
+	const body			= res.locals.body;
 
-	const resource_server_name_in_cert = cert.subject.CN.toLowerCase();
+	const hostname_in_certificate	= cert.subject.CN.toLowerCase();
 
 	if (! body.token)
 		return END_ERROR (res, 400, "No 'token' found in the body");
@@ -1899,7 +1901,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 		const issued_to		= split[0];
 		const random_hex	= split[1];
 
-		if (issued_to !== resource_server_name_in_cert)
+		if (issued_to !== hostname_in_certificate)
 			return END_ERROR (res, 400, "Invalid 'server-token'");
 
 		if (random_hex.length !== TOKEN_LEN_HEX)
@@ -1964,7 +1966,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 
 			const expected_server_token = results
 							.rows[0]
-							.server_token[resource_server_name_in_cert];
+							.server_token[hostname_in_certificate];
 
 			// if token doesn't belong to this server
 			if (! expected_server_token)
@@ -2042,7 +2044,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 				// if provider exists
 				if (providers[provider_id_hash])
 				{
-					if (resource_server === resource_server_name_in_cert)
+					if (resource_server === hostname_in_certificate)
 						request_for_resource_server.push (r);
 				}
 			}
