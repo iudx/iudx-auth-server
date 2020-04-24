@@ -1082,11 +1082,9 @@ function dns_check (req, res, next)
 
 function ocsp_check (req, res, next)
 {
-	const cert 		= res.locals.cert;
-	const cert_class	= res.locals.cert_class;
-	const is_iudx_cert	= res.locals.is_iudx_certificate; 
+	const cert = res.locals.cert;
 
-	if (is_iudx_cert || cert_class > 1)
+	if (res.locals.is_iudx_certificate)
 		return next();
 
 	if (! cert.issuerCertificate || ! cert.issuerCertificate.raw)
