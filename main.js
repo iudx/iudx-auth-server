@@ -338,6 +338,9 @@ function END_ERROR (res, http_status, error, exception = null)
 
 	res.socket.end();
 	res.socket.destroy();
+
+	if (! res.socket.destroyed)
+		res.socket = null;
 }
 
 function is_valid_email (email)
@@ -1032,8 +1035,7 @@ function dns_check (req, res, next)
 	const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
 
 	dns.lookup (
-		resource_server_name_in_cert,
-		{all:true},
+		resource_server_name_in_cert, {all:true},
 		(error, ip_addresses) =>
 		{
 			/*
@@ -1070,8 +1072,8 @@ function dns_check (req, res, next)
 			if (! ip_matched)
 			{
 				return END_ERROR (res, 403,
-					"Your certificate's hostname in CN and " +
-					"your IP does not match!"
+					"Your certificate's hostname in CN "	+
+					"and your IP does not match!"
 				);
 			}
 
@@ -1084,6 +1086,8 @@ function ocsp_check (req, res, next)
 {
 	const cert = res.locals.cert;
 
+	// No ocsp check required if its IUDX certificate
+
 	if (res.locals.is_iudx_certificate)
 		return next();
 
@@ -1091,7 +1095,7 @@ function ocsp_check (req, res, next)
 	{
 		if (req.socket.isSessionReused())
 		{
-			return next(); // previously ocsp check was done !
+			return next(); // previously ocsp check was passed ! 
 		}
 		else
 		{
