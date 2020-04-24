@@ -822,18 +822,18 @@ function security (req, res, next)
 			);
 		}
 
-		// class-1 APIs are special, user needs a class-1 certificate
 		if (min_class_required === 1 && integer_cert_class !== 1)
 		{
-			// except for certificate-info API
-			if (! api.endsWith("/certificate-info"))
-			{
-				return END_ERROR (
-					res, 403,
-					"A class-1 certificate is required " +
-					"to call this API"
-				);
-			}
+			/*
+				class-1 APIs are special,
+				user needs a class-1 certificate
+			*/
+
+			return END_ERROR (
+				res, 403,
+				"A class-1 certificate is required " +
+				"to call this API"
+			);
 		}
 
 		const error = is_secure(req,res,cert,true); // validate emails
@@ -940,70 +940,130 @@ function security (req, res, next)
 				}
 			}
 
+			// No dns check required if certificate is class-2 or above
+
 			if (res.locals.cert_class > 1)
 				return next();
-			else
-			{
-				if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
-					return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
 
-				const	ip				= req.connection.remoteAddress;
-				let	ip_matched			= false;
-				const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
+			if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
+				return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
 
-				dns.lookup (
-					resource_server_name_in_cert,
-					{all:true},
-					(error, ip_addresses) =>
+			const	ip				= req.connection.remoteAddress;
+			let	ip_matched			= false;
+			const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
+
+			dns.lookup (
+				resource_server_name_in_cert,
+				{all:true},
+				(error, ip_addresses) =>
+				{
+					/*
+						No dns checks for "example.com"
+						this for developer's testing purposes.
+					*/
+
+					if (resource_server_name_in_cert === "example.com")
 					{
-						/*
-							No dns checks for "example.com"
-							this for developer's testing purposes.
-						*/
-
-						if (resource_server_name_in_cert === "example.com")
-						{
-							error		= null;
-							ip_matched	= true;
-							ip_addresses	= [];
-						}
-
-						if (error)
-						{
-							const error_response = {
-								"message"	: "Invalid 'hostname' in certificate",
-								"invalid-input"	: xss_safe(resource_server_name_in_cert)
-							};
-
-							return END_ERROR (res, 400, error_response);
-						}
-
-						for (const a of ip_addresses)
-						{
-							if (a.address === ip)
-							{
-								ip_matched = true;
-								break;
-							}
-						}
-
-						if (! ip_matched)
-						{
-							return END_ERROR (res, 403,
-								"Your certificate's hostname in CN and " +
-								"your IP does not match!"
-							);
-						}
-
-						next();  // dns check passed
+						error		= null;
+						ip_matched	= true;
+						ip_addresses	= [];
 					}
-				);
-			}
+
+					if (error)
+					{
+						const error_response = {
+							"message"	: "Invalid 'hostname' in certificate",
+							"invalid-input"	: xss_safe(resource_server_name_in_cert)
+						};
+
+						return END_ERROR (res, 400, error_response);
+					}
+
+					for (const a of ip_addresses)
+					{
+						if (a.address === ip)
+						{
+							ip_matched = true;
+							break;
+						}
+					}
+
+					if (! ip_matched)
+					{
+						return END_ERROR (res, 403,
+							"Your certificate's hostname in CN and " +
+							"your IP does not match!"
+						);
+					}
+
+					return next();  // dns check passed
+				}
+			);
 		});
 	}
 	else
 	{
-		if ( (! cert) || (! cert.raw) || (! cert.issuerCertificate) || (! cert.issuerCertificate.raw))
+		/*
+			Certificates issued by other CAs
+			may not have an "emailAddress" field.
+			By default consider them as a class-1 certificate
+		*/
+
+		const error = is_secure(req,res,cert,false);
+
+		if (error !== "OK")
+			return END_ERROR (res, 403, error);
+
+		res.locals.cert_class	= 1;
+		res.locals.email	= "";
+		res.locals.cert		= cert;
+
+		/*
+			But if the certificate has a valid "emailAddress"
+			field then we consider it as a class-2 certificate
+		*/
+
+		if (is_valid_email(cert.subject.emailAddress))
+		{
+			res.locals.cert_class	= 2;
+			res.locals.email	= cert
+							.subject
+							.emailAddress
+							.toLowerCase();
+		}
+
+		/*
+			class-1 APIs are special,
+			user needs a class-1 certificate
+
+			if user is trying to call a class-1 API,
+			then downgrade his certificate class
+		*/
+
+		if (min_class_required === 1)
+		{
+			res.locals.cert_class = 1;
+		}
+
+		if (res.locals.cert_class < min_class_required)
+		{
+			return END_ERROR (
+				res, 403,
+				"A class-" + min_class_required	+
+				" or above certificate is"	+
+				" required to call this API"
+			);
+		}
+
+		if (! (res.locals.body = body_to_json(req.body)))
+		{
+			return END_ERROR (
+				res, 400,
+				"Body is not a valid JSON"
+			);
+		}
+
+		if (! cert.issuerCertificate || ! cert.issuerCertificate.raw)
 		{
 			if (! req.socket.isSessionReused())
 			{
@@ -1012,14 +1072,14 @@ function security (req, res, next)
 					"Something is wrong with your client/browser !"
 				);
 			}
+
+			// TODO what if session is reused and still issuerCertificate is undefined
 		}
 
 		const ocsp_request = {
-			cert : cert.raw
+			cert	: cert.raw,
+			issuer	: cert.issuerCertificate.raw
 		};
-
-		if (cert.issuerCertificate && cert.issuerCertificate.raw)
-			ocsp_request.issuer = cert.issuerCertificate.raw;
 
 		ocsp.check (ocsp_request, (ocsp_error, ocsp_response) =>
 		{
@@ -1041,113 +1101,67 @@ function security (req, res, next)
 				);
 			}
 
-			/*
-				Certificates issued by other CAs
-				may not have an "emailAddress" field.
-				By default consider them as a class-1 certificate
-			*/
-
-			const error = is_secure(req,res,cert,false);
-
-			if (error !== "OK")
-				return END_ERROR (res, 403, error);
-
-			res.locals.cert_class	= 1;
-			res.locals.email	= "";
-
-			/*
-				But if the certificate has a valid "emailAddress"
-				field then we consider it as a class-2 certificate
-			*/
-
-			if (is_valid_email(cert.subject.emailAddress))
-			{
-				res.locals.cert_class	= 2;
-				res.locals.email	= cert
-								.subject
-								.emailAddress
-								.toLowerCase();
-			}
-
-			if (res.locals.cert_class < min_class_required)
-			{
-				return END_ERROR (
-					res, 403,
-					"A class-" + min_class_required	+
-					" or above certificate is"	+
-					" required to call this API"
-				);
-			}
-
-			if (! (res.locals.body = body_to_json(req.body)))
-			{
-				return END_ERROR (
-					res, 400,
-					"Body is not a valid JSON"
-				);
-			}
-
-			res.locals.cert	= cert;
+			// No dns check required if certificate is class-2 or above
 
 			if (res.locals.cert_class > 1)
-				return next();
-			else
 			{
-				if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
-					return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
-
-				const	ip				= req.connection.remoteAddress;
-				let	ip_matched			= false;
-				const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
-
-				dns.lookup (
-					resource_server_name_in_cert,
-					{all:true},
-					(error, ip_addresses) =>
-					{
-						/*
-							No dns checks for "example.com"
-							this for developer's testing purposes.
-						*/
-
-						if (resource_server_name_in_cert === "example.com")
-						{
-							error		= null;
-							ip_matched	= true;
-							ip_addresses	= [];
-						}
-
-						if (error)
-						{
-							const error_response = {
-								"message"	: "Invalid 'hostname' in certificate",
-								"invalid-input"	: xss_safe(resource_server_name_in_cert)
-							};
-
-							return END_ERROR (res, 400, error_response);
-						}
-
-						for (const a of ip_addresses)
-						{
-							if (a.address === ip)
-							{
-								ip_matched = true;
-								break;
-							}
-						}
-
-						if (! ip_matched)
-						{
-							return END_ERROR (res, 403,
-								"Your certificate's hostname in CN and " +
-								"your IP does not match!"
-							);
-						}
-
-						next();  // dns check passed
-					}
-				);
+				return next();
 			}
+		
+			if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
+				return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
+
+			const	ip				= req.connection.remoteAddress;
+			let	ip_matched			= false;
+			const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
+
+			dns.lookup (
+				resource_server_name_in_cert,
+				{all:true},
+				(error, ip_addresses) =>
+				{
+					/*
+						No dns checks for "example.com"
+						this for developer's testing purposes.
+					*/
+
+					if (resource_server_name_in_cert === "example.com")
+					{
+						error		= null;
+						ip_matched	= true;
+						ip_addresses	= [];
+					}
+
+					if (error)
+					{
+						const error_response = {
+							"message"	: "Invalid 'hostname' in certificate",
+							"invalid-input"	: xss_safe(resource_server_name_in_cert)
+						};
+
+						return END_ERROR (res, 400, error_response);
+					}
+
+					for (const a of ip_addresses)
+					{
+						if (a.address === ip)
+						{
+							ip_matched = true;
+							break;
+						}
+					}
+
+					if (! ip_matched)
+					{
+						return END_ERROR (res, 403,
+							"Your certificate's hostname in CN and " +
+							"your IP does not match!"
+						);
+					}
+
+					return next();  // dns check passed
+				}
+			);
 		});
 	}
 }
