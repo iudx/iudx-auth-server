@@ -829,11 +829,14 @@ function security (req, res, next)
 				user needs a class-1 certificate
 			*/
 
-			return END_ERROR (
-				res, 403,
-				"A class-1 certificate is required " +
-				"to call this API"
-			);
+			if (! api.endsWith("/certificate-info"))
+			{
+				return END_ERROR (
+					res, 403,
+					"A class-1 certificate is required " +
+					"to call this API"
+				);
+			}
 		}
 
 		const error = is_secure(req,res,cert,true); // validate emails
@@ -1042,7 +1045,10 @@ function security (req, res, next)
 
 		if (min_class_required === 1)
 		{
-			res.locals.cert_class = 1;
+			if (! api.endsWith("/certificate-info"))
+			{
+				res.locals.cert_class = 1;
+			}
 		}
 
 		if (res.locals.cert_class < min_class_required)
