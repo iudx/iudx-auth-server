@@ -339,8 +339,8 @@ function END_ERROR (res, http_status, error, exception = null)
 	res.socket.end();
 	res.socket.destroy();
 
-	if (! res.socket.destroyed)
-		res.socket = null;
+	delete res.socket;
+	delete res.locals;
 }
 
 function is_valid_email (email)
