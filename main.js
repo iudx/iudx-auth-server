@@ -1016,10 +1016,10 @@ function basic_security_check (req, res, next)
 
 function dns_check (req, res, next)
 {
-	// No dns check required if certificate is class-2 or above
-
 	const cert		= res.locals.cert;
 	const cert_class	= res.locals.cert_class;
+
+	// No dns check required if certificate is class-2 or above
 
 	if (cert_class > 1)
 		return next();

@@ -4,6 +4,7 @@ from init import consumer
 from init import provider 
 from init import delegate 
 from init import resource_server
+from init import example_dot_com 
 
 r = resource_server.certificate_info()
 assert r["success"] is True
@@ -24,3 +25,7 @@ assert r["response"]["id"] == "arun.babu@rbccps.org"
 r = delegate.certificate_info()
 assert r["success"] is False
 assert r['status_code'] == 403 
+
+r = example_dot_com.certificate_info()
+assert r["success"] is True 
+assert r["response"]["certificate-class"] == 1
