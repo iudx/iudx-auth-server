@@ -171,7 +171,7 @@ app.use(
 //app.use(compression());
 app.use(bodyParser.raw({type:"*/*"}));
 
-app.use(security_check);
+app.use(basic_security_check);
 app.use(dns_check);
 app.use(ocsp_check);
 
@@ -729,7 +729,7 @@ let has_started_serving_apis = false;
 
 /* --- basic security checks to be done at every API call --- */
 
-function security_check (req, res, next)
+function basic_security_check (req, res, next)
 {
 	if (! has_started_serving_apis)
 	{
@@ -739,10 +739,9 @@ function security_check (req, res, next)
 		has_started_serving_apis = true;
 	}
 
-	const api			= url.parse(req.url).pathname;
-
 	// TODO: convert /v[1-9]/ to /v1/
 
+	const api			= url.parse(req.url).pathname;
 	const min_class_required	= MIN_CERT_CLASS_REQUIRED.get(api);
 
 	if (! min_class_required)
@@ -751,6 +750,14 @@ function security_check (req, res, next)
 			res, 404,
 				"No such API. Please visit : "	+
 				"<http://auth.iudx.org.in> for documentation."
+		);
+	}
+
+	if (! (res.locals.body = body_to_json(req.body)))
+	{
+		return END_ERROR (
+			res, 400,
+			"Body is not a valid JSON"
 		);
 	}
 
@@ -830,6 +837,8 @@ function security_check (req, res, next)
 			/*
 				class-1 APIs are special,
 				user needs a class-1 certificate
+
+				except in case of "/certificate-info"
 			*/
 
 			if (! api.endsWith("/certificate-info"))
@@ -867,13 +876,6 @@ function security_check (req, res, next)
 				);
 			}
 
-			if (! (res.locals.body = body_to_json(req.body)))
-			{
-				return END_ERROR (
-					res, 400,
-					"Body is not a valid JSON"
-				);
-			}
 
 			res.locals.cert		= cert;
 			res.locals.cert_class	= integer_cert_class;
@@ -984,6 +986,8 @@ function security_check (req, res, next)
 			class-1 APIs are special,
 			user needs a class-1 certificate
 
+			except in case of "/certificate-info"
+
 			if user is trying to call a class-1 API,
 			then downgrade his certificate class
 		*/
@@ -1004,27 +1008,6 @@ function security_check (req, res, next)
 				" or above certificate is"	+
 				" required to call this API"
 			);
-		}
-
-		if (! (res.locals.body = body_to_json(req.body)))
-		{
-			return END_ERROR (
-				res, 400,
-				"Body is not a valid JSON"
-			);
-		}
-
-		if (! cert.issuerCertificate || ! cert.issuerCertificate.raw)
-		{
-			if (! req.socket.isSessionReused())
-			{
-				return END_ERROR (
-					res, 400,
-					"Something is wrong with your client/browser !"
-				);
-			}
-
-			// TODO what if session is reused and still issuerCertificate is undefined
 		}
 
 		return next();
@@ -1099,11 +1082,28 @@ function dns_check (req, res, next)
 
 function ocsp_check (req, res, next)
 {
-	if (res.locals.cert_class > 1)
+	const cert 		= res.locals.cert;
+	const cert_class	= res.locals.cert_class;
+
+	if (cert_class > 1)
 		return next();
 
-	const cert		= res.locals.cert;
-	const ocsp_request 	= {
+	if (! cert.issuerCertificate || ! cert.issuerCertificate.raw)
+	{
+		if (req.socket.isSessionReused())
+		{
+			return next(); // previously ocsp check was done !
+		}
+		else
+		{
+			return END_ERROR (
+				res, 400,
+				"Something is wrong with your client/browser !"
+			);
+		}
+	}
+
+	const ocsp_request = {
 		cert	: cert.raw,
 		issuer	: cert.issuerCertificate.raw
 	};
