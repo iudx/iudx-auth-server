@@ -1084,8 +1084,9 @@ function ocsp_check (req, res, next)
 {
 	const cert 		= res.locals.cert;
 	const cert_class	= res.locals.cert_class;
+	const is_iudx_cert	= res.locals.is_iudx_certificate; 
 
-	if (cert_class > 1)
+	if (is_iudx_cert || cert_class > 1)
 		return next();
 
 	if (! cert.issuerCertificate || ! cert.issuerCertificate.raw)
