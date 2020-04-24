@@ -170,7 +170,10 @@ app.use(
 
 //app.use(compression());
 app.use(bodyParser.raw({type:"*/*"}));
-app.use(security);
+
+app.use(security_check);
+app.use(dns_check);
+app.use(ocsp_check);
 
 /* --- aperture --- */
 
@@ -726,7 +729,7 @@ let has_started_serving_apis = false;
 
 /* --- basic security checks to be done at every API call --- */
 
-function security (req, res, next)
+function security_check (req, res, next)
 {
 	if (! has_started_serving_apis)
 	{
@@ -756,7 +759,7 @@ function security (req, res, next)
 	cert.serialNumber	= cert.serialNumber.toLowerCase();
 	cert.fingerprint	= cert.fingerprint.toLowerCase();
 
-	if (is_iudx_certificate(cert))
+	if ((res.locals.is_iudx_certificate = is_iudx_certificate(cert)))
 	{
 		// id-qt-unotice is in the format "key1:value1;key2:value2;..."
 
@@ -943,65 +946,7 @@ function security (req, res, next)
 				}
 			}
 
-			// No dns check required if certificate is class-2 or above
-
-			if (res.locals.cert_class > 1)
-				return next();
-
-			if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
-				return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
-
-			const	ip				= req.connection.remoteAddress;
-			let	ip_matched			= false;
-			const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
-
-			dns.lookup (
-				resource_server_name_in_cert,
-				{all:true},
-				(error, ip_addresses) =>
-				{
-					/*
-						No dns checks for "example.com"
-						this for developer's testing purposes.
-					*/
-
-					if (resource_server_name_in_cert === "example.com")
-					{
-						error		= null;
-						ip_matched	= true;
-						ip_addresses	= [];
-					}
-
-					if (error)
-					{
-						const error_response = {
-							"message"	: "Invalid 'hostname' in certificate",
-							"invalid-input"	: xss_safe(resource_server_name_in_cert)
-						};
-
-						return END_ERROR (res, 400, error_response);
-					}
-
-					for (const a of ip_addresses)
-					{
-						if (a.address === ip)
-						{
-							ip_matched = true;
-							break;
-						}
-					}
-
-					if (! ip_matched)
-					{
-						return END_ERROR (res, 403,
-							"Your certificate's hostname in CN and " +
-							"your IP does not match!"
-						);
-					}
-
-					return next();  // dns check passed
-				}
-			);
+			return next();
 		});
 	}
 	else
@@ -1082,94 +1027,107 @@ function security (req, res, next)
 			// TODO what if session is reused and still issuerCertificate is undefined
 		}
 
-		const ocsp_request = {
-			cert	: cert.raw,
-			issuer	: cert.issuerCertificate.raw
-		};
-
-		ocsp.check (ocsp_request, (ocsp_error, ocsp_response) =>
-		{
-			if (ocsp_error)
-			{
-				return END_ERROR (
-					res, 403,
-					"Your certificate issuer did "	+
-					"NOT respond to an OCSP request"
-				);
-			}
-
-			if (ocsp_response.type !== "good")
-			{
-				return END_ERROR (
-					res, 403,
-					"Your certificate has been "	+
-					"revoked by your certificate issuer"
-				);
-			}
-
-			// No dns check required if certificate is class-2 or above
-
-			if (res.locals.cert_class > 1)
-			{
-				return next();
-			}
-		
-			if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
-				return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
-
-			const	ip				= req.connection.remoteAddress;
-			let	ip_matched			= false;
-			const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
-
-			dns.lookup (
-				resource_server_name_in_cert,
-				{all:true},
-				(error, ip_addresses) =>
-				{
-					/*
-						No dns checks for "example.com"
-						this for developer's testing purposes.
-					*/
-
-					if (resource_server_name_in_cert === "example.com")
-					{
-						error		= null;
-						ip_matched	= true;
-						ip_addresses	= [];
-					}
-
-					if (error)
-					{
-						const error_response = {
-							"message"	: "Invalid 'hostname' in certificate",
-							"invalid-input"	: xss_safe(resource_server_name_in_cert)
-						};
-
-						return END_ERROR (res, 400, error_response);
-					}
-
-					for (const a of ip_addresses)
-					{
-						if (a.address === ip)
-						{
-							ip_matched = true;
-							break;
-						}
-					}
-
-					if (! ip_matched)
-					{
-						return END_ERROR (res, 403,
-							"Your certificate's hostname in CN and " +
-							"your IP does not match!"
-						);
-					}
-
-					return next();  // dns check passed
-				}
-			);
-		});
+		return next();
 	}
+}
+
+function dns_check (req, res, next)
+{
+	// No dns check required if certificate is class-2 or above
+
+	const cert		= res.locals.cert;
+	const cert_class	= res.locals.cert_class;
+
+	if (cert_class > 1)
+		return next();
+
+	if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
+		return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
+
+	const	ip				= req.connection.remoteAddress;
+	let	ip_matched			= false;
+	const	resource_server_name_in_cert	= cert.subject.CN.toLowerCase();
+
+	dns.lookup (
+		resource_server_name_in_cert,
+		{all:true},
+		(error, ip_addresses) =>
+		{
+			/*
+				No dns checks for "example.com"
+				this for developer's testing purposes.
+			*/
+
+			if (resource_server_name_in_cert === "example.com")
+			{
+				error		= null;
+				ip_matched	= true;
+				ip_addresses	= [];
+			}
+
+			if (error)
+			{
+				const error_response = {
+					"message"	: "Invalid 'hostname' in certificate",
+					"invalid-input"	: xss_safe(resource_server_name_in_cert)
+				};
+
+				return END_ERROR (res, 400, error_response);
+			}
+
+			for (const a of ip_addresses)
+			{
+				if (a.address === ip)
+				{
+					ip_matched = true;
+					break;
+				}
+			}
+
+			if (! ip_matched)
+			{
+				return END_ERROR (res, 403,
+					"Your certificate's hostname in CN and " +
+					"your IP does not match!"
+				);
+			}
+
+			return next();  // dns check passed
+		}
+	);
+}
+
+function ocsp_check (req, res, next)
+{
+	if (res.locals.cert_class > 1)
+		return next();
+
+	const cert		= res.locals.cert;
+	const ocsp_request 	= {
+		cert	: cert.raw,
+		issuer	: cert.issuerCertificate.raw
+	};
+
+	ocsp.check (ocsp_request, (ocsp_error, ocsp_response) =>
+	{
+		if (ocsp_error)
+		{
+			return END_ERROR (
+				res, 403,
+				"Your certificate issuer did "	+
+				"NOT respond to an OCSP request"
+			);
+		}
+
+		if (ocsp_response.type !== "good")
+		{
+			return END_ERROR (
+				res, 403,
+				"Your certificate has been "	+
+				"revoked by your certificate issuer"
+			);
+		}
+	});
 }
 
 function to_array (o)
