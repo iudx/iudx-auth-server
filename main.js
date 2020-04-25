@@ -1184,7 +1184,7 @@ app.post("/auth/v1/token", (req, res) => {
 		" AND issued_at >= (NOW() - interval '60 seconds')",
 		[
 			consumer_id,		// 1
-		],
+		]
 	);
 
 	// in last 1 minute
@@ -1495,7 +1495,7 @@ app.post("/auth/v1/token", (req, res) => {
 				[
 					consumer_id,			// 1
 					JSON.stringify(resource_true),	// 2
-				],
+				]
 			);
 
 			context.conditions.tokens_per_day = parseInt (
