@@ -242,6 +242,19 @@ const https_options = {
 	rejectUnauthorized	: true,
 };
 
+
+/* --- static pages --- */
+
+const STATIC_PAGES = immutable.Map ({
+	"/topup.html"		: fs.readFileSync ("static/topup.html",	"ascii"),
+});
+
+const MIME_TYPE = immutable.Map({
+	"js"	: "text/javascript",
+	"css"	: "text/css",
+	"html"	: "text/html"
+});
+
 /* --- functions --- */
 
 function sha1 (string)
@@ -294,6 +307,26 @@ function log(color, msg)
 	}
 
 	logger.color(color).log(message);
+}
+
+function SERVE_HTML (req,res)
+{
+	const path	= url.parse(req.url).pathname;
+	const page	= STATIC_PAGES.get(path);
+
+	if (! page)
+		return false;
+
+	const split	= path.split(".");
+	const extension	= split[split.length - 1].toLowerCase();
+
+	const mime	= MIME_TYPE.get(extension) || "text/html";
+
+	res.setHeader("Content-Type", mime);
+
+	res.status(200).end(page);
+
+	return true;
 }
 
 function END_SUCCESS (res, response = null)
@@ -3213,6 +3246,17 @@ app.all("/*", (req, res) => {
 				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
+	else if (req.method === "GET")
+	{
+		if (! SERVE_HTML(req,res))
+		{
+			return END_ERROR (
+				res, 404,
+					"Page not found. Please visit : "	+
+					"<http://auth.iudx.org.in> for documentation."
+			);
+		}
+	}
 	else
 	{
 		return END_ERROR (
@@ -3224,7 +3268,7 @@ app.all("/*", (req, res) => {
 });
 
 app.on("error", (unused_var_error) => {
-
+	// nothing
 });
 
 /* --- The main application --- */
