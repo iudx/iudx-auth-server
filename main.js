@@ -483,7 +483,7 @@ function is_secure (req, res, cert, validate_email = true)
 	res.header("X-Frame-Options",		"deny");
 	res.header("X-XSS-Protection",		"1; mode=block");
 	res.header("X-Content-Type-Options",	"nosniff");
-	res.header("Content-Security-Policy",	"default-src 'self'");
+	res.header("Content-Security-Policy",	"default-src 'none'");
 
 	if (req.headers.host && req.headers.host !== SERVER_NAME)
 		return "Invalid 'host' field in the header";
