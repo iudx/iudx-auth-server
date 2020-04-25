@@ -9,8 +9,6 @@ then
 	exit
 fi
 
-cat /etc/hosts
-
 syspatch
 
 if [ "$1" = "test" ]
