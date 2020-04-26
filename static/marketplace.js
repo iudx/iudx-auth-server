@@ -7,6 +7,16 @@ function init ()
 	document.querySelector("#result").appendChild(jsonViewer.getContainer());
 }
 
+const error_codes = {
+	"0"	: "Perhaps a <a href=https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSDidNotSucceed>CORS</a> issue",
+	"200"	: "OK",
+	"400"	: "Bad request",
+	"401"	: "Unauthorized",
+	"402"	: "Payment required",
+	"403"	: "Forbidden",
+	"500"	: "Internal error",
+};
+
 function do_topup()
 {
 	const response		= document.getElementById("response");
@@ -51,7 +61,12 @@ function do_topup()
 				jsonViewer.showJSON(result);
 			}
 
-			response_code.innerHTML = "<font color=" + color +">" + this.status + "</font>";
+			response_code.innerHTML = "<font color="			+
+							color +">" + this.status	+
+							" - "				+
+							error_codes[this.status]	+
+						"</font>";
+
 			response.style.visibility = "visible"; 
 		}
 	}
