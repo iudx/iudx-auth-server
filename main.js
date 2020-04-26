@@ -794,7 +794,7 @@ function basic_security_check (req, res, next)
 	{
 		return END_ERROR (
 			res, 404,
-				"No such API. Please visit : "	+
+				"No such page/API. Please visit : "	+
 				"<http://auth.iudx.org.in> for documentation."
 		);
 	}
@@ -3314,7 +3314,10 @@ function drop_worker_privileges()
 		return;
 
 	for (const k in password)
+	{
+		password[k] = null;
 		delete password[k];	// forget all passwords
+	}
 
 	if (is_openbsd)
 	{

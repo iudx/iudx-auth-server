@@ -85,7 +85,19 @@ CURL example:
 				"key": "value"
 			}
 		   }
-		]
+		],
+
+		geoip: {
+
+			"ll"		: [
+				17.3846,
+				78.4574
+			],
+			"city"		: "Hyderabad",
+			"region"	: "TG",
+			"country"	: "IN",
+			"timezone"	: "Asia/Kolkata"
+		}
 	    },
 	    ...
 	  ],
@@ -121,7 +133,19 @@ CURL example:
 				"key": "value"
 			}
 		    }
-		]
+		],
+
+		geoip: {
+
+			"ll"		: [
+				17.3846,
+				78.4574
+			],
+			"city"		: "Hyderabad",
+			"region"	: "TG",
+			"country"	: "IN",
+			"timezone"	: "Asia/Kolkata"
+		}
 	    },
 	    ...
 	  ]
