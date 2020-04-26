@@ -75,6 +75,10 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 
 	"/auth/v1/token"			: 2,
 
+	"/topup.html"				: 2,
+	"/marketplace.js"			: 2,
+	"/marketplace.css"			: 2,
+
 	"/marketplace/v1/credit/info"		: 2,
 	"/marketplace/v1/credit/topup"		: 2,
 	"/marketplace/v1/audit/credit"		: 2,
@@ -246,7 +250,9 @@ const https_options = {
 /* --- static pages --- */
 
 const STATIC_PAGES = immutable.Map ({
-	"/topup.html"		: fs.readFileSync ("static/topup.html",	"ascii"),
+	"/topup.html"		: fs.readFileSync ("static/topup.html",		"ascii"),
+	"/marketplace.js"	: fs.readFileSync ("static/marketplace.js",	"ascii"),
+	"/marketplace.css"	: fs.readFileSync ("static/marketplace.css",	"ascii"),
 });
 
 const MIME_TYPE = immutable.Map({
@@ -336,7 +342,8 @@ function END_SUCCESS (res, response = null)
 	if (! response)
 		response = {"success":true};
 
-	res.setHeader("Content-Type", "application/json");
+	res.setHeader("Content-Security-Policy",	"default-src 'none'");
+	res.setHeader("Content-Type",			"application/json");
 
 	res.status(200).end(JSON.stringify(response) + "\n");
 }
@@ -346,8 +353,9 @@ function END_ERROR (res, http_status, error, exception = null)
 	if (exception)
 		log("red", String(exception).replace(/\n/g," "));
 
-	res.setHeader("Content-Type",	"application/json");
-	res.setHeader("Connection",	"close");
+	res.setHeader("Content-Security-Policy",	"default-src 'none'");
+	res.setHeader("Content-Type",			"application/json");
+	res.setHeader("Connection",			"close");
 
 	const response = {};
 
@@ -516,7 +524,6 @@ function is_secure (req, res, cert, validate_email = true)
 	res.header("X-Frame-Options",		"deny");
 	res.header("X-XSS-Protection",		"1; mode=block");
 	res.header("X-Content-Type-Options",	"nosniff");
-	res.header("Content-Security-Policy",	"default-src 'none'");
 
 	if (req.headers.host && req.headers.host !== SERVER_NAME)
 		return "Invalid 'host' field in the header";
@@ -3197,10 +3204,12 @@ app.post("/auth/v1/group/delete", (req, res) => {
 /* --- Marketplace APIs --- */
 
 app.post("/marketplace/v1/payment/confirm", (req, res) => {
-	// TODO
+	return END_ERROR (res, 405, "Not yet implemented");
 });
 
 app.post("/marketplace/v1/credit/info", (req, res) => {
+
+	return END_ERROR (res, 405, "Not yet implemented");
 
 	// TODO
 
@@ -3211,6 +3220,8 @@ app.post("/marketplace/v1/credit/info", (req, res) => {
 });
 
 app.post("/marketplace/v1/credit/topup", (req, res) => {
+
+	return END_ERROR (res, 405, "Not yet implemented");
 
 	// TODO
 
@@ -3267,7 +3278,7 @@ app.all("/*", (req, res) => {
 	}
 });
 
-app.on("error", (unused_var_error) => {
+app.on("error", () => {
 	// nothing
 });
 
@@ -3286,7 +3297,7 @@ if (! is_openbsd)
 	evaluator.evaluate(_tmp, {});
 
 	dns.lookup("google.com", {all:true},
-		(error, unused_var_address) => {
+		(error) => {
 			if (error)
 				log("red","DNS to google.com failed ");
 		}
@@ -3358,7 +3369,7 @@ if (cluster.isMaster)
 		cluster.fork();
 	}
 
-	cluster.on("exit", (worker, unused_var_code, unused_var_signal) => {
+	cluster.on("exit", (worker) => {
 
 		log("red","Worker " + worker.process.pid + " died.");
 
