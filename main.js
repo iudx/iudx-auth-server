@@ -151,6 +151,20 @@ pg.connectSync (
 		}
 );
 
+/* --- preload negotiator's encoding module for gzip compression --- */
+
+const Negotiator = require("negotiator");
+const negotiator = new Negotiator();
+
+try
+{
+	negotiator.encodings();
+}
+catch
+{
+	// ignore
+}
+
 /* --- express --- */
 
 const app = express();
@@ -172,7 +186,7 @@ app.use(
 	})
 );
 
-//app.use(compression());
+app.use(compression());
 app.use(bodyParser.raw({type:"*/*"}));
 
 app.use(basic_security_check);
