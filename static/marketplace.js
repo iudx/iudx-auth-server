@@ -14,6 +14,7 @@ const error_codes = {
 	"401"	: "Unauthorized",
 	"402"	: "Payment required",
 	"403"	: "Forbidden",
+	"405"	: "Method not allowed",
 	"500"	: "Internal error",
 };
 

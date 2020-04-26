@@ -156,14 +156,8 @@ pg.connectSync (
 const Negotiator = require("negotiator");
 const negotiator = new Negotiator();
 
-try
-{
-	negotiator.encodings();
-}
-catch
-{
-	// ignore
-}
+try	{ negotiator.encodings(); }
+catch	{ /* ignore */ }
 
 /* --- express --- */
 
@@ -3322,11 +3316,6 @@ if (! is_openbsd)
 
 function drop_worker_privileges()
 {
-	const do_drop_privileges = true; // change this for testing !
-
-	if (! do_drop_privileges)
-		return;
-
 	for (const k in password)
 	{
 		password[k] = null;
