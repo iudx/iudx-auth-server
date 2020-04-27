@@ -7,6 +7,8 @@ verify = True
 
 if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 #
+	import urllib3
+	urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 	verify = False
 #
 

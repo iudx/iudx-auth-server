@@ -156,8 +156,8 @@ pg.connectSync (
 const Negotiator = require("negotiator");
 const negotiator = new Negotiator();
 
-try	{ negotiator.encodings(); }
-catch	{ /* ignore */ }
+try		{ negotiator.encodings(); }
+catch(x)	{ /* ignore */ }
 
 /* --- express --- */
 
@@ -3272,7 +3272,7 @@ app.all("/*", (req, res) => {
 			return END_ERROR (
 				res, 404,
 					"Page not found. Please visit : "	+
-					"<http://auth.iudx.org.in> for documentation."
+					"<http://auth.iudx.org.in>"
 			);
 		}
 	}
