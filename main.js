@@ -60,7 +60,6 @@ const unveil			= is_openbsd ? require("openbsd-unveil"): null;
 const NUM_CPUS			= os.cpus().length;
 
 const SERVER_NAME		= "auth.iudx.org.in";
-const WEBHOOK_SERVER_NAME	= "webhook.iudx.org.in";
 
 const MAX_TOKEN_TIME		= 31536000; // in seconds (1 year)
 
@@ -77,6 +76,9 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 
 /* --- data consumer's APIs --- */
 	"/auth/v1/token"			: 2,
+
+/* --- for topup --- */
+	"/topup-success"			: 2,
 
 /* --- static files --- */
 	"/topup.html"				: 2,
@@ -138,6 +140,7 @@ const password	= {
 
 const rzpay_key_id		= fs.readFileSync ("rzpay.key.id",		"ascii").trim();
 const rzpay_key_secret		= fs.readFileSync ("rzpay.key.secret",		"ascii").trim();
+const rzpay_webhook_secret 	= fs.readFileSync ("rzpay.webhook.secret",	"ascii").trim();
 
 const rzpay_invoices_url	= "https://"				+
 						rzpay_key_id		+
@@ -3281,7 +3284,7 @@ app.post("/marketplace/v1/credit/info", (req, res) => {
 
 		if (cert_class < 3)
 		{
-			response.credits 		= results.rows[0].balance;
+			response.credits 		= results.rows[0].amount;
 			response["last-updated"]	= results.rows[0].last_updated;
 
 			return END_SUCCESS (res, response);
@@ -3299,7 +3302,7 @@ app.post("/marketplace/v1/credit/info", (req, res) => {
 			{
 				if (row.cert_serial === "*" && row.cert_fingerprint === "*")
 				{
-					response.credits 		= results.rows[0].balance;
+					response.credits 		= results.rows[0].amount;
 					response["last-updated"]	= results.rows[0].last_updated;
 				}
 				else
@@ -3307,7 +3310,7 @@ app.post("/marketplace/v1/credit/info", (req, res) => {
 					response["other-credits"].push ({
 						"serial"	: row.cert_serial,
 						"fingerprint"	: row.cert_fingerprint,
-						"credits"	: row.balance,
+						"credits"	: row.amount,
 						"last-updated"  : row.last_updated
 					});
 				}
@@ -3379,7 +3382,7 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 	const now		= Math.floor (Date.now() / 1000);
 	const expire		= now + 1800; // after 30 mins
 
-	const success_url	= "https://" + SERVER_NAME + "/topup-success.html";
+	const success_url	= "https://" + SERVER_NAME + "/topup-success";
 
 	const first_name	= cert.subject.GN || "Unknown";
 	const last_name		= cert.subject.SN || "unknown";
@@ -3389,7 +3392,7 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 	const post_body = {
 
 		"type"			: "link",
-		"amount"		: amount,
+		"amount"		: amount * 100.0,
 		"description"		: "IUDX credits topup for : " + id,
 		"view_less"		: 1,
 		"currency"		: "INR",
@@ -3425,7 +3428,7 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 		const link		= {"link" : body.short_url};
 		const invoice_number	= body.id;
 
-		const query = "INSERT INTO topup_transaction VALUES("	+
+		const query = "INSERT INTO topup_transaction VALUES ("	+
 				"$1::text,"				+
 				"$2::text,"				+
 				"$3::text,"				+
@@ -3451,6 +3454,53 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 			else
 				return END_SUCCESS (res, link);
 		});
+	});
+});
+
+app.get("/topup-success", (req, res) => {
+
+	const payment_id		= req.query.razorpay_payment_id;
+	const invoice_number		= req.query.razorpay_invoice_id;
+	const invoice_status		= req.query.razorpay_invoice_status;
+	const invoice_recipt		= req.query.razorpay_invoice_receipt;
+	const signature			= req.query.razorpay_signature;
+
+	const body			= ""; 
+
+	const expected_signature	= crypto.createHmac('sha256', rzpay_webhook_secret)
+						.update(body)
+						.digest('hex');
+
+	if (signature !== expected_signature)
+		return END_ERROR (res, 400, 'Invalid signature');
+
+	if (invoice_status !== 'paid')
+	{
+		const response = STATIC_PAGES.get("/topup-failed.html");
+
+		res.setHeader("Content-Type", "text/html");
+		res.status(400).end(response);
+	}
+
+	const query		= "CALL credit_update($1::text)";
+	const parameters	= [invoice_number];
+
+	pool.query(query, parameters, (error, results) =>
+	{
+		if (error || results.rowCount === 0)
+		{
+			return END_ERROR (
+				res, 400,
+				"Error in topup confirmation for : " +
+					invoice_number,
+				error
+			);
+		}
+
+		const response = STATIC_PAGES.get("/topup-success.html");
+
+		res.setHeader("Content-Type", "text/html");
+		res.status(200).end(response);
 	});
 });
 

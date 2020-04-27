@@ -93,7 +93,7 @@ CREATE TABLE public.credit (
 	id			character varying		NOT NULL,
 	cert_serial		character varying		NOT NULL,
 	cert_fingerprint	character varying		NOT NULL,
-	balance			numeric				NOT NULL DEFAULT 0 CHECK (balance >= 0),
+	amount			numeric				NOT NULL DEFAULT 0 CHECK (amount >= 0),
 	last_updated		timestamp without time zone	NOT NULL
 );
 
@@ -103,9 +103,70 @@ CREATE TABLE public.topup_transaction (
 	cert_fingerprint	character varying		NOT NULL,
 	amount			numeric				NOT NULL,
 	time			timestamp without time zone	NOT NULL,
-	invoice_num		character varying		NOT NULL,
+	invoice_number		character varying		NOT NULL,
 	paid			boolean				NOT NULL
 );
+
+--
+-- Procedures
+--
+
+CREATE OR REPLACE PROCEDURE public.credit_update (my_invoice_number character varying)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+	my_id			character varying;
+	my_cert_serial		character varying;
+	my_cert_fingerprint	character varying;
+	my_time			timestamp without time zone;
+	my_amount		numeric;
+BEGIN
+	UPDATE public.transaction
+		SET
+			paid = true,
+			time = NOW()
+		WHERE 
+			invoice_number = my_invoice_number
+		AND
+			paid = false
+	RETURNING
+		id,
+		cert_serial,
+		cert_fingerprint,
+		time,
+		amount
+
+	INTO STRICT
+		my_id,
+		my_cert_serial,
+		my_cert_fingerprint,
+		my_time,
+		my_amount
+	;
+
+	INSERT INTO public.credit (
+			id,
+			cert_serial,
+			cert_fingerprint,
+			amount,
+			last_updated
+		) 
+
+		VALUES (
+			my_id,
+			my_cert_serial,
+			my_cert_fingerprint,
+			my_amount,
+			my_time
+		)
+	
+	ON CONFLICT (id, cert_serial, cert_fingerprint)
+		DO UPDATE
+			SET
+				amount		= credit.amount + EXCLUDED.amount,
+				last_updated	= my_time;
+END;
+$$;
 
 --
 -- ACCESS CONTROLS
@@ -118,6 +179,8 @@ ALTER TABLE public.token		OWNER TO postgres;
 ALTER TABLE public.credit		OWNER TO postgres;
 ALTER TABLE public.topup_transaction	OWNER TO postgres;
 
+ALTER PROCEDURE public.credit_update	OWNER TO postgres;
+
 CREATE USER auth		with PASSWORD 'XXX_auth';
 CREATE USER update_crl		with PASSWORD 'XXX_update_crl';
 
@@ -128,4 +191,7 @@ GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy			TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.credit			TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction	TO auth;
 
-GRANT UPDATE			ON TABLE public.crl	TO update_crl;
+GRANT UPDATE			ON TABLE public.crl			TO update_crl;
+
+GRANT EXECUTE ON PROCEDURE	public.credit_update(character varying)	TO auth;
+

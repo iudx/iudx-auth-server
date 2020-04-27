@@ -27,6 +27,11 @@ r = delegate.certificate_info()
 assert r["success"] is False
 assert r['status_code'] == 403 
 
+# delegated certificate cannot call any Marketplace API
+r = delegate.topup(100)
+assert r["success"] is False
+assert r['status_code'] == 403 
+
 r = example_dot_com.certificate_info()
 assert r["success"] is True 
 assert r["response"]["certificate-class"] == 1

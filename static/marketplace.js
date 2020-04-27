@@ -27,9 +27,9 @@ function do_topup()
 	response.style.visibility = "hidden"; 
 
 	const post_body = JSON.stringify({
-		"amount"	: document.getElementById("amount"),
-		"fingerprint"	: document.getElementById("fingerprint"),
-		"serial"	: document.getElementById("serial"),
+		"amount"	: document.getElementById("amount").value,
+		"fingerprint"	: document.getElementById("fingerprint").value,
+		"serial"	: document.getElementById("serial").value,
 	});
 
 	const ajax = new XMLHttpRequest();
@@ -50,26 +50,25 @@ function do_topup()
 				result.error.message	= "Response from server was not a valid JSON";
 			}
 
-			let color = "red";
+			const color = "red";
 
 			if(this.status === 200)
 			{
-				color = "blue";
-				jsonViewer.showJSON(result);
+				response.style.visibility = "hidden";
 				window.location	= result.link;
 			}
 			else
 			{
 				jsonViewer.showJSON(result);
-			}
-
-			response_code.innerHTML = "<font color="			+
+			
+				response_code.innerHTML = "<font color="		+
 							color +">" + this.status	+
 							" - "				+
 							error_codes[this.status]	+
 						"</font>";
 
-			response.style.visibility = "visible"; 
+				response.style.visibility = "visible"; 
+			}
 		}
 	};
 
