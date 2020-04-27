@@ -84,7 +84,7 @@ CREATE TABLE public.token (
     providers		jsonb				NOT NULL,
     geoip		jsonb				NOT NULL,
 
-    PRIMARY KEY (id,token)
+    PRIMARY KEY (id, token)
 );
 
 CREATE UNIQUE INDEX idx_token_id ON public.token(id,token,issued_at);
@@ -110,12 +110,14 @@ CREATE TABLE public.topup_transaction (
 	payment_details		jsonb				NOT NULL
 );
 
+CREATE UNIQUE INDEX idx_topup_transaction ON public.topup_transaction (id,time);
+
 --
--- Functions 
+-- Functions
 --
 
 CREATE OR REPLACE FUNCTION public.update_credit (in_invoice_number character varying, in_payment_details jsonb)
-RETURNS boolean AS 
+RETURNS boolean AS
 $$
 	DECLARE
 		my_id			character varying;
@@ -130,7 +132,7 @@ $$
 				paid		= true,
 				time		= NOW(),
 				payment_details	= in_payment_details
-			WHERE 
+			WHERE
 				invoice_number	= in_invoice_number
 			AND
 				paid = false
@@ -162,7 +164,8 @@ $$
 				cert_fingerprint,
 				amount,
 				last_updated
-			) 
+			)
+
 			VALUES (
 				my_id,
 				my_cert_serial,
@@ -170,7 +173,8 @@ $$
 				my_amount,
 				my_time
 			)
-		ON CONFLICT ON CONSTRAINT credit_pkey 
+
+		ON CONFLICT ON CONSTRAINT credit_pkey
 			DO UPDATE
 				SET
 					amount		= credit.amount + EXCLUDED.amount,
@@ -185,11 +189,11 @@ $$
 			RETURN FALSE;
 		ELSE
 			COMMIT;
-			RETURN TRUE;	
+			RETURN TRUE;
 		END IF;
 	END;
 $$
-LANGUAGE PLPGSQL;                                                               
+LANGUAGE PLPGSQL;
 
 --
 -- ACCESS CONTROLS

@@ -3497,7 +3497,8 @@ app.get("/topup-success", (req, res) => {
 		payment_details[key] = req.headers[key];
 	}
 
-	const query = "SELECT update_credit($1::text,$2::jsonb) AS is_credit_updated";
+	const query		= "SELECT update_credit($1::text,$2::jsonb) AS is_credit_updated";
+	const parameters	= [invoice_number, payment_details];
 
 	pool.query(query, parameters, (error, results) =>
 	{
@@ -3513,11 +3514,12 @@ app.get("/topup-success", (req, res) => {
 
 		if (! results.row[0].is_credit_updated)
 		{
-			return END_ERROR (
-				res, 400,
-				"Invalid 'invoice number' : " +
-					invoice_number
-			);
+			const error_response = {
+				"message"	: "Invalid invoice number",
+				"invalid-input"	: xss_safe(invoice_number),
+			};
+
+			return END_ERROR (res, 400, error_response);
 		}
 
 		const response = STATIC_PAGES.get("/topup-success.html");
