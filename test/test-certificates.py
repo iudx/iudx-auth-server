@@ -3,6 +3,7 @@
 from init import consumer 
 from init import provider 
 from init import delegate 
+from init import untrusted 
 from init import resource_server
 from init import example_dot_com 
 
