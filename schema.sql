@@ -26,7 +26,7 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE public.crl (
-    crl jsonb DEFAULT '[]'::jsonb NOT NULL
+    crl	jsonb	DEFAULT '[]'::jsonb	NOT NULL
 );
 
 INSERT INTO public.crl VALUES('[]'::jsonb);
@@ -38,10 +38,12 @@ ALTER TABLE public.crl OWNER TO postgres;
 --
 
 CREATE TABLE public.groups (
-    id character varying NOT NULL,
-    consumer character varying NOT NULL,
-    group_name character varying NOT NULL,
-    valid_till timestamp without time zone NOT NULL
+
+    id		character varying		NOT NULL,
+    consumer	character varying		NOT NULL,
+    group_name	character varying		NOT NULL,
+    valid_till	timestamp without time zone	NOT NULL
+
 );
 
 CREATE INDEX idx_groups_id ON public.groups(id,group_name,valid_till);
@@ -53,11 +55,13 @@ ALTER TABLE public.groups OWNER TO postgres;
 --
 
 CREATE TABLE public.policy (
-    id character varying PRIMARY KEY,
-    policy character varying(3145728) NOT NULL,
-    policy_in_json jsonb NOT NULL,
-    previous_policy character varying(3145728),
-    last_updated timestamp without time zone NOT NULL
+
+    id			character varying		PRIMARY KEY,
+    policy		character varying(3145728)	NOT NULL,
+    policy_in_json	jsonb				NOT NULL,
+    previous_policy	character varying(3145728),
+    last_updated	timestamp without time zone	NOT NULL
+
 );
 
 CREATE UNIQUE INDEX idx_policy_id ON public.policy(id);
@@ -69,20 +73,22 @@ ALTER TABLE public.policy OWNER TO postgres;
 --
 
 CREATE TABLE public.token (
-    id character varying NOT NULL,
-    token character varying NOT NULL,
-    expiry timestamp without time zone NOT NULL,
-    request jsonb NOT NULL,
-    cert_serial character varying NOT NULL,
-    cert_fingerprint character varying NOT NULL,
-    issued_at timestamp without time zone NOT NULL,
-    resource_ids jsonb NOT NULL,
-    introspected boolean NOT NULL,
-    revoked boolean NOT NULL,
-    cert_class integer NOT NULL,
-    server_token jsonb NOT NULL,
-    providers jsonb NOT NULL,
-    geoip jsonb NOT NULL,
+
+    id			character varying		NOT NULL,
+    token		character varying		NOT NULL,
+    expiry		timestamp without time zone	NOT NULL,
+    request		jsonb				NOT NULL,
+    cert_serial		character varying		NOT NULL,
+    cert_fingerprint	character varying		NOT NULL,
+    issued_at		timestamp without time zone	NOT NULL,
+    resource_ids	jsonb				NOT NULL,
+    introspected	boolean				NOT NULL,
+    revoked		boolean				NOT NULL,
+    cert_class		integer				NOT NULL,
+    server_token	jsonb				NOT NULL,
+    providers		jsonb				NOT NULL,
+    geoip		jsonb				NOT NULL,
+
     PRIMARY KEY(id, token)
 );
 
@@ -94,12 +100,12 @@ ALTER TABLE public.token OWNER TO postgres;
 -- ACCESS CONTROLS 
 --
 
-CREATE USER auth with PASSWORD 'XXXauth';
+CREATE USER auth	with PASSWORD 'XXXauth';
+CREATE USER update_crl	with PASSWORD 'XXXupdate_crl';
 
-GRANT SELECT ON TABLE public.crl TO auth;
-GRANT SELECT,INSERT,UPDATE ON TABLE public.token TO auth;
-GRANT SELECT,INSERT,UPDATE ON TABLE public.groups TO auth;
-GRANT SELECT,INSERT,UPDATE ON TABLE public.policy TO auth;
+GRANT SELECT			ON TABLE public.crl	TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.token	TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.groups	TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy	TO auth;
 
-CREATE USER update_crl with PASSWORD 'XXXupdate_crl';
-GRANT UPDATE ON TABLE public.crl TO update_crl;
+GRANT UPDATE			ON TABLE public.crl	TO update_crl;

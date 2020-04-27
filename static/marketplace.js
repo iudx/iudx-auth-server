@@ -44,7 +44,7 @@ function do_topup()
 			}
 			catch
 			{
-				result			= {}
+				result			= {};
 				result.error		= {};
 				result.error.message	= "Response from server was not a valid JSON";
 			}
@@ -70,7 +70,7 @@ function do_topup()
 
 			response.style.visibility = "visible"; 
 		}
-	}
+	};
 
 	ajax.open("POST", "/marketplace/v1/credit/topup");
 	ajax.send(post_body);

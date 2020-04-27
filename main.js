@@ -3257,37 +3257,27 @@ app.post("/auth/v1/certificate-info", (req, res) => {
 
 app.all("/*", (req, res) => {
 
+	const doc = " Please visit <http://auth.iudx.org.in> for documentation";
+
 	if (req.method === "POST")
 	{
-		return END_ERROR (
-			res, 404,
-				"No such API. Please visit : "	+
-				"<http://auth.iudx.org.in> for documentation."
-		);
+		return END_ERROR (res, 404, "No such API." + doc );
 	}
 	else if (req.method === "GET")
 	{
 		if (! SERVE_HTML(req,res))
 		{
-			return END_ERROR (
-				res, 404,
-					"Page not found. Please visit : "	+
-					"<http://auth.iudx.org.in>"
-			);
+			return END_ERROR (res, 404, "Page not found." + doc);
 		}
 	}
 	else
 	{
-		return END_ERROR (
-			res, 405,
-				"Method must be POST. Please visit : "	+
-				"<http://auth.iudx.org.in> for documentation."
-		);
+		return END_ERROR (res, 405, "Method must be POST." + doc);
 	}
 });
 
 app.on("error", () => {
-	// nothing
+	/* nothing */
 });
 
 /* --- The main application --- */
