@@ -30,8 +30,11 @@ class Auth():
 			api_type = "/marketplace"
 			api = "/".join(api.split("/")[1:])
 
+
+		url = self.url + api_type + "/v1/" + api
+
 		response = requests.post (
-			url	= self.url + api_type + "/v1/" + api,
+			url	= url,
 			verify	= self.ssl_verify,
 			cert	= self.credentials,
 			data	= body,
@@ -42,7 +45,7 @@ class Auth():
 		#
 			sys.stderr.write (
 				"WARNING: auth API failure  | "	+
-				self.url + "/" + api	+ " | "	+
+				url			+ " | "	+
 				response.reason 	+ " | "	+
 				response.text
 			)
@@ -168,6 +171,6 @@ class Auth():
 			body['serial']		= serial
 			body['fingerprint']	= fingerprint 
 
-		return self.call("marketplace/topup", body)
+		return self.call("marketplace/credit/topup", body)
 	#
 #}
