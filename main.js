@@ -80,6 +80,7 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 
 /* --- static files --- */
 	"/topup.html"				: 2,
+	"/topup-success.html"			: 2,
 	"/marketplace.js"			: 2,
 	"/marketplace.css"			: 2,
 
@@ -274,6 +275,7 @@ const https_options = {
 
 const STATIC_PAGES = immutable.Map ({
 	"/topup.html"		: fs.readFileSync ("static/topup.html",		"ascii"),
+	"/topup-success.html"	: fs.readFileSync ("static/topup-success.html",	"ascii"),
 	"/marketplace.js"	: fs.readFileSync ("static/marketplace.js",	"ascii"),
 	"/marketplace.css"	: fs.readFileSync ("static/marketplace.css",	"ascii"),
 });
@@ -3374,10 +3376,10 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 		}
 	}
 
-	const now		= Math.floor(Date.now() / 1000);
+	const now		= Math.floor (Date.now() / 1000);
 	const expire		= now + 1800; // after 30 mins
 
-	const success_url	= "https://" + WEBHOOK_SERVER_NAME + "/razorpay-topup-webhook";
+	const success_url	= "https://" + SERVER_NAME + "/topup-success.html";
 
 	const first_name	= cert.subject.GN || "Unknown";
 	const last_name		= cert.subject.SN || "unknown";
