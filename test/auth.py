@@ -14,7 +14,7 @@ class Auth():
 		if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 			self.ssl_verify = False
 
-		self.url		= "https://" + auth_server + "/auth/v" + str(version)
+		self.url		= "https://" + auth_server
 		self.credentials	= (certificate, key)
 	#
 
@@ -24,8 +24,14 @@ class Auth():
 
 		body = json.dumps(body)
 
+		api_type = "/auth"
+
+		if api.startswith("marketplace/"):
+			api_type = "/marketplace"
+			api = "/".join(api.split("/")[1:])
+
 		response = requests.post (
-			url	= self.url + "/" + api,
+			url	= self.url + api_type + "/v1/" + api,
 			verify	= self.ssl_verify,
 			cert	= self.credentials,
 			data	= body,
