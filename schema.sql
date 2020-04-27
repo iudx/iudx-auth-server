@@ -111,67 +111,85 @@ CREATE TABLE public.topup_transaction (
 );
 
 --
--- Procedures
+-- Functions 
 --
 
-CREATE OR REPLACE PROCEDURE public.update_credit (in_invoice_number character varying, in_payment_details jsonb)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-	my_id			character varying;
-	my_cert_serial		character varying;
-	my_cert_fingerprint	character varying;
-	my_time			timestamp without time zone;
-	my_amount		numeric;
-BEGIN
-	UPDATE public.topup_transaction
-		SET
-			paid		= true,
-			time		= NOW(),
-			payment_details	= in_payment_details
-		WHERE 
-			invoice_number	= in_invoice_number
-		AND
-			paid = false
-	RETURNING
-		id,
-		cert_serial,
-		cert_fingerprint,
-		time,
-		amount
-
-	INTO STRICT
-		my_id,
-		my_cert_serial,
-		my_cert_fingerprint,
-		my_time,
-		my_amount
-	;
-
-	INSERT INTO public.credit (
+CREATE OR REPLACE FUNCTION public.update_credit (in_invoice_number character varying, in_payment_details jsonb)
+RETURNS boolean AS 
+$$
+	DECLARE
+		my_id			character varying;
+		my_cert_serial		character varying;
+		my_cert_fingerprint	character varying;
+		my_time			timestamp without time zone;
+		my_amount		numeric;
+		my_num_rows_affected	numeric;
+	BEGIN
+		UPDATE public.topup_transaction
+			SET
+				paid		= true,
+				time		= NOW(),
+				payment_details	= in_payment_details
+			WHERE 
+				invoice_number	= in_invoice_number
+			AND
+				paid = false
+		RETURNING
 			id,
 			cert_serial,
 			cert_fingerprint,
-			amount,
-			last_updated
-		) 
-
-		VALUES (
+			time,
+			amount
+		INTO STRICT
 			my_id,
 			my_cert_serial,
 			my_cert_fingerprint,
-			my_amount,
-			my_time
-		)
-	
-	ON CONFLICT ON CONSTRAINT credit_pkey 
-		DO UPDATE
-			SET
-				amount		= credit.amount + EXCLUDED.amount,
-				last_updated	= my_time
-	;
-END;
-$$;
+			my_time,
+			my_amount
+		;
+
+		GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
+
+		IF my_num_rows_affected <> 1
+		THEN
+			ROLLBACK;
+			RETURN FALSE;
+		END IF;
+
+		INSERT INTO public.credit (
+				id,
+				cert_serial,
+				cert_fingerprint,
+				amount,
+				last_updated
+			) 
+			VALUES (
+				my_id,
+				my_cert_serial,
+				my_cert_fingerprint,
+				my_amount,
+				my_time
+			)
+		ON CONFLICT ON CONSTRAINT credit_pkey 
+			DO UPDATE
+				SET
+					amount		= credit.amount + EXCLUDED.amount,
+					last_updated	= my_time
+		;
+
+		GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
+
+		IF my_num_rows_affected <> 1
+		THEN
+			ROLLBACK;
+			RETURN FALSE;
+		ELSE
+			COMMIT;
+			RETURN TRUE;	
+		END IF;
+	END;
+$$
+LANGUAGE PLPGSQL;                                                               
 
 --
 -- ACCESS CONTROLS
@@ -184,7 +202,7 @@ ALTER TABLE public.token		OWNER TO postgres;
 ALTER TABLE public.credit		OWNER TO postgres;
 ALTER TABLE public.topup_transaction	OWNER TO postgres;
 
-ALTER PROCEDURE public.update_credit	OWNER TO postgres;
+ALTER FUNCTION public.update_credit	OWNER TO postgres;
 
 CREATE USER auth		with PASSWORD 'XXX_auth';
 CREATE USER update_crl		with PASSWORD 'XXX_update_crl';
@@ -198,5 +216,5 @@ GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction		TO auth;
 
 GRANT UPDATE			ON TABLE public.crl				TO update_crl;
 
-GRANT EXECUTE ON PROCEDURE	public.update_credit(character varying,jsonb)	TO auth;
+GRANT EXECUTE ON FUNCTION	public.update_credit(character varying,jsonb)	TO auth;
 

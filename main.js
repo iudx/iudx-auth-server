@@ -3497,12 +3497,11 @@ app.get("/topup-success", (req, res) => {
 		payment_details[key] = req.headers[key];
 	}
 
-	const query		= "CALL update_credit($1::text,$2::jsonb)";
-	const parameters	= [invoice_number, payment_details];
+	const query = "SELECT update_credit($1::text,$2::jsonb) AS is_credit_updated";
 
 	pool.query(query, parameters, (error, results) =>
 	{
-		if (error)
+		if (error || results.rowCount == 0)
 		{
 			return END_ERROR (
 				res, 500,
@@ -3512,7 +3511,7 @@ app.get("/topup-success", (req, res) => {
 			);
 		}
 
-		if (results.rowCount === 0)
+		if (! results.row[0].is_credit_updated)
 		{
 			return END_ERROR (
 				res, 400,
