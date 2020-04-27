@@ -104,14 +104,15 @@ CREATE TABLE public.topup_transaction (
 	amount			numeric				NOT NULL,
 	time			timestamp without time zone	NOT NULL,
 	invoice_number		character varying		NOT NULL,
-	paid			boolean				NOT NULL
+	paid			boolean				NOT NULL,
+	payment_details		jsonb				NOT NULL
 );
 
 --
 -- Procedures
 --
 
-CREATE OR REPLACE PROCEDURE public.credit_update (my_invoice_number character varying)
+CREATE OR REPLACE PROCEDURE public.update_credit (in_invoice_number character varying, in_payment_details jsonb)
 LANGUAGE plpgsql
 AS $$
 DECLARE
@@ -121,12 +122,13 @@ DECLARE
 	my_time			timestamp without time zone;
 	my_amount		numeric;
 BEGIN
-	UPDATE public.transaction
+	UPDATE public.topup_transaction
 		SET
-			paid = true,
-			time = NOW()
+			paid		= true,
+			time		= NOW(),
+			payment_details	= in_payment_details,
 		WHERE 
-			invoice_number = my_invoice_number
+			invoice_number	= in_invoice_number
 		AND
 			paid = false
 	RETURNING
@@ -164,7 +166,9 @@ BEGIN
 		DO UPDATE
 			SET
 				amount		= credit.amount + EXCLUDED.amount,
-				last_updated	= my_time;
+				last_updated	= my_time,
+				payment_details	= in_payment_details
+	;
 END;
 $$;
 
@@ -179,7 +183,7 @@ ALTER TABLE public.token		OWNER TO postgres;
 ALTER TABLE public.credit		OWNER TO postgres;
 ALTER TABLE public.topup_transaction	OWNER TO postgres;
 
-ALTER PROCEDURE public.credit_update	OWNER TO postgres;
+ALTER PROCEDURE public.update_credit	OWNER TO postgres;
 
 CREATE USER auth		with PASSWORD 'XXX_auth';
 CREATE USER update_crl		with PASSWORD 'XXX_update_crl';
@@ -193,5 +197,5 @@ GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction	TO auth;
 
 GRANT UPDATE			ON TABLE public.crl			TO update_crl;
 
-GRANT EXECUTE ON PROCEDURE	public.credit_update(character varying)	TO auth;
+GRANT EXECUTE ON PROCEDURE	public.update_credit(character varying)	TO auth;
 

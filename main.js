@@ -140,7 +140,6 @@ const password	= {
 
 const rzpay_key_id		= fs.readFileSync ("rzpay.key.id",		"ascii").trim();
 const rzpay_key_secret		= fs.readFileSync ("rzpay.key.secret",		"ascii").trim();
-const rzpay_webhook_secret 	= fs.readFileSync ("rzpay.webhook.secret",	"ascii").trim();
 
 const rzpay_invoices_url	= "https://"				+
 						rzpay_key_id		+
@@ -1268,6 +1267,27 @@ app.post("/auth/v1/token", (req, res) => {
 		return END_ERROR (res, 429, "Too many requests");
 	}
 
+	let requested_token_time;		// as specified by the consumer
+	let token_time = MAX_TOKEN_TIME;	// to be sent along with token
+
+	if (body["token-time"])
+	{
+		requested_token_time = parseInt(body["token-time"],10);
+
+		if (
+			isNaN(requested_token_time)		||
+			requested_token_time < 1		||
+			requested_token_time > MAX_TOKEN_TIME
+		)
+		{
+			return END_ERROR (
+				res, 400,
+				"'token-time' should be > 0 and < " +
+				MAX_TOKEN_TIME
+			);
+		}
+	}
+
 	const ip	= req.connection.remoteAddress;
 	const geoip	= geoip_lite.lookup(ip) || {ll:[]};
 	const issuer	= cert.issuer;
@@ -1306,27 +1326,6 @@ app.post("/auth/v1/token", (req, res) => {
 			longitude		: geoip.ll[1]		|| 0,
 		}
 	};
-
-	let requested_token_time;		// as specified by the consumer
-	let token_time = MAX_TOKEN_TIME;	// to be sent along with token
-
-	if (body["token-time"])
-	{
-		requested_token_time = parseInt(body["token-time"],10);
-
-		if (
-			isNaN(requested_token_time)		||
-			requested_token_time < 1		||
-			requested_token_time > MAX_TOKEN_TIME
-		)
-		{
-			return END_ERROR (
-				res, 400,
-				"'token-time' should be > 0 and < " +
-				MAX_TOKEN_TIME
-			);
-		}
-	}
 
 	const existing_token		= body["existing-token"];
 	const providers			= {};
@@ -3435,7 +3434,8 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 				"$4::int,"				+
 				"to_timestamp($5::int),"		+
 				"$6::text,"				+
-				"false"					+
+				"false,"				+
+				"'{}'::jsonb"				+
 		")";
 
 		const parameters = [
@@ -3459,22 +3459,25 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 
 app.get("/topup-success", (req, res) => {
 
-	const payment_id		= req.query.razorpay_payment_id;
-	const invoice_number		= req.query.razorpay_invoice_id;
-	const invoice_status		= req.query.razorpay_invoice_status;
-	const invoice_recipt		= req.query.razorpay_invoice_receipt;
-	const signature			= req.query.razorpay_signature;
+	const payload = [
+			req.query.razorpay_invoice_id,
+			req.query.razorpay_invoice_receipt,
+			req.query.razorpay_invoice_status,
+			req.query.razorpay_payment_id
+	].join("|");
 
-	const body			= ""; 
+	const expected_signature = crypto
+					.createHmac('sha256',rzpay_key_secret)
+					.update(payload)
+					.digest('hex');
 
-	const expected_signature	= crypto.createHmac('sha256', rzpay_webhook_secret)
-						.update(body)
-						.digest('hex');
-
-	if (signature !== expected_signature)
+	if (req.query.razorpay_signature !== expected_signature)
 		return END_ERROR (res, 400, 'Invalid signature');
 
-	if (invoice_status !== 'paid')
+	const invoice_number	= req.query.razorpay_invoice_id;
+	const invoice_status	= req.query.razorpay_invoice_status;
+
+	if (invoice_status !== "paid")
 	{
 		const response = STATIC_PAGES.get("/topup-failed.html");
 
@@ -3482,8 +3485,20 @@ app.get("/topup-success", (req, res) => {
 		res.status(400).end(response);
 	}
 
-	const query		= "CALL credit_update($1::text)";
-	const parameters	= [invoice_number];
+	const payment_details = {};
+
+	for (const key in req.query)
+	{
+		payment_details[key] = req.query[key];
+	}
+
+	for (const key in req.headers)
+	{
+		payment_details[key] = req.headers[key];
+	}
+
+	const query		= "CALL update_credit($1::text,$2::jsonb)";
+	const parameters	= [invoice_number, payment_details];
 
 	pool.query(query, parameters, (error, results) =>
 	{
