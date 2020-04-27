@@ -16,6 +16,7 @@ const error_codes = {
 	"403"	: "Forbidden",
 	"405"	: "Method not allowed",
 	"500"	: "Internal error",
+	"501"	: "Not yet implemented",
 };
 
 function do_topup()

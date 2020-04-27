@@ -58,7 +58,9 @@ const pledge			= is_openbsd ? require("node-pledge")	: null;
 const unveil			= is_openbsd ? require("openbsd-unveil"): null;
 
 const NUM_CPUS			= os.cpus().length;
+
 const SERVER_NAME		= "auth.iudx.org.in";
+const WEBHOOK_SERVER_NAME	= "webhook.iudx.org.in";
 
 const MAX_TOKEN_TIME		= 31536000; // in seconds (1 year)
 
@@ -69,21 +71,23 @@ const MAX_SAFE_STRING_LEN	= 512;
 
 const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 
+/* --- resource server API --- */
 	"/auth/v1/token/introspect"		: 1,
 	"/auth/v1/certificate-info"		: 1,
-	"/marketplace/v1/credit/topup-success"	: 1,
 
+/* --- data consumer's APIs --- */
 	"/auth/v1/token"			: 2,
 
+/* --- static files --- */
 	"/topup.html"				: 2,
 	"/marketplace.js"			: 2,
 	"/marketplace.css"			: 2,
 
+/* --- marketplace APIs --- */
 	"/marketplace/v1/credit/info"		: 2,
 	"/marketplace/v1/credit/topup"		: 2,
-	"/marketplace/v1/audit/credit"		: 2,
-	"/marketplace/v1/confirm-payment"	: 2,
 
+/* --- data provider's APIs --- */
 	"/auth/v1/audit/tokens"			: 3,
 
 	"/auth/v1/token/revoke"			: 3,
@@ -128,6 +132,17 @@ const DB_SERVER	= "127.0.0.1";
 const password	= {
 	"DB"	: fs.readFileSync ("passwords/auth.db.password","ascii").trim(),
 };
+
+/* --- razorpay --- */
+
+const rzpay_key_id		= fs.readFileSync ("rzpay.key.id",		"ascii").trim();
+const rzpay_key_secret		= fs.readFileSync ("rzpay.key.secret",		"ascii").trim();
+
+const rzpay_invoices_url	= "https://"				+
+						rzpay_key_id		+
+							":"		+
+						rzpay_key_secret	+
+					"@api.razorpay.com/v1/invoices/";
 
 // async postgres connection
 const pool = new Pool ({
@@ -1786,8 +1801,6 @@ app.post("/auth/v1/token", (req, res) => {
 		}
 
 		response["payment-info"].amount = total_payment_amount;
-
-		// TODO save payment info
 	}
 
 	const num_resource_servers = Object
@@ -1828,15 +1841,14 @@ app.post("/auth/v1/token", (req, res) => {
 			{}, existing_row[0].resource_ids, resource_id_dict
 		);
 
-		query = "UPDATE token SET "				+
-				"request = $1::jsonb,"			+
-				"resource_ids = $2::jsonb,"		+
-				"server_token = $3::jsonb,"		+
-				"expiry = NOW() + $4::interval "	+
-				"WHERE "				+
-				"id = $5::text AND "			+
-				"token = $6::text AND "			+
-				"expiry > NOW()";
+		query = "UPDATE token SET"				+
+				" request = $1::jsonb,"			+
+				" resource_ids = $2::jsonb,"		+
+				" server_token = $3::jsonb,"		+
+				" expiry = NOW() + $4::interval"	+
+				" WHERE id = $5::text"			+
+				" AND token = $6::text"			+
+				" AND expiry > NOW()";
 
 		parameters = [
 			JSON.stringify(new_request),			// 1
@@ -3209,36 +3221,6 @@ app.post("/auth/v1/group/delete", (req, res) => {
 	});
 });
 
-/* --- Marketplace APIs --- */
-
-app.post("/marketplace/v1/payment/confirm", (req, res) => {
-	return END_ERROR (res, 405, "Not yet implemented");
-});
-
-app.post("/marketplace/v1/credit/info", (req, res) => {
-
-	return END_ERROR (res, 405, "Not yet implemented");
-
-	// TODO
-
-	// if class 2 - only related to this certificate's public key
-	// if class 3 or above - for all ids with this emailAddress
-
-	// select amount from credits table
-});
-
-app.post("/marketplace/v1/credit/topup", (req, res) => {
-
-	return END_ERROR (res, 405, "Not yet implemented");
-
-	// TODO
-
-	// if class 2 - only related to this certificate's public key
-	// if class 3 or above - for all ids with this emailAddress
-
-	// insert or update amount in credit table
-});
-
 app.post("/auth/v1/certificate-info", (req, res) => {
 
 	const cert	= res.locals.cert;
@@ -3251,6 +3233,223 @@ app.post("/auth/v1/certificate-info", (req, res) => {
 	};
 
 	return END_SUCCESS (res,response);
+});
+
+/* --- Marketplace APIs --- */
+
+app.post("/marketplace/v1/credit/info", (req, res) => {
+
+	const id		= res.locals.email;
+	const cert_class	= res.locals.cert_class;
+	const cert		= res.locals.cert;
+
+	let query		= "SELECT * FROM credit"			+
+					" WHERE id = $1::text"			+
+					" AND cert_fingerprint = $2::text"	+
+					" AND cert_serial = $3::text";
+
+	let serial 	= "*";
+	let fingerprint	= "*";
+
+	if (cert_class < 3) // get the real serial and fingerprint
+	{
+		serial		= cert.serialNumber.toLowerCase();
+		fingerprint	= cert.fingerprint.toLowerCase();
+
+		query += " LIMIT 1";
+	}
+
+	pool.query (
+		query,
+		[
+			id,
+			fingerprint,
+			serial
+		],
+
+	(error, results) =>
+	{
+		if (error)
+			return END_ERROR (res, 500, "Internal error!", error);
+
+		if (results.rowCount === 0)
+			return END_ERROR (res, 400, "No credits available");
+
+		const response = {};
+
+		if (cert_class < 3)
+		{
+			response.credits 		= results.rows[0].balance;
+			response["last-updated"]	= results.rows[0].last_updated;
+
+			return END_SUCCESS (res, response);
+		}
+
+		pool.query ("SELECT * FROM credit WHERE id = $1::text", [id],
+		(other_error, other_results) =>
+		{
+			if (other_error)
+				return END_ERROR (res, 500, "Internal error!", other_error);
+
+			response["other-credits"] = [];
+
+			for (const row of other_results.rows)
+			{
+				if (row.cert_serial === "*" && row.cert_fingerprint === "*")
+				{
+					response.credits 		= results.rows[0].balance;
+					response["last-updated"]	= results.rows[0].last_updated;
+				}
+				else
+				{
+					response["other-credits"].push ({
+						"serial"	: row.cert_serial,
+						"fingerprint"	: row.cert_fingerprint,
+						"credits"	: row.balance,
+						"last-updated"  : row.last_updated
+					});
+				}
+			}
+
+			return END_SUCCESS (res, response);
+		});
+	});
+});
+
+app.post("/marketplace/v1/credit/topup", (req, res) => {
+
+	const id		= res.locals.email;
+	const body		= res.locals.body;
+	const cert_class	= res.locals.cert_class;
+	const cert		= res.locals.cert;
+
+	if (! body.amount)
+		return END_ERROR (res, 400, "No 'amount' found in the body");
+
+	const amount = parseFloat(body.amount);
+
+	if (isNaN(amount) || amount < 0 || amount > 1000)
+		return END_ERROR (res, 400, "'amount' must be a positive number");
+
+	let serial;
+	let fingerprint;
+
+	if (cert_class < 3)
+	{
+		if (body.fingerprint || body.serial)
+		{
+			return END_ERROR (
+				res, 400,
+				"'fingerprint' and 'serial' can only be "	+
+				"provided when using a class-3 or above certificate"
+			);
+		}
+
+		serial		= cert.serialNumber.toLowerCase();
+		fingerprint	= cert.fingerprint.toLowerCase();
+	}
+	else	
+	{
+		/*
+			For a class-3 user, by default, the topup amount
+			is not associated with serial or fingerprint.
+
+			i.e. denoted by "*"
+			unless 'serial' and 'fingerprint' is provided in body.
+		*/
+
+		serial		= "*";
+		fingerprint 	= "*";
+
+		if (body.serial && body.fingerprint)
+		{
+			if (! is_string_safe(body.serial))
+				return END_ERROR (res, 400, "Invalid 'serial'");
+
+			if (! is_string_safe(body.fingerprint,":")) // fingerprint contains ':'
+				return END_ERROR (res, 400, "Invalid 'fingerprint'");
+
+			serial		= body.serial.toLowerCase();
+			fingerprint	= body.fingerprint.toLowerCase();
+		}
+	}
+
+	const now		= Math.floor(Date.now() / 1000);
+	const expire		= now + 1800; // after 30 mins
+
+	const success_url	= "https://" + WEBHOOK_SERVER_NAME + "/razorpay-topup-webhook";
+
+	const first_name	= cert.subject.GN || "Unknown";
+	const last_name		= cert.subject.SN || "unknown";
+
+	const full_name		= first_name + " " + last_name;
+
+	const post_body = {
+
+		"type"			: "link",
+		"amount"		: amount,
+		"description"		: "IUDX credits topup for : " + id,
+		"view_less"		: 1,
+		"currency"		: "INR",
+		"expire_by"		: expire,
+		"email_notify"		: 0,
+		"callback_url"		: success_url,
+		"callback_method"	: "get",
+
+		"customer"		: {
+			"email"		: id,
+			"name"		: full_name
+		},
+	};
+
+	const options = {
+		url	: rzpay_invoices_url, 
+		headers	: {"Content-Type": "application/json"},
+		json	: true,
+		body	: post_body 
+	};
+
+	http_request.post(options, (error, response, body) => {
+
+		if (error)
+			return END_ERROR (res, 500, "Error in payment process", error);
+
+		if (response.statusCode !== 200)
+			return END_ERROR (res, 500, "Error in payment process; response code is not 200");
+
+		if (! body.short_url)
+			return END_ERROR (res, 500, "Error in payment process; response short url is invalid");
+
+		const link		= {"link" : body.short_url};
+		const invoice_number	= body.id;
+
+		const query = "INSERT INTO topup_transaction VALUES("	+
+				"$1::text,"				+
+				"$2::text,"				+
+				"$3::text,"				+
+				"$4::int,"				+
+				"to_timestamp($5::int),"		+
+				"$6::text,"				+
+				"false"					+
+		")";
+
+		const parameters = [
+				id,					// 1
+				serial,					// 2
+				fingerprint,				// 3
+				amount,					// 4
+				now,					// 5
+				invoice_number				// 6
+		];
+
+		pool.query (query, parameters, (error_1, results_1) =>
+		{
+			if (error_1 || results_1.rowCount === 0)
+				return END_ERROR (res, 500, "Internal error!", error_1);
+			else
+				return END_SUCCESS (res, link);
+		});
+	});
 });
 
 /* --- Invalid requests --- */

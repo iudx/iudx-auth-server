@@ -31,7 +31,6 @@ CREATE TABLE public.crl (
 
 INSERT INTO public.crl VALUES('[]'::jsonb);
 
-ALTER TABLE public.crl OWNER TO postgres;
 
 --
 -- Name: groups; Type: TABLE; Schema: public; Owner: postgres
@@ -48,8 +47,6 @@ CREATE TABLE public.groups (
 
 CREATE INDEX idx_groups_id ON public.groups(id,group_name,valid_till);
 
-ALTER TABLE public.groups OWNER TO postgres;
-
 --
 -- Name: policy; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -65,8 +62,6 @@ CREATE TABLE public.policy (
 );
 
 CREATE UNIQUE INDEX idx_policy_id ON public.policy(id);
-
-ALTER TABLE public.policy OWNER TO postgres;
 
 --
 -- Name: token; Type: TABLE; Schema: public; Owner: postgres
@@ -89,23 +84,48 @@ CREATE TABLE public.token (
     providers		jsonb				NOT NULL,
     geoip		jsonb				NOT NULL,
 
-    PRIMARY KEY(id, token)
+    PRIMARY KEY (id,token)
 );
 
 CREATE UNIQUE INDEX idx_token_id ON public.token(id,token,issued_at);
 
-ALTER TABLE public.token OWNER TO postgres;
+CREATE TABLE public.credit (
+	id			character varying		NOT NULL,
+	cert_serial		character varying		NOT NULL,
+	cert_fingerprint	character varying		NOT NULL,
+	balance			numeric				NOT NULL DEFAULT 0 CHECK (balance >= 0),
+	last_updated		timestamp without time zone	NOT NULL
+);
+
+CREATE TABLE public.topup_transaction (
+	id			character varying		NOT NULL,
+	cert_serial		character varying		NOT NULL,
+	cert_fingerprint	character varying		NOT NULL,
+	amount			numeric				NOT NULL,
+	time			timestamp without time zone	NOT NULL,
+	invoice_num		character varying		NOT NULL,
+	paid			boolean				NOT NULL
+);
 
 --
--- ACCESS CONTROLS 
+-- ACCESS CONTROLS
 --
 
-CREATE USER auth	with PASSWORD 'XXXauth';
-CREATE USER update_crl	with PASSWORD 'XXXupdate_crl';
+ALTER TABLE public.policy		OWNER TO postgres;
+ALTER TABLE public.groups		OWNER TO postgres;
+ALTER TABLE public.crl			OWNER TO postgres;
+ALTER TABLE public.token		OWNER TO postgres;
+ALTER TABLE public.credit		OWNER TO postgres;
+ALTER TABLE public.topup_transaction	OWNER TO postgres;
 
-GRANT SELECT			ON TABLE public.crl	TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.token	TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.groups	TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy	TO auth;
+CREATE USER auth		with PASSWORD 'XXX_auth';
+CREATE USER update_crl		with PASSWORD 'XXX_update_crl';
+
+GRANT SELECT			ON TABLE public.crl			TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.token			TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.groups			TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy			TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.credit			TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction	TO auth;
 
 GRANT UPDATE			ON TABLE public.crl	TO update_crl;

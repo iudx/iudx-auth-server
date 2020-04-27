@@ -42,14 +42,19 @@ do
 	password=`cat passwords/$f`
 	label=`echo $f | cut -f1 -d'.'`
 
-	sed -i "s/XXX$label/$password/" schema.sql 
+	sed -i "s/XXX_$label/$password/" schema.sql 
 done
 
-echo your-telegram-api-key > telegram.apikey
-echo your-telegram-chat-id > telegram.chatid
+echo your-telegram-api-key		> telegram.apikey
+echo your-telegram-chat-id		> telegram.chatid
+
+echo your-razorpay-key-id		> rzpay.key.id
+echo your-razorpay-key-secret		> rzpay.key.secret
+echo your-razorpay-webhook-secret	> rzpay.key.secret
 
 chmod 400 telegram.*
 chmod 400 *.sql
+chmod 400 rzpay.*
 
 # setup postgresql
 

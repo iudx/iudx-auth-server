@@ -12,6 +12,8 @@ openssl req -new -newkey rsa:2048 -nodes -out provider.csr -keyout provider.key.
 
 openssl req -new -newkey rsa:2048 -nodes -out delegated.csr -keyout delegated.key.pem -subj "/CN=employee/emailAddress=abc.xyz@rbccps.org/id-qt-unotice=class:3;delegated-by:arun.babu@rbccps.org"
 
+openssl req -new -newkey rsa:2048 -nodes -out untrusted.csr -keyout untrusted.key.pem -subj "/CN=employee/emailAddress=abc.xyz@rbccps.org/id-qt-unotice=class:3;untrusted:true"
+
 openssl req -new -newkey rsa:2048 -nodes -out r-server.csr -keyout r-server.key.pem -subj "/CN=iisc.iudx.org.in/id-qt-unotice=class:1/emailAddress=example@example.com"
 openssl req -new -newkey rsa:2048 -nodes -out f-server.csr -keyout f-server.key.pem -subj "/CN=google.com/id-qt-unotice=class:1/emailAddress=arun.babu@rbccps.org"
 
@@ -24,6 +26,7 @@ openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in restricted
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in provider.csr -req -days 365 -sha256 -out provider.pem 
 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in delegated.csr -req -days 365 -sha256 -out delegated.pem 
+openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in untrusted.csr -req -days 365 -sha256 -out untrusted.pem 
 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in r-server.csr -req -days 365 -sha256 -out r-server.pem 
 

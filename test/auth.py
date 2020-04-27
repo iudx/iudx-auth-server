@@ -151,4 +151,17 @@ class Auth():
 
 		return self.call("group/list", body)
 	#
+
+	############################# Marketplace ##############################
+
+	def topup(self, amount, serial = None, fingerprint = None):
+	#
+		body = {'amount': amount}
+
+		if serial and fingerprint:
+			body['serial']		= serial
+			body['fingerprint']	= fingerprint 
+
+		return self.call("marketplace/topup", body)
+	#
 #}
