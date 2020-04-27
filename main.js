@@ -3502,13 +3502,22 @@ app.get("/topup-success", (req, res) => {
 
 	pool.query(query, parameters, (error, results) =>
 	{
-		if (error || results.rowCount === 0)
+		if (error)
 		{
 			return END_ERROR (
-				res, 400,
+				res, 500,
 				"Error in topup confirmation for : " +
 					invoice_number,
 				error
+			);
+		}
+
+		if (results.rowCount === 0)
+		{
+			return END_ERROR (
+				res, 400,
+				"Invalid 'invoice number' : " +
+					invoice_number
 			);
 		}
 

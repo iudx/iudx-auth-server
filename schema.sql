@@ -94,7 +94,9 @@ CREATE TABLE public.credit (
 	cert_serial		character varying		NOT NULL,
 	cert_fingerprint	character varying		NOT NULL,
 	amount			numeric				NOT NULL DEFAULT 0 CHECK (amount >= 0),
-	last_updated		timestamp without time zone	NOT NULL
+	last_updated		timestamp without time zone	NOT NULL,
+
+	CONSTRAINT "credit_pkey" PRIMARY KEY (id, cert_serial, cert_fingerprint)
 );
 
 CREATE TABLE public.topup_transaction (
@@ -126,7 +128,7 @@ BEGIN
 		SET
 			paid		= true,
 			time		= NOW(),
-			payment_details	= in_payment_details,
+			payment_details	= in_payment_details
 		WHERE 
 			invoice_number	= in_invoice_number
 		AND
@@ -162,12 +164,11 @@ BEGIN
 			my_time
 		)
 	
-	ON CONFLICT (id, cert_serial, cert_fingerprint)
+	ON CONFLICT ON CONSTRAINT credit_pkey 
 		DO UPDATE
 			SET
 				amount		= credit.amount + EXCLUDED.amount,
-				last_updated	= my_time,
-				payment_details	= in_payment_details
+				last_updated	= my_time
 	;
 END;
 $$;
@@ -188,14 +189,14 @@ ALTER PROCEDURE public.update_credit	OWNER TO postgres;
 CREATE USER auth		with PASSWORD 'XXX_auth';
 CREATE USER update_crl		with PASSWORD 'XXX_update_crl';
 
-GRANT SELECT			ON TABLE public.crl			TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.token			TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.groups			TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy			TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.credit			TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction	TO auth;
+GRANT SELECT			ON TABLE public.crl				TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.token				TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.groups				TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy				TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.credit				TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction		TO auth;
 
-GRANT UPDATE			ON TABLE public.crl			TO update_crl;
+GRANT UPDATE			ON TABLE public.crl				TO update_crl;
 
-GRANT EXECUTE ON PROCEDURE	public.update_credit(character varying)	TO auth;
+GRANT EXECUTE ON PROCEDURE	public.update_credit(character varying,jsonb)	TO auth;
 
