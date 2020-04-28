@@ -1,7 +1,7 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
 import os
-from auth import Auth 
+from auth import Auth
 
 auth_server = "auth.iudx.org.in"
 home        = os.path.expanduser("~") + "/"

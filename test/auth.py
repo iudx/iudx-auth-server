@@ -10,7 +10,7 @@ class Auth():
 	def __init__(self, certificate, key, auth_server="auth.iudx.org.in", version=1):
 	#
 		self.ssl_verify = True
- 
+
 		if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 			self.ssl_verify = False
 
@@ -169,7 +169,7 @@ class Auth():
 
 		if serial and fingerprint:
 			body['serial']		= serial
-			body['fingerprint']	= fingerprint 
+			body['fingerprint']	= fingerprint
 
 		return self.call("marketplace/credit/topup", body)
 	#

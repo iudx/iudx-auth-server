@@ -69,26 +69,26 @@ const MAX_SAFE_STRING_LEN	= 512;
 
 const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 
-/* --- resource server API --- */
+/* resource server API */
 	"/auth/v1/token/introspect"		: 1,
 	"/auth/v1/certificate-info"		: 1,
 
-/* --- data consumer's APIs --- */
+/* data consumer's APIs */
 	"/auth/v1/token"			: 2,
 
-/* --- for topup --- */
+/* for credit topup */
 	"/marketplace/topup-success"		: 2,
 
-/* --- static files --- */
+/* static files for marketplace */
 	"/marketplace/topup.html"		: 2,
 	"/marketplace/marketplace.js"		: 2,
 	"/marketplace/marketplace.css"		: 2,
 
-/* --- marketplace APIs --- */
+/* marketplace APIs */
 	"/marketplace/v1/credit/info"		: 2,
 	"/marketplace/v1/credit/topup"		: 2,
 
-/* --- data provider's APIs --- */
+/* data provider's APIs */
 	"/auth/v1/audit/tokens"			: 3,
 
 	"/auth/v1/token/revoke"			: 3,
@@ -104,8 +104,9 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 	"/auth/v1/group/list"			: 3,
 });
 
-/* --- time zone --- */
-process.env.TZ= "Asia/Kolkata";
+/* --- environment variables--- */
+
+process.env.TZ = "Asia/Kolkata";
 
 /* --- dns --- */
 
@@ -139,10 +140,10 @@ const password	= {
 const rzpay_key_id	= fs.readFileSync("rzpay.key.id",	"ascii").trim();
 const rzpay_key_secret	= fs.readFileSync("rzpay.key.secret",	"ascii").trim();
 
-const rzpay_url		= "https://"				+
-					rzpay_key_id		+
-						":"		+
-					rzpay_key_secret	+
+const rzpay_url		= "https://"					+
+					rzpay_key_id			+
+						":"			+
+					rzpay_key_secret		+
 				"@api.razorpay.com/v1/invoices/";
 
 // async postgres connection
@@ -276,7 +277,7 @@ const STATIC_PAGES = immutable.Map ({
 
 /* get end points */
 
-	"/marketplace/topup.html": 
+	"/marketplace/topup.html":
 				fs.readFileSync (
 					"static/topup.html",		"ascii"
 				),
@@ -1813,7 +1814,6 @@ app.post("/auth/v1/token", (req, res) => {
 	};
 
 	const total_payment_amount	= total_data_cost_per_second * token_time;
-	const balance_amount_in_credit	= 0.0; // TODO get from DB
 
 	if (total_payment_amount > 0)
 	{
@@ -1825,11 +1825,24 @@ app.post("/auth/v1/token", (req, res) => {
 			);
 		}
 
-		if (total_payment_amount > balance_amount_in_credit)
+		const query	= "SELECT amount FROM credit"			+
+					" WHERE id = $1::text"			+
+					" AND cert_serial = $2::text"		+
+					" AND cert_fingerprint = $3::text"	+
+					" LIMIT 1";
+
+		const params	= (cert_class > 2) ?
+					[consumer_id, "*", "*"]	:
+					[consumer_id, cert.serialNumber, cert.fingerprint];
+
+		const rows	= pg.querySync (query, params);
+		const credits	= (rows.length === 1) ? rows[0].amount : 0.0;
+
+		if (total_payment_amount > credits)
 		{
 			return END_ERROR (
 				res, 402,
-					"Not enough balance in credits : " +
+					"Not enough balance in credits for : "	+
 					total_payment_amount
 			);
 		}
@@ -1862,7 +1875,7 @@ app.post("/auth/v1/token", (req, res) => {
 	const sha256_of_token		= sha256(token);
 
 	let query;
-	let parameters;
+	let params;
 
 	if (existing_token)
 	{
@@ -1875,7 +1888,7 @@ app.post("/auth/v1/token", (req, res) => {
 			{}, existing_row[0].resource_ids, resource_id_dict
 		);
 
-		query = "UPDATE token SET"				+
+		query	= "UPDATE token SET"				+
 				" request = $1::jsonb,"			+
 				" resource_ids = $2::jsonb,"		+
 				" server_token = $3::jsonb,"		+
@@ -1884,7 +1897,7 @@ app.post("/auth/v1/token", (req, res) => {
 				" AND token = $6::text"			+
 				" AND expiry > NOW()";
 
-		parameters = [
+		params	= [
 			JSON.stringify(new_request),			// 1
 			JSON.stringify(new_resource_ids_dict),		// 2
 			JSON.stringify(sha256_of_resource_server_token),// 3
@@ -1893,7 +1906,7 @@ app.post("/auth/v1/token", (req, res) => {
 			sha256_of_token,				// 6
 		];
 
-		pool.query (query, parameters, (error,results) =>
+		pool.query (query, params, (error,results) =>
 		{
 			if (error || results.rowCount === 0)
 			{
@@ -1913,7 +1926,7 @@ app.post("/auth/v1/token", (req, res) => {
 		delete geoip.metro;
 		delete geoip.range;
 
-		query = "INSERT INTO token VALUES("			+
+		query	= "INSERT INTO token VALUES("			+
 				"$1::text,"				+
 				"$2::text,"				+
 				"NOW() + $3::interval,"			+
@@ -1930,7 +1943,7 @@ app.post("/auth/v1/token", (req, res) => {
 				"$11::jsonb"				+
 			")";
 
-		parameters = [
+		params	= [
 			consumer_id,					// 1
 			sha256_of_token,				// 2
 			token_time + " seconds",			// 3
@@ -1944,7 +1957,7 @@ app.post("/auth/v1/token", (req, res) => {
 			JSON.stringify(geoip)				// 11
 		];
 
-		pool.query (query, parameters, (error,results) =>
+		pool.query (query, params, (error,results) =>
 		{
 			if (error || results.rowCount === 0)
 			{
@@ -2609,18 +2622,18 @@ app.post("/auth/v1/acl/set", (req, res) => {
 			return END_ERROR (res, 500, "Internal error!", error);
 
 		let query;
-		let parameters;
+		let params;
 
 		if (results.rows.length > 0)
 		{
-			query = "UPDATE policy"				+
-				" SET policy = $1::text,"		+
-				" policy_in_json = $2::jsonb,"		+
-				" previous_policy = policy,"		+
-				" last_updated = NOW()"	+
-				" WHERE id = $3::text";
+			query	= "UPDATE policy"			+
+					" SET policy = $1::text,"	+
+					" policy_in_json = $2::jsonb,"	+
+					" previous_policy = policy,"	+
+					" last_updated = NOW()"		+
+					" WHERE id = $3::text";
 
-			parameters = [
+			params	= [
 				base64policy,				// 1
 				JSON.stringify(policy_in_json),		// 2
 				provider_id_hash			// 3
@@ -2628,17 +2641,17 @@ app.post("/auth/v1/acl/set", (req, res) => {
 		}
 		else
 		{
-			query = "INSERT INTO policy VALUES"		+
-				"($1::text, $2::text, $3::jsonb, NULL, NOW())";
+			query	= "INSERT INTO policy VALUES"		+
+					"($1::text, $2::text, $3::jsonb, NULL, NOW())";
 
-			parameters = [
+			params	= [
 				provider_id_hash,			// 1
 				base64policy,				// 2
 				JSON.stringify(policy_in_json)		// 3
 			];
 		}
 
-		pool.query (query, parameters, (error_1, results_1) =>
+		pool.query (query, params, (error_1, results_1) =>
 		{
 			if (error_1 || results_1.rowCount === 0)
 			{
@@ -2712,7 +2725,7 @@ app.post("/auth/v1/acl/append", (req, res) => {
 			return END_ERROR (res,500,"Internal error!",error);
 
 		let query;
-		let parameters;
+		let params;
 
 		if (results.rows.length === 1)
 		{
@@ -2746,17 +2759,17 @@ app.post("/auth/v1/acl/append", (req, res) => {
 						.from(new_policy)
 						.toString("base64");
 
-			query = "UPDATE policy"				+
-				" SET policy = $1::text,"		+
-				" policy_in_json = $2::jsonb,"		+
-				" previous_policy = policy,"		+
-				" last_updated = NOW()"			+
-				" WHERE id = $3::text";
+			query	= "UPDATE policy"			+
+					" SET policy = $1::text,"	+
+					" policy_in_json = $2::jsonb,"	+
+					" previous_policy = policy,"	+
+					" last_updated = NOW()"		+
+					" WHERE id = $3::text";
 
-			parameters = [
-				base64policy,				// 1
-				JSON.stringify(policy_in_json),		// 2
-				provider_id_hash			// 3
+			params	= [
+					base64policy,			// 1
+					JSON.stringify(policy_in_json),	// 2
+					provider_id_hash		// 3
 			];
 		}
 		else
@@ -2765,17 +2778,17 @@ app.post("/auth/v1/acl/append", (req, res) => {
 						.from(policy)
 						.toString("base64");
 
-			query = "INSERT INTO policy VALUES"		+
+			query	= "INSERT INTO policy VALUES"		+
 				"($1::text, $2::text, $3::jsonb, NULL, NOW())";
 
-			parameters = [
+			params	= [
 				provider_id_hash,			// 1
 				base64policy,				// 2
 				JSON.stringify(policy_in_json)		// 3
 			];
 		}
 
-		pool.query (query, parameters, (error_1, results_1) =>
+		pool.query (query, params, (error_1, results_1) =>
 		{
 			if (error_1 || results_1.rowCount === 0)
 			{
@@ -2891,23 +2904,23 @@ app.post("/auth/v1/acl/revert", (req, res) => {
 
 			return END_ERROR (
 				res, 400,
-					"Syntax error in previous-policy. " + err
+				"Syntax error in previous-policy. " + err
 			);
 		}
 
-		const query = "UPDATE policy"				+
-				" SET policy = previous_policy,"	+
-				" policy_in_json = $1::jsonb,"		+
-				" previous_policy = NULL,"		+
-				" last_updated = NOW()"			+
-				" WHERE id = $2::text";
+		const query	= "UPDATE policy"			+
+					" SET policy = previous_policy,"+
+					" policy_in_json = $1::jsonb,"	+
+					" previous_policy = NULL,"	+
+					" last_updated = NOW()"		+
+					" WHERE id = $2::text";
 
-		const parameters = [
-			JSON.stringify(policy_in_json),			// 2
-			provider_id_hash				// 3
+		const params	= [
+				JSON.stringify(policy_in_json),		// 2
+				provider_id_hash			// 3
 		];
 
-		pool.query (query, parameters, (error_1, results_1) =>
+		pool.query (query, params, (error_1, results_1) =>
 		{
 			if (error_1 || results_1.rowCount === 0)
 			{
@@ -3218,24 +3231,24 @@ app.post("/auth/v1/group/delete", (req, res) => {
 
 	const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
-	let query =	"UPDATE groups SET "				+
-			"valid_till = (NOW() - interval '1 seconds') "	+
-			"WHERE id = $1::text "				+
-			"AND group_name = $2::text "			+
-			"AND valid_till > NOW()";
+	let query	= "UPDATE groups SET"					+
+				" valid_till = (NOW() - interval '1 seconds')"	+
+				" WHERE id = $1::text"				+
+				" AND group_name = $2::text"			+
+				" AND valid_till > NOW()";
 
-	const parameters = [
-			provider_id_hash,				// 1
-			group						// 2
+	const params	= [
+				provider_id_hash,			// 1
+				group					// 2
 	];
 
 	if (consumer_id !== "*")
 	{
-		query += " AND consumer = $3::text ";
-		parameters.push(consumer_id);	// 3
+		query	+= " AND consumer = $3::text";
+		params.push(consumer_id);				// 3
 	}
 
-	pool.query (query, parameters, (error, results) =>
+	pool.query (query, params, (error, results) =>
 	{
 		if (error)
 			return END_ERROR (res, 500, "Internal error!", error);
@@ -3474,18 +3487,18 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 		const link		= { link : body.short_url };
 		const invoice_number	= body.id;
 
-		const query = "INSERT INTO topup_transaction VALUES ("	+
-				"$1::text,"				+
-				"$2::text,"				+
-				"$3::text,"				+
-				"$4::int,"				+
-				"to_timestamp($5::int),"		+
-				"$6::text,"				+
-				"false,"				+
-				"'{}'::jsonb"				+
+		const query	= "INSERT INTO topup_transaction VALUES ("	+
+					"$1::text,"				+
+					"$2::text,"				+
+					"$3::text,"				+
+					"$4::int,"				+
+					"to_timestamp($5::int),"		+
+					"$6::text,"				+
+					"false,"				+
+					"'{}'::jsonb"				+
 		")";
 
-		const parameters = [
+		const params	= [
 				id,					// 1
 				serial,					// 2
 				fingerprint,				// 3
@@ -3494,7 +3507,7 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 				invoice_number				// 6
 		];
 
-		pool.query (query, parameters, (error_1, results_1) =>
+		pool.query (query, params, (error_1, results_1) =>
 		{
 			if (error_1 || results_1.rowCount === 0)
 			{
@@ -3522,7 +3535,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 			"message"	: "Payment was not completed for invoice",
 			"invalid-input"	: {
 				invoice					: xss_safe(invoice_number),
-				time					: new Date(), 
+				time					: new Date(),
 				cert_serial_used_for_payment		: cert.serialNumber.toLowerCase(),
 				cert_fingerprint_used_for_payment	: cert.fingerprint.toLowerCase(),
 				cert_class_used_for_payment		: cert_class
@@ -3562,8 +3575,8 @@ app.get("/marketplace/topup-success", (req, res) => {
 			"message"	: "Invalid razorpay signature",
 			"invalid-input"	: {
 				invoice					: xss_safe(invoice_number),
-				time					: new Date(), 
-				razorpay_signature			: xss_safe(req.query.razorpay_signature), 
+				time					: new Date(),
+				razorpay_signature			: xss_safe(req.query.razorpay_signature),
 				razorpay_invoice_id			: xss_safe(req.query.razorpay_invoice_id),
 				razorpay_invoice_receipt		: xss_safe(req.query.razorpay_invoice_receipt),
 				razorpay_invoice_status			: xss_safe(req.query.razorpay_invoice_status),
@@ -3597,13 +3610,13 @@ app.get("/marketplace/topup-success", (req, res) => {
 	payment_details.origin	= req.headers.origin;
 	payment_details.referer = req.headers.referrer;
 
-	const query		= "SELECT"					+
-					" update_credit($1::text,$2::jsonb)"	+
-					" AS details";
+	const query	= "SELECT"					+
+				" update_credit($1::text,$2::jsonb)"	+
+				" AS details";
 
-	const parameters	= [invoice_number, payment_details];
+	const params	= [invoice_number, payment_details];
 
-	pool.query(query, parameters, (error, results) =>
+	pool.query(query, params, (error, results) =>
 	{
 		if (error || results.rowCount == 0)
 		{
@@ -3613,7 +3626,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 				"message"	: "Internal error in topup confirmation",
 				"invalid-input"	: {
 					invoice					: xss_safe(invoice_number),
-					time					: new Date(), 
+					time					: new Date(),
 					cert_serial_used_for_payment		: cert.serialNumber.toLowerCase(),
 					cert_fingerprint_used_for_payment	: cert.fingerprint.toLowerCase(),
 					cert_class_used_for_payment		: cert_class
@@ -3643,7 +3656,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 				"message"	: "Invalid invoice number",
 				"invalid-input"	: {
 					invoice					: xss_safe(invoice_number),
-					time					: new Date(), 
+					time					: new Date(),
 					cert_serial_used_for_payment		: cert.serialNumber.toLowerCase(),
 					cert_fingerprint_used_for_payment	: cert.fingerprint.toLowerCase(),
 					cert_class_used_for_payment		: cert_class

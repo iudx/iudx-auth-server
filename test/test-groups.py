@@ -1,7 +1,7 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
-from init import consumer 
-from init import provider 
+from init import consumer
+from init import provider
 from init import resource_server
 
 r                       = provider.delete_consumer_from_group("*","confidential")

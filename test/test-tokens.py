@@ -2,11 +2,12 @@
 
 import os
 
-from init import consumer 
-from init import provider 
+from init import consumer
+from init import provider
+from init import untrusted
 from init import resource_server
 
-from init import restricted_consumer 
+from init import restricted_consumer
 
 import hashlib
 
@@ -80,7 +81,7 @@ request = [
 		"apis"		: ["/latest"],
 		"methods"	: ["GET"],
 		"body"		: {"key":"some-key"}
-	    }   
+	    }
 ]
 
 bad_request = [
@@ -89,7 +90,7 @@ bad_request = [
 		"apis"		: ["/latest-now"],
 		"methods"	: ["POST"],
 		"body"		: {"key":"some-key"}
-	    }   
+	    }
 ]
 
 assert resource_server.introspect_token (token,server_token,request)['success']			is True
@@ -242,7 +243,7 @@ body = [
 r = restricted_consumer.get_token(body)
 access_token = r['response']
 
-assert r['success']     is True 
+assert r['success']     is True
 assert None             != access_token
 
 body = [
@@ -255,7 +256,7 @@ body = [
 ]
 
 r = restricted_consumer.get_token(body)
-assert r['success']	is False 
+assert r['success']	is False
 assert r['status_code']	== 403
 
 # new api tests
@@ -265,12 +266,28 @@ body = [
 	"rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/r2"
 ]
 r = consumer.get_token(body)
-assert r['success']	is True 
+assert r['success']	is True
 
 body = "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1";
 r = consumer.get_token(body)
-assert r['success']	is True 
+assert r['success']	is True
 
 body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
 r = consumer.get_token(body)
-assert r['success']	is True 
+assert r['success']	is True
+
+# payment related
+
+policy = "all can access anything @ 20 INR"
+provider.set_policy(policy)
+assert r['success']	is True
+
+body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
+r = consumer.get_token(body)
+assert r['success']	is False
+assert r['status_code']	== 402 # payment required
+
+body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
+r = untrusted.get_token(body)
+assert r['success']	is False
+assert r['status_code']	== 403

@@ -1,6 +1,6 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
-from init import provider 
+from init import provider
 
 rules = [
 	'x@x.com can access rs1.com/x/y/z/t/a/b/c for 2 days',
@@ -21,22 +21,22 @@ rules = [
 
 for rule in rules:
 	r = provider.set_policy(rule)
-	assert r['success'] is True 
+	assert r['success'] is True
 
-	
+
 policy = "x can access x"
 r = provider.set_policy(policy)
-assert r['success'] is True 
+assert r['success'] is True
 
-new_policy = "y can access y"  
+new_policy = "y can access y"
 r = provider.set_policy(policy)
-assert r['success'] is True 
+assert r['success'] is True
 
 r = provider.revert_policy()
-assert r['success'] is True 
+assert r['success'] is True
 
 r = provider.get_policy()
-assert r['success'] is True 
+assert r['success'] is True
 reverted_policy = r['response']['policy']
 
 assert len(reverted_policy) == 1
@@ -49,17 +49,17 @@ assert r['success'] is False
 # RegEx should not work supported
 
 r = provider.get_policy()
-assert r['success'] is True 
+assert r['success'] is True
 policy = r['response']['policy']
 
-regex_policy = "x can access y if z like /someregex*/i" 
+regex_policy = "x can access y if z like /someregex*/i"
 r = provider.set_policy(regex_policy)
-assert r['success'] is False 
+assert r['success'] is False
 
-regex_policy = "x can access /fred(dy)?/i::regex" 
+regex_policy = "x can access /fred(dy)?/i::regex"
 r = provider.set_policy(regex_policy)
-assert r['success'] is False 
+assert r['success'] is False
 
 r = provider.get_policy()
-assert r['success'] is True 
+assert r['success'] is True
 assert policy == r['response']['policy']

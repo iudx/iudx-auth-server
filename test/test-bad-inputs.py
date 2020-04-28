@@ -3,7 +3,6 @@
 import os
 
 from init import provider 
-from init import provider 
 from init import resource_server
 
 RS = "iisc.iudx.org.in"
