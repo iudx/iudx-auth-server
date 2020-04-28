@@ -373,6 +373,15 @@ function SERVE_HTML (req,res)
 	return true;
 }
 
+function END_REDIRECT (res, url, error = null)
+{
+	if (error)
+		url += "?error=" + error;
+
+	res.setHeader("Location",url);
+	res.status(302).end();
+}
+
 function END_SUCCESS (res, response = null)
 {
 	// if no response is given, just send success
@@ -3511,10 +3520,12 @@ app.get("/topup-success", (req, res) => {
 
 	if (invoice_status !== "paid")
 	{
-		const response = STATIC_PAGES.get("/topup-failure.html");
-
-		res.setHeader("Content-Type", "text/html");
-		res.status(400).end(response);
+		return END_REDIRECT (
+			res, 
+			"https://" + SERVER_NAME + "/topup-failure.html",
+			"Looks like payment was not completed for invoice :"	+
+				xss_safe(invoice_number)
+		);
 	}
 
 	const payment_details = {};
@@ -3535,22 +3546,23 @@ app.get("/topup-success", (req, res) => {
 	{
 		if (error || results.rowCount == 0)
 		{
-			return END_ERROR (
-				res, 500,
-				"Error in topup confirmation for : " +
-					invoice_number,
-				error
+			return END_REDIRECT (
+				res, 
+				"https://" + SERVER_NAME + "/topup-failure.html",
+				"Internal error in topup confirmation for : "	+
+					xss_safe(invoice_number) + ". "		+
+					error
 			);
 		}
 
 		if (! results.row[0].is_credit_updated)
 		{
-			const error_response = {
-				"message"	: "Invalid invoice number",
-				"invalid-input"	: xss_safe(invoice_number),
-			};
-
-			return END_ERROR (res, 400, error_response);
+			return END_REDIRECT (
+				res, 
+				"https://" + SERVER_NAME + "/topup-failure.html",
+				"Invalid invoice number : "			+
+					xss_safe(invoice_number)
+			);
 		}
 
 		const response = STATIC_PAGES.get("/topup-success.html");
