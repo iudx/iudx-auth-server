@@ -181,7 +181,7 @@ $$
 		; 
 
 		RETURN QUERY
-			SELECT	row_to_json(topup_transaction)::jsonb
+			SELECT  json_build_object('id',id, 'amount', amount, 'time', time)::jsonb
 			FROM	topup_transaction
 			WHERE	invoice_number = in_invoice_number
 		;
