@@ -3569,7 +3569,7 @@ app.get("/topup-success", (req, res) => {
 			);
 		}
 
-		if (! results.row[0].is_credit_updated)
+		if (! results.rows[0].is_credit_updated)
 		{
 			const error_response = {
 				"message"	: "Invalid invoice number",
