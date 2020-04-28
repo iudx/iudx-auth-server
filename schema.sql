@@ -117,7 +117,7 @@ CREATE UNIQUE INDEX idx_topup_transaction ON public.topup_transaction (id,time);
 --
 
 CREATE OR REPLACE FUNCTION public.update_credit (IN in_invoice_number character varying, IN in_payment_details jsonb)
-RETURNS boolean AS
+RETURNS SETOF jsonb AS
 $$
 	DECLARE
 		my_id			character varying;
@@ -129,13 +129,13 @@ $$
 	BEGIN
 		UPDATE public.topup_transaction
 			SET
-				paid		= true,
+				paid		= TRUE,
 				time		= NOW(),
 				payment_details	= in_payment_details
 			WHERE
 				invoice_number	= in_invoice_number
 			AND
-				paid = false
+				paid = FALSE 
 		RETURNING
 			id,
 			cert_serial,
@@ -154,7 +154,7 @@ $$
 
 		IF my_num_rows_affected = 0
 		THEN
-			RETURN FALSE;
+			RETURN QUERY SELECT '{}'::jsonb;
 		END IF;
 
 		INSERT INTO public.credit (
@@ -180,7 +180,11 @@ $$
 					last_updated	= my_time 
 		; 
 
-		RETURN TRUE;
+		RETURN QUERY
+			SELECT	row_to_json(topup_transaction)::jsonb
+			FROM	topup_transaction
+			WHERE	invoice_number = in_invoice_number
+		;
 	END;
 $$
 LANGUAGE PLPGSQL STRICT;
