@@ -715,7 +715,7 @@ function has_certificate_been_revoked (socket, cert, CRL)
 function xss_safe (input)
 {
 	if (typeof input === "string")
-		return input.replace(/[^-a-zA-Z0-9:/.@]/g,"*");
+		return input.replace(/[^-a-zA-Z0-9:/.@_]/g,"*");
 	else
 		return input;
 }
@@ -3520,14 +3520,10 @@ app.get("/topup-success", (req, res) => {
 	const payment_details = {};
 
 	for (const key in req.query)
-	{
 		payment_details[key] = req.query[key];
-	}
 
-	for (const key in req.headers)
-	{
-		payment_details[key] = req.headers[key];
-	}
+	payment_details.origin	= req.headers.origin;
+	payment_details.referer = req.headers.referrer;
 
 	const query		= "SELECT"					+
 					" update_credit($1::text,$2::jsonb)"	+
