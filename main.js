@@ -81,7 +81,6 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 
 /* --- static files --- */
 	"/topup.html"				: 2,
-	"/topup-success.html"			: 2,
 	"/topup-failure.html"			: 2,
 	"/marketplace.js"			: 2,
 	"/marketplace.css"			: 2,
@@ -276,11 +275,10 @@ const https_options = {
 
 const STATIC_PAGES = immutable.Map ({
 
+/* get end points */
+
 	"/topup.html"		: fs.readFileSync (
 					"static/topup.html",		"ascii"
-				),
-	"/topup-success.html"	: fs.readFileSync (
-					"static/topup-success.html",	"ascii"
 				),
 	"/topup-failure.html"	: fs.readFileSync (
 					"static/topup-failure.html",	"ascii"
@@ -290,6 +288,15 @@ const STATIC_PAGES = immutable.Map ({
 				),
 	"/marketplace.css"	: fs.readFileSync (
 					"static/marketplace.css",	"ascii"
+				),
+
+/* templates */
+
+	"topup-success-1.html"	: fs.readFileSync (
+					"static/topup-success-1.html",	"ascii"
+				),
+	"topup-success-2.html"	: fs.readFileSync (
+					"static/topup-success-2.html",	"ascii"
 				),
 });
 
@@ -367,16 +374,15 @@ function SERVE_HTML (req,res)
 	const mime	= MIME_TYPE.get(extension) || "text/html";
 
 	res.setHeader("Content-Type", mime);
-
 	res.status(200).end(page);
 
 	return true;
 }
 
-function END_REDIRECT (res, url, error = null)
+function END_REDIRECT (res, url, message = null)
 {
-	if (error)
-		url += "?error=" + error;
+	if (message)
+		url += "?message=" + base64(xss_safe(message));
 
 	res.setHeader("Location",url);
 	res.status(302).end();
@@ -3373,7 +3379,7 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 		serial		= cert.serialNumber.toLowerCase();
 		fingerprint	= cert.fingerprint.toLowerCase();
 	}
-	else	
+	else
 	{
 		/*
 			For a class-3 user, by default, the topup amount
@@ -3428,10 +3434,10 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 	};
 
 	const options = {
-		url	: rzpay_url, 
+		url	: rzpay_url,
 		headers	: {"Content-Type": "application/json"},
 		json	: true,
-		body	: post_body 
+		body	: post_body
 	};
 
 	http_request.post(options, (error, response, body) => {
@@ -3520,11 +3526,15 @@ app.get("/topup-success", (req, res) => {
 
 	if (invoice_status !== "paid")
 	{
+		const error_response = {
+			"message"	: "Payment was not completed for invoice",
+			"invalid-input"	: xss_safe(invoice_number)
+		};
+
 		return END_REDIRECT (
-			res, 
+			res,
 			"https://" + SERVER_NAME + "/topup-failure.html",
-			"Looks like payment was not completed for invoice :"	+
-				xss_safe(invoice_number)
+			JSON.stringify (error_response)
 		);
 	}
 
@@ -3546,26 +3556,45 @@ app.get("/topup-success", (req, res) => {
 	{
 		if (error || results.rowCount == 0)
 		{
+			const error_response = {
+				"message"	: "Internal error in topup confirmation",
+				"invalid-input"	: xss_safe(invoice_number),
+				"error"		: xss_safe(error)
+			};
+
 			return END_REDIRECT (
-				res, 
+				res,
 				"https://" + SERVER_NAME + "/topup-failure.html",
-				"Internal error in topup confirmation for : "	+
-					xss_safe(invoice_number) + ". "		+
-					error
+				JSON.stringify (error_response)
 			);
 		}
 
 		if (! results.row[0].is_credit_updated)
 		{
+			const error_response = {
+				"message"	: "Invalid invoice number",
+				"invalid-input"	: xss_safe(invoice_number)
+			};
+
 			return END_REDIRECT (
-				res, 
+				res,
 				"https://" + SERVER_NAME + "/topup-failure.html",
-				"Invalid invoice number : "			+
-					xss_safe(invoice_number)
+				JSON.stringify (error_response)
 			);
 		}
 
-		const response = STATIC_PAGES.get("/topup-success.html");
+		const response_start	= STATIC_PAGES.get("topup-success-1.html");
+		const response_end	= STATIC_PAGES.get("topup-success-2.html");
+
+		let response_mid =
+				"<script>"					+
+					"jsonViewer.showJSON("			+
+						"JSON.parse("			+
+						JSON.stringify(req.query)	+
+					"));"					+
+				"</script>";
+
+		const response = response_start + response_mid + response_end;
 
 		res.setHeader("Content-Type", "text/html");
 		res.status(200).end(response);
