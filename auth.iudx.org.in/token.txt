@@ -34,7 +34,6 @@ Body in JSON format:
 		{
 			"request"  		: <resource id(s) for which access is requested>		// required
 			"token-time"		: <the time in seconds, till which the token should be valid>	// optional
-			"existing-token"	: <a valid token a data consumer already has>			// optional
 		}
 
 	2. complex:
@@ -48,15 +47,10 @@ Body in JSON format:
 			},
 
 			"token-time"		: <the time in seconds, till which the token should be valid>	// optional
-			"existing-token"	: <a valid token a data consumer already has>			// optional
 		}
 
 	Note:
-
-	The "request" field could also be an "array" of strings/objects.
-
-	The "existing-token" field is used to indicate that new token "SHOULD NOT" be generated;
-	i.e. the existing-token will be used to access the new requested list of resource ids.
+		The "request" field could also be an "array" of strings/objects.
 
 	The "request" fields are:
 
@@ -247,13 +241,6 @@ CURL examples:
 					"rs2.com" is "rs2.com/52338cdfff3222699900"
 
 				The "server-token" ensures that only a genuine resource server can access its token.
-
-				Important note:
-
-					The "server-token"s may change if "existing-token" is used with
-					multiple resource servers.
-
-					Hence, consumers must update their "server-token"s as in the API response.
 
 See also:
 
