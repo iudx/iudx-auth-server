@@ -3569,7 +3569,9 @@ app.get("/topup-success", (req, res) => {
 			);
 		}
 
-		if (! results.rows[0].is_credit_updated)
+		const details = results.rows[0].details;
+
+		if (! details)
 		{
 			const error_response = {
 				"message"	: "Invalid invoice number",
@@ -3586,18 +3588,24 @@ app.get("/topup-success", (req, res) => {
 		const response_start	= STATIC_PAGES.get("topup-success-1.html");
 		const response_end	= STATIC_PAGES.get("topup-success-2.html");
 
+		const response		= JSON.parse(req.query);
+
+		for (const k in details)
+		{
+			response[k] = details[k];
+		}
+
 		let response_mid =
 				"<script>"					+
 					"jsonViewer.showJSON("			+
-						"JSON.parse("			+
-						JSON.stringify(req.query)	+
-					"));"					+
+						JSON.stringify(response)	+
+					");"					+
 				"</script>";
 
-		const response = response_start + response_mid + response_end;
+		const page = response_start + response_mid + response_end;
 
 		res.setHeader("Content-Type", "text/html");
-		res.status(200).end(response);
+		res.status(200).end(page);
 	});
 });
 
