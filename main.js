@@ -58,7 +58,6 @@ const pledge			= is_openbsd ? require("node-pledge")	: null;
 const unveil			= is_openbsd ? require("openbsd-unveil"): null;
 
 const NUM_CPUS			= os.cpus().length;
-
 const SERVER_NAME		= "auth.iudx.org.in";
 
 const MAX_TOKEN_TIME		= 31536000; // in seconds (1 year)
@@ -83,6 +82,7 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 /* --- static files --- */
 	"/topup.html"				: 2,
 	"/topup-success.html"			: 2,
+	"/topup-failure.html"			: 2,
 	"/marketplace.js"			: 2,
 	"/marketplace.css"			: 2,
 
@@ -133,19 +133,19 @@ const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
 const DB_SERVER	= "127.0.0.1";
 
 const password	= {
-	"DB"	: fs.readFileSync ("passwords/auth.db.password","ascii").trim(),
+	"DB"	: fs.readFileSync("passwords/auth.db.password","ascii").trim(),
 };
 
 /* --- razorpay --- */
 
-const rzpay_key_id		= fs.readFileSync ("rzpay.key.id",		"ascii").trim();
-const rzpay_key_secret		= fs.readFileSync ("rzpay.key.secret",		"ascii").trim();
+const rzpay_key_id	= fs.readFileSync("rzpay.key.id",	"ascii").trim();
+const rzpay_key_secret	= fs.readFileSync("rzpay.key.secret",	"ascii").trim();
 
-const rzpay_invoices_url	= "https://"				+
-						rzpay_key_id		+
-							":"		+
-						rzpay_key_secret	+
-					"@api.razorpay.com/v1/invoices/";
+const rzpay_url		= "https://"				+
+					rzpay_key_id		+
+						":"		+
+					rzpay_key_secret	+
+				"@api.razorpay.com/v1/invoices/";
 
 // async postgres connection
 const pool = new Pool ({
@@ -272,14 +272,25 @@ const https_options = {
 	rejectUnauthorized	: true,
 };
 
-
 /* --- static pages --- */
 
 const STATIC_PAGES = immutable.Map ({
-	"/topup.html"		: fs.readFileSync ("static/topup.html",		"ascii"),
-	"/topup-success.html"	: fs.readFileSync ("static/topup-success.html",	"ascii"),
-	"/marketplace.js"	: fs.readFileSync ("static/marketplace.js",	"ascii"),
-	"/marketplace.css"	: fs.readFileSync ("static/marketplace.css",	"ascii"),
+
+	"/topup.html"		: fs.readFileSync (
+					"static/topup.html",		"ascii"
+				),
+	"/topup-success.html"	: fs.readFileSync (
+					"static/topup-success.html",	"ascii"
+				),
+	"/topup-failure.html"	: fs.readFileSync (
+					"static/topup-failure.html",	"ascii"
+				),
+	"/marketplace.js"	: fs.readFileSync (
+					"static/marketplace.js",	"ascii"
+				),
+	"/marketplace.css"	: fs.readFileSync (
+					"static/marketplace.css",	"ascii"
+				),
 });
 
 const MIME_TYPE = immutable.Map({
@@ -431,7 +442,7 @@ function is_valid_email (email)
 			the allowed chars in the email login is -._a-z0-9
 			which is : 1 + 1 + 1 + 26 + 10 = ~40 possible chars
 
-			in the worst case of brute force attacks with 31 chars is
+			the worst case brute force attack with 31 chars is
 				40**31 > 2**160
 
 			but for 30 chars it is
@@ -1242,6 +1253,27 @@ app.post("/auth/v1/token", (req, res) => {
 		);
 	}
 
+	let requested_token_time;		// as specified by the consumer
+	let token_time = MAX_TOKEN_TIME;	// to be sent along with token
+
+	if (body["token-time"])
+	{
+		requested_token_time = parseInt(body["token-time"],10);
+
+		if (
+			isNaN(requested_token_time)		||
+			requested_token_time < 1		||
+			requested_token_time > MAX_TOKEN_TIME
+		)
+		{
+			return END_ERROR (
+				res, 400,
+				"'token-time' should be > 0 and < " +
+				MAX_TOKEN_TIME
+			);
+		}
+	}
+
 	const rows = pg.querySync (
 
 		"SELECT COUNT(*)/60.0"		+
@@ -1265,27 +1297,6 @@ app.post("/auth/v1/token", (req, res) => {
 		);
 
 		return END_ERROR (res, 429, "Too many requests");
-	}
-
-	let requested_token_time;		// as specified by the consumer
-	let token_time = MAX_TOKEN_TIME;	// to be sent along with token
-
-	if (body["token-time"])
-	{
-		requested_token_time = parseInt(body["token-time"],10);
-
-		if (
-			isNaN(requested_token_time)		||
-			requested_token_time < 1		||
-			requested_token_time > MAX_TOKEN_TIME
-		)
-		{
-			return END_ERROR (
-				res, 400,
-				"'token-time' should be > 0 and < " +
-				MAX_TOKEN_TIME
-			);
-		}
 	}
 
 	const ip	= req.connection.remoteAddress;
@@ -2829,7 +2840,7 @@ app.post("/auth/v1/acl/revert", (req, res) => {
 		" AND previous_policy IS NOT NULL"	+
 		" LIMIT 1",
 		[
-			provider_id_hash	// 1
+			provider_id_hash		// 1
 		],
 
 	(error, results) =>
@@ -3049,13 +3060,13 @@ app.post("/auth/v1/group/add", (req, res) => {
 
 	pool.query (
 
-		"INSERT INTO groups"				+
+		"INSERT INTO groups"			+
 		" VALUES ($1::text, $2::text, $3::text, NOW() + $4::interval)",
 		[
-			provider_id_hash,			// 1
-			consumer_id,				// 2
-			group,					// 3
-			valid_till + " hours"			// 4
+			provider_id_hash,		// 1
+			consumer_id,			// 2
+			group,				// 3
+			valid_till + " hours"		// 4
 		],
 
 	(error, results) =>
@@ -3195,8 +3206,8 @@ app.post("/auth/v1/group/delete", (req, res) => {
 			"AND valid_till > NOW()";
 
 	const parameters = [
-			provider_id_hash,	// 1
-			group			// 2
+			provider_id_hash,				// 1
+			group						// 2
 	];
 
 	if (consumer_id !== "*")
@@ -3344,8 +3355,9 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 		{
 			return END_ERROR (
 				res, 400,
-				"'fingerprint' and 'serial' can only be "	+
-				"provided when using a class-3 or above certificate"
+				"'fingerprint' or 'serial' can only be"	+
+				" provided when using a class-3 "	+
+				" or above certificate"
 			);
 		}
 
@@ -3407,7 +3419,7 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 	};
 
 	const options = {
-		url	: rzpay_invoices_url, 
+		url	: rzpay_url, 
 		headers	: {"Content-Type": "application/json"},
 		json	: true,
 		body	: post_body 
@@ -3416,15 +3428,31 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 	http_request.post(options, (error, response, body) => {
 
 		if (error)
-			return END_ERROR (res, 500, "Error in payment process", error);
+		{
+			return END_ERROR (
+				res, 500, "Payment failed", error
+			);
+		}
 
 		if (response.statusCode !== 200)
-			return END_ERROR (res, 500, "Error in payment process; response code is not 200");
+		{
+			return END_ERROR (
+				res, 500,
+				"Payment failed. Invalid status from RazorPay",
+				response
+			);
+		}
 
 		if (! body.short_url)
-			return END_ERROR (res, 500, "Error in payment process; response short url is invalid");
+		{
+			return END_ERROR (
+				res, 500,
+				"Payment failed. RazorPay did send payment url",
+				body
+			);
+		}
 
-		const link		= {"link" : body.short_url};
+		const link		= { link : body.short_url };
 		const invoice_number	= body.id;
 
 		const query = "INSERT INTO topup_transaction VALUES ("	+
@@ -3450,9 +3478,13 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 		pool.query (query, parameters, (error_1, results_1) =>
 		{
 			if (error_1 || results_1.rowCount === 0)
-				return END_ERROR (res, 500, "Internal error!", error_1);
-			else
-				return END_SUCCESS (res, link);
+			{
+				return END_ERROR (
+					res, 500, "Internal error!", error_1
+				);
+			}
+
+			return END_SUCCESS (res, link);
 		});
 	});
 });
@@ -3479,7 +3511,7 @@ app.get("/topup-success", (req, res) => {
 
 	if (invoice_status !== "paid")
 	{
-		const response = STATIC_PAGES.get("/topup-failed.html");
+		const response = STATIC_PAGES.get("/topup-failure.html");
 
 		res.setHeader("Content-Type", "text/html");
 		res.status(400).end(response);
@@ -3497,7 +3529,10 @@ app.get("/topup-success", (req, res) => {
 		payment_details[key] = req.headers[key];
 	}
 
-	const query		= "SELECT update_credit($1::text,$2::jsonb) AS is_credit_updated";
+	const query		= "SELECT"					+
+					" update_credit($1::text,$2::jsonb)"	+
+					" AS is_credit_updated";
+
 	const parameters	= [invoice_number, payment_details];
 
 	pool.query(query, parameters, (error, results) =>
