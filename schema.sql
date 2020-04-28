@@ -83,6 +83,7 @@ CREATE TABLE public.token (
     server_token	jsonb				NOT NULL,
     providers		jsonb				NOT NULL,
     geoip		jsonb				NOT NULL,
+    payment_info	jsonb				NOT NULL,
 
     PRIMARY KEY (id, token)
 );

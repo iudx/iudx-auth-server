@@ -526,7 +526,7 @@ function is_valid_email (email)
 
 function is_certificate_ok (req, cert, validate_email)
 {
-	if ((! cert) || (! cert.subject))
+	if (! cert || ! cert.subject)
 		return "No subject found in the certificate";
 
 	if (! cert.subject.CN)
@@ -537,7 +537,7 @@ function is_certificate_ok (req, cert, validate_email)
 		if (! is_valid_email(cert.subject.emailAddress))
 			return "Invalid 'emailAddress' field in the certificate";
 
-		if ((! cert.issuer) || (! cert.issuer.emailAddress))
+		if (! cert.issuer || ! cert.issuer.emailAddress)
 			return "Certificate issuer has no 'emailAddress' field";
 
 		const issuer_email = cert.issuer.emailAddress.toLowerCase();
@@ -1128,7 +1128,7 @@ function dns_check (req, res, next)
 	if (cert_class > 1)
 		return next();
 
-	if ((! cert.subject) || (! is_string_safe(cert.subject.CN)))
+	if (! cert.subject || ! is_string_safe(cert.subject.CN))
 		return END_ERROR (res, 400, "Invalid 'CN' in the certificate");
 
 	const	ip			= req.connection.remoteAddress;
@@ -1264,7 +1264,7 @@ app.post("/auth/v1/token", (req, res) => {
 	const request_array			= to_array(body.request);
 	const processed_request_array		= [];
 
-	if ((! request_array) || (request_array.length < 1))
+	if (! request_array || request_array.length < 1)
 	{
 		return END_ERROR (
 			res, 400,
@@ -1358,13 +1358,15 @@ app.post("/auth/v1/token", (req, res) => {
 		}
 	};
 
-	const existing_token		= body["existing-token"];
 	const providers			= {};
 
 	let num_rules_passed		= 0;
 	let total_data_cost_per_second	= 0.0;
 
-	const payment_info		= {};
+	const payment_info		= {
+		amount		: 0.0,
+		providers	: {}
+	};
 
 	const can_access_regex		= res.locals.can_access_regex;
 
@@ -1658,9 +1660,8 @@ app.post("/auth/v1/token", (req, res) => {
 
 					const token_time_in_policy	= result.expiry;
 					const payment_amount		= result.amount;
-					// const payment_currency	= result.currency;
 
-					if ((! token_time_in_policy) || token_time_in_policy < 1 || payment_amount < 0)
+					if (! token_time_in_policy || token_time_in_policy < 1 || payment_amount < 0)
 					{
 						const error_response = {
 							"message"	: "Unauthorized",
@@ -1678,10 +1679,10 @@ app.post("/auth/v1/token", (req, res) => {
 
 					total_data_cost_per_second	+= cost_per_second;
 
-					if (! payment_info[provider_id_hash])
-						payment_info[provider_id_hash] = 0.0;
+					if (! payment_info.providers[provider_id_hash])
+						payment_info.providers[provider_id_hash] = 0.0;
 
-					payment_info[provider_id_hash]	+= cost_per_second;
+					payment_info.providers[provider_id_hash] += cost_per_second;
 
 					token_time = Math.min (
 						token_time,
@@ -1719,87 +1720,18 @@ app.post("/auth/v1/token", (req, res) => {
 		++num_rules_passed;
 	}
 
-	if ((num_rules_passed < 1) || (num_rules_passed < request_array.length))
+	if (num_rules_passed < 1 || num_rules_passed < request_array.length)
 		return END_ERROR (res, 403, "Unauthorized!");
 
 	let token;
-	let existing_row;
 
-	if (existing_token)
-	{
-		if (
-			(! is_string_safe(existing_token))	||
-			(! existing_token.startsWith(SERVER_NAME + "/"))
-		)
-		{
-			return END_ERROR (
-				res, 400, "Invalid 'existing-token'"
-			);
-		}
+	const random_hex = crypto
+				.randomBytes(TOKEN_LEN)
+				.toString("hex");
 
-		if ((existing_token.match(/\//g) || []).length !== 2)
-		{
-			return END_ERROR (
-				res, 400, "Invalid 'existing-token'"
-			);
-		}
+	/* Token format = issued-by / issued-to / random-hex-string */
 
-		const split		= existing_token.split("/");
-
-		const issued_by		= split[0];
-		const issued_to		= split[1];
-		const random_hex	= split[2];
-
-		if (
-			(issued_by		!== SERVER_NAME)	||
-			(issued_to		!== consumer_id)	||
-			(random_hex.length	!== TOKEN_LEN_HEX)
-		) {
-			return END_ERROR (res, 403, "Invalid 'existing-token'");
-		}
-
-		const sha256_of_existing_token	= sha256(existing_token);
-
-		existing_row = pg.querySync (
-
-			"SELECT EXTRACT(EPOCH FROM (expiry - NOW()))"	+
-			" AS token_time,request,resource_ids,"		+
-			" server_token"					+
-			" FROM token"					+
-			" WHERE id = $1::text"				+
-			" AND token = $2::text"				+
-			" AND revoked = false"				+
-			" AND expiry > NOW()"				+
-			" LIMIT 1",
-			[
-				consumer_id,				// 1
-				sha256_of_existing_token,		// 2
-			]
-		);
-
-		if (existing_row.length === 0)
-			return END_ERROR (res, 403,"Invalid 'existing-token'");
-
-		token_time = Math.min (
-			token_time,
-			(parseInt(existing_row[0].token_time, 10) || 0)
-		);
-
-		for (const key in existing_row[0].server_token)
-			resource_server_token [key] = true;
-
-		token = existing_token; // as given by the user
-	}
-	else
-	{
-		const random_hex = crypto
-					.randomBytes(TOKEN_LEN)
-					.toString("hex");
-
-		/* Token format = issued-by / issued-to / random-hex-string */
-
-		token = SERVER_NAME + "/" + consumer_id + "/" + random_hex;
-	}
+	token = SERVER_NAME + "/" + consumer_id + "/" + random_hex;
 
 	const response = {
 
@@ -1813,7 +1745,7 @@ app.post("/auth/v1/token", (req, res) => {
 		},
 	};
 
-	const total_payment_amount	= total_data_cost_per_second * token_time;
+	const total_payment_amount = total_data_cost_per_second * token_time;
 
 	if (total_payment_amount > 0)
 	{
@@ -1847,7 +1779,8 @@ app.post("/auth/v1/token", (req, res) => {
 			);
 		}
 
-		response["payment-info"].amount = total_payment_amount;
+		payment_info.amount		= total_payment_amount;
+		response["payment-info"].amount	= total_payment_amount;
 	}
 
 	const num_resource_servers = Object
@@ -1874,102 +1807,57 @@ app.post("/auth/v1/token", (req, res) => {
 	response["server-token"]	= resource_server_token;
 	const sha256_of_token		= sha256(token);
 
-	let query;
-	let params;
+	// these fields are unnessary
+	delete geoip.eu;
+	delete geoip.area;
+	delete geoip.metro;
+	delete geoip.range;
 
-	if (existing_token)
+	const query = "INSERT INTO token VALUES("			+
+			"$1::text,"					+
+			"$2::text,"					+
+			"NOW() + $3::interval,"				+
+			"$4::jsonb,"					+
+			"$5::text,"					+
+			"$6::text,"					+
+			"NOW(),"					+
+			"$7::jsonb,"					+
+			"false,"					+
+			"false,"					+
+			"$8::int,"					+
+			"$9::jsonb,"					+
+			"$10::jsonb,"					+
+			"$11::jsonb,"					+
+			"$12::jsonb"					+
+	")";
+
+	const params = [
+		consumer_id,						//  1
+		sha256_of_token,					//  2
+		token_time + " seconds",				//  3
+		JSON.stringify(processed_request_array),		//  4
+		cert.serialNumber,					//  5
+		cert.fingerprint,					//  6
+		JSON.stringify(resource_id_dict),			//  7
+		cert_class,						//  8
+		JSON.stringify(sha256_of_resource_server_token),	//  9
+		JSON.stringify(providers),				// 10
+		JSON.stringify(geoip),					// 11
+		JSON.stringify(payment_info)				// 12
+	];
+
+	pool.query (query, params, (error,results) =>
 	{
-		// merge both existing values
-
-		const old_request	= existing_row[0].request;
-		const new_request	= old_request.concat(processed_request_array);
-
-		const new_resource_ids_dict = Object.assign(
-			{}, existing_row[0].resource_ids, resource_id_dict
-		);
-
-		query	= "UPDATE token SET"				+
-				" request = $1::jsonb,"			+
-				" resource_ids = $2::jsonb,"		+
-				" server_token = $3::jsonb,"		+
-				" expiry = NOW() + $4::interval"	+
-				" WHERE id = $5::text"			+
-				" AND token = $6::text"			+
-				" AND expiry > NOW()";
-
-		params	= [
-			JSON.stringify(new_request),			// 1
-			JSON.stringify(new_resource_ids_dict),		// 2
-			JSON.stringify(sha256_of_resource_server_token),// 3
-			token_time + " seconds",			// 4
-			consumer_id,					// 5
-			sha256_of_token,				// 6
-		];
-
-		pool.query (query, params, (error,results) =>
+		if (error || results.rowCount === 0)
 		{
-			if (error || results.rowCount === 0)
-			{
-				return END_ERROR (
-					res, 500,
-					"Internal error!", error
-				);
-			}
+			return END_ERROR (
+				res, 500,
+				"Internal error!", error
+			);
+		}
 
-			return END_SUCCESS (res,response);
-		});
-	}
-	else
-	{
-		delete geoip.eu;
-		delete geoip.area;
-		delete geoip.metro;
-		delete geoip.range;
-
-		query	= "INSERT INTO token VALUES("			+
-				"$1::text,"				+
-				"$2::text,"				+
-				"NOW() + $3::interval,"			+
-				"$4::jsonb,"				+
-				"$5::text,"				+
-				"$6::text,"				+
-				"NOW(),"				+
-				"$7::jsonb,"				+
-				"false,"				+
-				"false,"				+
-				"$8::int,"				+
-				"$9::jsonb,"				+
-				"$10::jsonb,"				+
-				"$11::jsonb"				+
-			")";
-
-		params	= [
-			consumer_id,					// 1
-			sha256_of_token,				// 2
-			token_time + " seconds",			// 3
-			JSON.stringify(processed_request_array),	// 4
-			cert.serialNumber,				// 5
-			cert.fingerprint,				// 6
-			JSON.stringify(resource_id_dict),		// 7
-			cert_class,					// 8
-			JSON.stringify(sha256_of_resource_server_token),// 9
-			JSON.stringify(providers),			// 10
-			JSON.stringify(geoip)				// 11
-		];
-
-		pool.query (query, params, (error,results) =>
-		{
-			if (error || results.rowCount === 0)
-			{
-				return END_ERROR (
-					res, 500,
-					"Internal error!", error
-				);
-			}
-
-			return END_SUCCESS (res,response);
-		});
-	}
+		return END_SUCCESS (res,response);
+	});
 });
 
 app.post("/auth/v1/token/introspect", (req, res) => {
@@ -1982,7 +1870,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	if (! body.token)
 		return END_ERROR (res, 400, "No 'token' found in the body");
 
-	if ((! is_string_safe(body.token)) || (! body.token.startsWith(SERVER_NAME + "/")))
+	if (! is_string_safe(body.token) || ! body.token.startsWith(SERVER_NAME + "/"))
 		return END_ERROR (res, 400, "Invalid 'token'");
 
 	if ((body.token.match(/\//g) || []).length !== 2)
@@ -3487,18 +3375,19 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 		const link		= { link : body.short_url };
 		const invoice_number	= body.id;
 
-		const query	= "INSERT INTO topup_transaction VALUES ("	+
-					"$1::text,"				+
-					"$2::text,"				+
-					"$3::text,"				+
-					"$4::int,"				+
-					"to_timestamp($5::int),"		+
-					"$6::text,"				+
-					"false,"				+
-					"'{}'::jsonb"				+
-		")";
+		const query = "INSERT INTO topup_transaction"		+
+					" VALUES ("			+
+						"$1::text,"		+
+						"$2::text,"		+
+						"$3::text,"		+
+						"$4::int,"		+
+						"to_timestamp($5::int),"+
+						"$6::text,"		+
+						"false,"		+
+						"'{}'::jsonb"		+
+					")";
 
-		const params	= [
+		const params = [
 				id,					// 1
 				serial,					// 2
 				fingerprint,				// 3

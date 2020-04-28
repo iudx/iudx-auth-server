@@ -72,15 +72,12 @@ class Auth():
 	def certificate_info(self):
 		return self.call("certificate-info")
 
-	def get_token(self, request, token_time=None, existing_token=None):
+	def get_token(self, request, token_time=None):
 	#
 		body = {'request': request}
 
 		if token_time:
 			body['token-time'] = token_time
-
-		if existing_token:
-			body['existing-token'] = existing_token
 
 		return self.call("token", body)
 	#
