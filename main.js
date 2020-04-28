@@ -382,7 +382,7 @@ function SERVE_HTML (req,res)
 function END_REDIRECT (res, url, message = null)
 {
 	if (message)
-		url += "?message=" + base64(xss_safe(message));
+		url += "?message=" + base64(message);
 
 	res.setHeader("Location",url);
 	res.status(302).end();
@@ -3548,7 +3548,7 @@ app.get("/topup-success", (req, res) => {
 
 	const query		= "SELECT"					+
 					" update_credit($1::text,$2::jsonb)"	+
-					" AS is_credit_updated";
+					" AS details";
 
 	const parameters	= [invoice_number, payment_details];
 
@@ -3585,10 +3585,13 @@ app.get("/topup-success", (req, res) => {
 			);
 		}
 
+		details.cert_serial_used_for_payment		= cert.serialNumber;
+		details.cert_fingerprint_used_for_payment	= cert.fingerprint;
+
 		const response_start	= STATIC_PAGES.get("topup-success-1.html");
 		const response_end	= STATIC_PAGES.get("topup-success-2.html");
 
-		const response		= JSON.parse(req.query);
+		const response		= JSON.parse(JSON.stringify(req.query));
 
 		for (const k in details)
 		{
