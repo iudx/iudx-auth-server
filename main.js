@@ -80,9 +80,9 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 	"/topup-success"			: 2,
 
 /* --- static files --- */
-	"/topup.html"				: 2,
-	"/marketplace.js"			: 2,
-	"/marketplace.css"			: 2,
+	"/marketplace/topup.html"		: 2,
+	"/marketplace/marketplace.js"		: 2,
+	"/marketplace/marketplace.css"		: 2,
 
 /* --- marketplace APIs --- */
 	"/marketplace/v1/credit/info"		: 2,
@@ -276,13 +276,18 @@ const STATIC_PAGES = immutable.Map ({
 
 /* get end points */
 
-	"/topup.html"		: fs.readFileSync (
+	"/marketplace/topup.html": 
+				fs.readFileSync (
 					"static/topup.html",		"ascii"
 				),
-	"/marketplace.js"	: fs.readFileSync (
+
+	"/marketplace/marketplace.js":
+				fs.readFileSync (
 					"static/marketplace.js",	"ascii"
 				),
-	"/marketplace.css"	: fs.readFileSync (
+
+	"/marketplace/marketplace.css":
+				fs.readFileSync (
 					"static/marketplace.css",	"ascii"
 				),
 
@@ -892,7 +897,7 @@ function basic_security_check (req, res, next)
 		{
 			res.locals.untrusted = true;
 
-			if (api.startsWith("/marketplace"))
+			if (api.startsWith("/marketplace/"))
 			{
 				return END_ERROR (
 					res, 403,
