@@ -154,7 +154,10 @@ $$
 
 		IF my_num_rows_affected = 0
 		THEN
-			RETURN QUERY SELECT '{}'::jsonb;
+			RETURN QUERY
+				SELECT '{}'::jsonb;
+
+			RETURN;
 		END IF;
 
 		INSERT INTO public.credit (
