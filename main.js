@@ -77,7 +77,7 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 	"/auth/v1/token"			: 2,
 
 /* --- for topup --- */
-	"/topup-success"			: 2,
+	"/marketplace/topup-success"		: 2,
 
 /* --- static files --- */
 	"/marketplace/topup.html"		: 2,
@@ -3412,7 +3412,7 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 	const now		= Math.floor (Date.now() / 1000);
 	const expire		= now + 1800; // after 30 mins
 
-	const success_url	= "https://" + SERVER_NAME + "/topup-success";
+	const success_url	= "https://" + SERVER_NAME + "/marketplace/topup-success";
 
 	const first_name	= cert.subject.GN || "Unknown";
 	const last_name		= cert.subject.SN || "unknown";
@@ -3508,10 +3508,41 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 	});
 });
 
-app.get("/topup-success", (req, res) => {
+app.get("/marketplace/topup-success", (req, res) => {
 
 	const cert		= res.locals.cert;
 	const cert_class	= res.locals.cert_class;
+
+	const invoice_number	= req.query.razorpay_invoice_id;
+	const invoice_status	= req.query.razorpay_invoice_status;
+
+	if (! invoice_number || invoice_status !== "paid")
+	{
+		const error_response = {
+			"message"	: "Payment was not completed for invoice",
+			"invalid-input"	: {
+				invoice					: xss_safe(invoice_number),
+				time					: new Date(), 
+				cert_serial_used_for_payment		: cert.serialNumber.toLowerCase(),
+				cert_fingerprint_used_for_payment	: cert.fingerprint.toLowerCase(),
+				cert_class_used_for_payment		: cert_class
+			}
+		};
+
+		let response_mid =
+			"<script>"					+
+				"jsonViewer.showJSON("			+
+					JSON.stringify(error_response)	+
+				");"					+
+			"</script>";
+
+		const page = topup_failure_1 + response_mid + topup_failure_2;
+
+		res.setHeader("Content-Type", "text/html");
+		res.status(400).end(page);
+
+		return;
+	}
 
 	const payload = [
 			req.query.razorpay_invoice_id,
@@ -3526,18 +3557,17 @@ app.get("/topup-success", (req, res) => {
 					.digest('hex');
 
 	if (req.query.razorpay_signature !== expected_signature)
-		return END_ERROR (res, 400, 'Invalid signature');
-
-	const invoice_number	= req.query.razorpay_invoice_id;
-	const invoice_status	= req.query.razorpay_invoice_status;
-
-	if (invoice_status !== "paid")
 	{
 		const error_response = {
-			"message"	: "Payment was not completed for invoice",
+			"message"	: "Invalid razorpay signature",
 			"invalid-input"	: {
 				invoice					: xss_safe(invoice_number),
 				time					: new Date(), 
+				razorpay_signature			: xss_safe(req.query.razorpay_signature), 
+				razorpay_invoice_id			: xss_safe(req.query.razorpay_invoice_id),
+				razorpay_invoice_receipt		: xss_safe(req.query.razorpay_invoice_receipt),
+				razorpay_invoice_status			: xss_safe(req.query.razorpay_invoice_status),
+				razorpay_payment_id			: xss_safe(req.query.razorpay_payment_id),
 				cert_serial_used_for_payment		: cert.serialNumber.toLowerCase(),
 				cert_fingerprint_used_for_payment	: cert.fingerprint.toLowerCase(),
 				cert_class_used_for_payment		: cert_class
