@@ -81,7 +81,6 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 
 /* --- static files --- */
 	"/topup.html"				: 2,
-	"/topup-failure.html"			: 2,
 	"/marketplace.js"			: 2,
 	"/marketplace.css"			: 2,
 
@@ -280,9 +279,6 @@ const STATIC_PAGES = immutable.Map ({
 	"/topup.html"		: fs.readFileSync (
 					"static/topup.html",		"ascii"
 				),
-	"/topup-failure.html"	: fs.readFileSync (
-					"static/topup-failure.html",	"ascii"
-				),
 	"/marketplace.js"	: fs.readFileSync (
 					"static/marketplace.js",	"ascii"
 				),
@@ -298,6 +294,12 @@ const STATIC_PAGES = immutable.Map ({
 	"topup-success-2.html"	: fs.readFileSync (
 					"static/topup-success-2.html",	"ascii"
 				),
+	"topup-failure-1.html"	: fs.readFileSync (
+					"static/topup-failure-1.html",	"ascii"
+				),
+	"topup-failure-2.html"	: fs.readFileSync (
+					"static/topup-failure-2.html",	"ascii"
+				),
 });
 
 const MIME_TYPE = immutable.Map({
@@ -305,6 +307,12 @@ const MIME_TYPE = immutable.Map({
 	"css"	: "text/css",
 	"html"	: "text/html"
 });
+
+const topup_success_1 = STATIC_PAGES.get("topup-success-1.html");
+const topup_success_2 = STATIC_PAGES.get("topup-success-2.html");
+
+const topup_failure_1 = STATIC_PAGES.get("topup-failure-1.html");
+const topup_failure_2 = STATIC_PAGES.get("topup-failure-2.html");
 
 /* --- functions --- */
 
@@ -3531,11 +3539,17 @@ app.get("/topup-success", (req, res) => {
 			"invalid-input"	: xss_safe(invoice_number)
 		};
 
-		return END_REDIRECT (
-			res,
-			"https://" + SERVER_NAME + "/topup-failure.html",
-			JSON.stringify (error_response)
-		);
+		let response_mid =
+			"<script>"					+
+				"jsonViewer.showJSON("			+
+					JSON.stringify(error_response)	+
+				");"					+
+			"</script>";
+
+		const page = topup_failure_1 + response_mid + topup_failure_2;
+
+		res.setHeader("Content-Type", "text/html");
+		res.status(400).end(page);
 	}
 
 	const payment_details = {};
@@ -3562,11 +3576,17 @@ app.get("/topup-success", (req, res) => {
 				"error"		: xss_safe(error)
 			};
 
-			return END_REDIRECT (
-				res,
-				"https://" + SERVER_NAME + "/topup-failure.html",
-				JSON.stringify (error_response)
-			);
+			let response_mid =
+				"<script>"					+
+					"jsonViewer.showJSON("			+
+						JSON.stringify(error_response)	+
+					");"					+
+				"</script>";
+
+			const page = topup_failure_1 + response_mid + topup_failure_2;
+
+			res.setHeader("Content-Type", "text/html");
+			res.status(400).end(page);
 		}
 
 		const details = results.rows[0].details;
@@ -3578,23 +3598,26 @@ app.get("/topup-success", (req, res) => {
 				"invalid-input"	: xss_safe(invoice_number)
 			};
 
-			return END_REDIRECT (
-				res,
-				"https://" + SERVER_NAME + "/topup-failure.html",
-				JSON.stringify (error_response)
-			);
+			let response_mid =
+				"<script>"					+
+					"jsonViewer.showJSON("			+
+						JSON.stringify(error_response)	+
+					");"					+
+				"</script>";
+
+			const page = topup_failure_1 + response_mid + topup_failure_2;
+
+			res.setHeader("Content-Type", "text/html");
+			res.status(400).end(page);
 		}
 
 		const cert					= res.locals.cert;
 
-		details.cert_serial_used_for_payment		= cert.serialNumber;
-		details.cert_fingerprint_used_for_payment	= cert.fingerprint;
+		details.cert_serial_used_for_payment		= cert.serialNumber.toLowerCase();
+		details.cert_fingerprint_used_for_payment	= cert.fingerprint.toLowerCase();
 		details.cert_class_used_for_payment		= res.locals.cert_class;
 
-		const response_start	= STATIC_PAGES.get("topup-success-1.html");
-		const response_end	= STATIC_PAGES.get("topup-success-2.html");
-
-		const response		= JSON.parse(JSON.stringify(req.query));
+		const response = JSON.parse(JSON.stringify(req.query));
 
 		for (const k in details)
 		{
@@ -3608,7 +3631,7 @@ app.get("/topup-success", (req, res) => {
 					");"					+
 				"</script>";
 
-		const page = response_start + response_mid + response_end;
+		const page = topup_success_1 + response_mid + topup_success_2;
 
 		res.setHeader("Content-Type", "text/html");
 		res.status(200).end(page);
