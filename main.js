@@ -3571,7 +3571,7 @@ app.get("/topup-success", (req, res) => {
 
 		const details = results.rows[0].details;
 
-		if (! details)
+		if (! details || Object.keys(details).length === 0)
 		{
 			const error_response = {
 				"message"	: "Invalid invoice number",
