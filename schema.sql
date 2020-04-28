@@ -142,8 +142,7 @@ $$
 			cert_fingerprint,
 			time,
 			amount
-
-		INTO STRICT
+		INTO
 			my_id,
 			my_cert_serial,
 			my_cert_fingerprint,
@@ -153,9 +152,8 @@ $$
 
 		GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
 
-		IF my_num_rows_affected != 1
+		IF my_num_rows_affected = 0
 		THEN
-			ROLLBACK;
 			RETURN FALSE;
 		END IF;
 
@@ -174,35 +172,14 @@ $$
 				my_amount,
 				my_time
 			)
-		;
 
-		GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
-
-		IF my_num_rows_affected != 1
-		THEN
-			UPDATE public.credit
+		ON CONFLICT ON CONSTRAINT credit_pkey
+			DO UPDATE                    
 				SET
-					amount			= amount + my_amount,
-					last_updated		= my_time
-				WHERE
-					id			= my_id
-				AND
-					cert_serial		= my_cert_serial
-				AND
-					cert_fingerprint	= my_cert_fingerprint
-			;
+					amount		= credit.amount + my_amount,
+					last_updated	= my_time 
+		; 
 
-			GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
-
-			IF my_num_rows_affected != 1
-			THEN
-				ROLLBACK;
-				RETURN FALSE;
-			END IF;
-
-		END IF;
-
-		COMMIT;
 		RETURN TRUE;
 	END;
 $$
