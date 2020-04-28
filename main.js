@@ -3585,8 +3585,11 @@ app.get("/topup-success", (req, res) => {
 			);
 		}
 
+		const cert					= res.locals.cert;
+
 		details.cert_serial_used_for_payment		= cert.serialNumber;
 		details.cert_fingerprint_used_for_payment	= cert.fingerprint;
+		details.cert_class_used_for_payment		= res.locals.cert_class;
 
 		const response_start	= STATIC_PAGES.get("topup-success-1.html");
 		const response_end	= STATIC_PAGES.get("topup-success-2.html");

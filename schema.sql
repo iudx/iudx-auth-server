@@ -181,9 +181,20 @@ $$
 		; 
 
 		RETURN QUERY
-			SELECT  json_build_object('id',id, 'amount', amount, 'time', time)::jsonb
-			FROM	topup_transaction
-			WHERE	invoice_number = in_invoice_number
+
+			SELECT  json_build_object (
+
+					'id',			id,
+					'amount',		amount,
+					'time',			time,
+					'cert_serial',		cert_serial,
+					'cert_fingerprint',	cert_fingerprint
+
+				) :: jsonb
+			FROM
+				topup_transaction
+			WHERE
+				invoice_number = in_invoice_number
 		;
 	END;
 $$
