@@ -387,15 +387,6 @@ function SERVE_HTML (req,res)
 	return true;
 }
 
-function END_REDIRECT (res, url, message = null)
-{
-	if (message)
-		url += "?message=" + base64(message);
-
-	res.setHeader("Location",url);
-	res.status(302).end();
-}
-
 function END_SUCCESS (res, response = null)
 {
 	// if no response is given, just send success
@@ -3514,6 +3505,9 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 
 app.get("/topup-success", (req, res) => {
 
+	const cert		= res.locals.cert;
+	const cert_class	= res.locals.cert_class;
+
 	const payload = [
 			req.query.razorpay_invoice_id,
 			req.query.razorpay_invoice_receipt,
@@ -3536,7 +3530,13 @@ app.get("/topup-success", (req, res) => {
 	{
 		const error_response = {
 			"message"	: "Payment was not completed for invoice",
-			"invalid-input"	: xss_safe(invoice_number)
+			"invalid-input"	: {
+				invoice					: xss_safe(invoice_number),
+				time					: new Date(), 
+				cert_serial_used_for_payment		: cert.serialNumber.toLowerCase(),
+				cert_fingerprint_used_for_payment	: cert.fingerprint.toLowerCase(),
+				cert_class_used_for_payment		: cert_class
+			}
 		};
 
 		let response_mid =
@@ -3550,6 +3550,8 @@ app.get("/topup-success", (req, res) => {
 
 		res.setHeader("Content-Type", "text/html");
 		res.status(400).end(page);
+
+		return;
 	}
 
 	const payment_details = {};
@@ -3570,10 +3572,17 @@ app.get("/topup-success", (req, res) => {
 	{
 		if (error || results.rowCount == 0)
 		{
+			log ("red",error);
+
 			const error_response = {
 				"message"	: "Internal error in topup confirmation",
-				"invalid-input"	: xss_safe(invoice_number),
-				"error"		: xss_safe(error)
+				"invalid-input"	: {
+					invoice					: xss_safe(invoice_number),
+					time					: new Date(), 
+					cert_serial_used_for_payment		: cert.serialNumber.toLowerCase(),
+					cert_fingerprint_used_for_payment	: cert.fingerprint.toLowerCase(),
+					cert_class_used_for_payment		: cert_class
+				}
 			};
 
 			let response_mid =
@@ -3587,6 +3596,8 @@ app.get("/topup-success", (req, res) => {
 
 			res.setHeader("Content-Type", "text/html");
 			res.status(400).end(page);
+
+			return;
 		}
 
 		const details = results.rows[0].details;
@@ -3595,7 +3606,13 @@ app.get("/topup-success", (req, res) => {
 		{
 			const error_response = {
 				"message"	: "Invalid invoice number",
-				"invalid-input"	: xss_safe(invoice_number)
+				"invalid-input"	: {
+					invoice					: xss_safe(invoice_number),
+					time					: new Date(), 
+					cert_serial_used_for_payment		: cert.serialNumber.toLowerCase(),
+					cert_fingerprint_used_for_payment	: cert.fingerprint.toLowerCase(),
+					cert_class_used_for_payment		: cert_class
+				}
 			};
 
 			let response_mid =
@@ -3609,19 +3626,19 @@ app.get("/topup-success", (req, res) => {
 
 			res.setHeader("Content-Type", "text/html");
 			res.status(400).end(page);
-		}
 
-		const cert					= res.locals.cert;
+			return;
+		}
 
 		details.cert_serial_used_for_payment		= cert.serialNumber.toLowerCase();
 		details.cert_fingerprint_used_for_payment	= cert.fingerprint.toLowerCase();
-		details.cert_class_used_for_payment		= res.locals.cert_class;
+		details.cert_class_used_for_payment		= cert_class;
 
 		const response = JSON.parse(JSON.stringify(req.query));
 
-		for (const k in details)
+		for (const key in details)
 		{
-			response[k] = details[k];
+			response[key] = details[key];
 		}
 
 		let response_mid =
