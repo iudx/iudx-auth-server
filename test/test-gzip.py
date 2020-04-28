@@ -13,7 +13,7 @@ if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 #
 
 response = requests.get (
-	url	= "https://auth.iudx.org.in/topup.html", 
+	url	= "https://auth.iudx.org.in/marketplace/topup.html",
 	verify	= verify,
 	cert	= (home + "provider.pem", home + "provider.key.pem"),
 )

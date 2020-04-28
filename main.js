@@ -3363,7 +3363,7 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 	const amount = parseFloat(body.amount);
 
 	if (isNaN(amount) || amount < 0 || amount > 1000)
-		return END_ERROR (res, 400, "'amount' must be a positive number");
+		return END_ERROR (res, 400, "'amount' must be a positive number <= 1000");
 
 	let serial;
 	let fingerprint;
