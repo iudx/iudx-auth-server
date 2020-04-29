@@ -2349,7 +2349,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 
 				"SELECT 1 FROM token"			+
 				" WHERE token = $1::text"		+
-				" AND providers-> $2::text = 'true'"	+
+				" AND providers->> $2::text = 'true'"	+
 				" AND expiry > NOW()"			+
 				" LIMIT 1",
 				[
@@ -2377,7 +2377,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 				"UPDATE token SET"			+
 				" providers = providers || $1::jsonb"	+
 				" WHERE token = $2::text"		+
-				" AND providers-> $3::text = 'true'"	+
+				" AND providers->> $3::text = 'true'"	+
 				" AND expiry > NOW()",
 				[
 					JSON.stringify(provider_false),	// 1
@@ -2467,7 +2467,7 @@ app.post("/auth/v1/token/revoke-all", (req, res) => {
 				" AND cert_fingerprint = $3::text"	+
 				" AND expiry > NOW()"			+
 				" AND revoked = false"			+
-				" AND providers-> $4::text = 'true'",
+				" AND providers->> $4::text = 'true'",
 				[
 					JSON.stringify(provider_false),	// 1
 					serial,				// 2
@@ -2932,11 +2932,11 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 			"SELECT id,token,issued_at,expiry,request,"	+
 			" cert_serial,cert_fingerprint,"		+
 			" revoked,introspected,"			+
-			" providers-> $1::text"				+
+			" providers->> $1::text"			+
 			" AS is_valid_token_for_provider,"		+
 			" expiry < NOW() as expired,geoip,paid"		+
 			" FROM token"					+
-			" WHERE providers-> $1::text"			+
+			" WHERE providers->> $1::text"			+
 			" IS NOT NULL"					+
 			" AND issued_at >= (NOW() - $2::interval)"	+
 			" ORDER BY issued_at DESC",
@@ -3840,10 +3840,11 @@ app.post("/marketplace/v1/audit/credits", (req, res) => {
 
 			pool.query (
 				"SELECT paid_at,"						+
-					" payment_info ->> providers ->> $1::text as money"	+
+					" (payment_info ->>'providers')::jsonb->> $1::text"	+
+					" AS money"						+
 					" FROM token"						+
 					" WHERE amount > 0.0"					+
-					" AND > payment_info ->>'amount'"			+
+					" AND > payment_info->>'amount'"			+
 					" AND paid = true",
 				[
 					provider_id_hash	
