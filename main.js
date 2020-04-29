@@ -91,6 +91,8 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 	"/marketplace/v1/confirm-payment"	: 2,
 	"/marketplace/v1/audit/credits"		: 2,
 
+	"/marketplace/v1/credit/transfer"	: 3,
+
 /* data provider's APIs */
 	"/auth/v1/audit/tokens"			: 3,
 
@@ -3870,6 +3872,114 @@ app.post("/marketplace/v1/audit/credits", (req, res) => {
 			});
 		});
 	});
+});
+
+app.post("/marketplace/v1/credit/transfer", (req, res) => {
+
+	const id	= res.locals.email;
+	const body    	= res.locals.body;
+
+	if (! body["from-fingerprint"])
+		return END_ERROR (res, 400, "'from-fingerprint' field not found in body");
+
+	if (! is_string_safe(body["from-fingerprint"],":"))
+		return END_ERROR (res, 400, "Invalid 'from-fingerprint'");
+
+	const from_fingerprint = body["from-fingerprint"];
+
+	if (! body["to-fingerprint"])
+		return END_ERROR (res, 400, "'to-fingerprint' field not found in body");
+
+	if (! is_string_safe(body["to-fingerprint"],":"))
+		return END_ERROR (res, 400, "Invalid 'to-fingerprint'");
+
+	const to_fingerprint = body["to-fingerprint"];
+
+	if (from_fingerprint === to_fingerprint)
+		return END_ERROR (res, 400, "'from-fingerprint' and 'to-fingerprint' cannot be same");
+
+	if (! body["to-serial"])
+		return END_ERROR (res, 400, "'to-serial' field not found in body");
+
+	if (! is_string_safe(body["to-serial"]))
+		return END_ERROR (res, 400, "Invalid 'to-serial'");
+
+	const to_serial = body.to["to-serial"];
+
+	if (! body.amount)
+		return END_ERROR (res, 400, "'amount' field not found in body");
+
+	const amount = parseFloat(body.amount, 10);
+
+	if (isNaN(amount) || amount < 0 || amount > 1000)
+		return END_ERROR (res, 400, "'amount' is not a valid number");
+
+	pool.query (
+
+		"SELECT amount FROM credit"	+
+		" WHERE id = $1::text" 		+
+		" AND cert_serial = $2::text"	+
+		" AND amount >=  $3::numeric",
+		[
+			id,
+			from_fingerprint,
+			amount	
+		],
+		(error, results) =>
+		{
+			if (error)
+			{
+				return END_ERROR (
+					res, 500,
+					"Internal error!", error
+				);
+			}
+
+			if (results.rowCount === 0)
+			{
+				return END_ERROR (
+					res, 400,
+					"Not enough balance in 'from-fingerprint'"
+				);
+			}
+
+			pool.query (
+				"SELECT transfer_credits("	+
+					"$1::text,"		+
+					"$1::numeric,"		+
+					"$1::text,"		+
+					"$1::text"		+
+					"$1::text"		+
+				") as credits_transfered",
+				[
+					id,
+					amount,
+					from_fingerprint,
+					to_fingerprint,
+					to_serial
+				],
+			(error_1, results_1) =>
+			{
+				if (error_1 || results_1.rowCount === 0)
+				{
+					return END_ERROR (
+						res, 500,
+						"Internal error!", error_1
+					);
+				}
+				
+				if (! results_1.credits_transfered)
+				{
+					return END_ERROR (
+						res, 400,
+						"Could not transfer credits"
+					);
+				}
+
+				return END_SUCCESS (res);
+			}); 
+		}
+	);
 });
 
 /* --- Invalid requests --- */

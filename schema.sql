@@ -274,6 +274,56 @@ $$
 $$
 LANGUAGE PLPGSQL STRICT;
 
+CREATE OR REPLACE FUNCTION public.transfer_credits (
+
+	IN in_id		character varying,
+	IN in_amount		numeric,
+	IN in_from		character varying,
+	IN in_to		character varying,
+	IN in_to_serial		character varying
+
+) RETURNS boolean AS
+$$
+	BEGIN
+		UPDATE credit
+			SET
+				amount = amount - in_amount	
+			WHERE
+				cert_fingerprint	= in_from
+			AND
+				(amount - in_amount)	> 0.0
+		;
+
+		GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
+
+		IF my_num_rows_affected = 0
+		THEN
+			RAISE EXCEPTION 'Not enough balance';
+		END IF;
+
+		UPDATE credit
+			SET
+				amount = amount + in_amount
+			WHERE
+				cert_fingerprint = in_to
+		;
+
+		IF my_num_rows_affected = 0
+		THEN
+			INSERT INTO credit VALUES (	
+				in_id,
+				in_to_serial,
+				in_to,
+				in_amount,
+				NOW()
+			);
+		END IF;
+
+		RETURN TRUE;
+	END;
+$$
+LANGUAGE PLPGSQL STRICT;
+
 --
 -- ACCESS CONTROLS
 --
