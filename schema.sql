@@ -125,8 +125,12 @@ CREATE UNIQUE INDEX idx_topup_transaction ON public.topup_transaction (id,time);
 -- Functions
 --
 
-CREATE OR REPLACE FUNCTION public.update_credit (IN in_invoice_number character varying, IN in_payment_details jsonb)
-RETURNS SETOF jsonb AS
+CREATE OR REPLACE FUNCTION public.update_credit (
+
+	IN	in_invoice_number	character varying,
+	IN	in_payment_details	jsonb
+
+) RETURNS SETOF jsonb AS
 $$
 	DECLARE
 		my_id			character varying;
@@ -144,7 +148,7 @@ $$
 			WHERE
 				invoice_number	= in_invoice_number
 			AND
-				paid = FALSE 
+				paid = FALSE
 		RETURNING
 			id,
 			cert_serial,
@@ -186,11 +190,11 @@ $$
 			)
 
 		ON CONFLICT ON CONSTRAINT credit_pkey
-			DO UPDATE                    
+			DO UPDATE
 				SET
 					amount		= credit.amount + my_amount,
-					last_updated	= my_time 
-		; 
+					last_updated	= my_time
+		;
 
 		RETURN QUERY
 
@@ -208,6 +212,64 @@ $$
 			WHERE
 				invoice_number = in_invoice_number
 		;
+	END;
+$$
+LANGUAGE PLPGSQL STRICT;
+
+CREATE OR REPLACE FUNCTION public.confirm_payment (
+
+	IN in_id		character varying,
+	IN in_amount		numeric,
+	IN in_cert_serial	character varying,
+	IN in_cert_fingerprint	character varying,
+	IN in_serial		character varying,
+	IN in_fingerprint	character varying
+
+) RETURNS boolean AS
+$$
+	BEGIN
+		UPDATE credit
+			SET
+				amount = amount - in_amount
+			WHERE
+				id			= in_id
+			AND
+				cert_serial		= in_serial
+			AND
+				cert_fingerprint	= in_fingerprint
+			AND
+				(amount - in_amount) > 0.0
+		;
+
+		GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
+
+		IF my_num_rows_affected = 0
+		THEN
+			RETURN FALSE;
+		END IF;
+
+		UPDATE token
+			SET
+				paid	= TRUE,
+				paid_at	= NOW()
+			WHERE
+				id			= in_id
+			AND
+				paid			= FALSE
+			AND
+				cert_serial		= in_cert_serial
+			AND
+				cert_fingerprint	= in_cert_fingerprint
+		;
+
+		GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
+
+		IF my_num_rows_affected = 0
+		THEN
+			RAISE EXCEPTION 'Invalid token';
+		END IF;
+
+		RETURN TRUE;
 	END;
 $$
 LANGUAGE PLPGSQL STRICT;
