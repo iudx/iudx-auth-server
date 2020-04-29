@@ -89,6 +89,7 @@ const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
 	"/marketplace/v1/credit/info"		: 2,
 	"/marketplace/v1/credit/topup"		: 2,
 	"/marketplace/v1/confirm-payment"	: 2,
+	"/marketplace/v1/audit/credits"		: 2,
 
 /* data provider's APIs */
 	"/auth/v1/audit/tokens"			: 3,
@@ -2231,8 +2232,8 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 
 app.post("/auth/v1/token/revoke", (req, res) => {
 
-	const body		= res.locals.body;
 	const id		= res.locals.email;
+	const body		= res.locals.body;
 
 	const tokens		= body.tokens;
 	const token_hashes	= body["token-hashes"];
@@ -2396,8 +2397,8 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 
 app.post("/auth/v1/token/revoke-all", (req, res) => {
 
-	const body		= res.locals.body;
 	const id		= res.locals.email;
+	const body		= res.locals.body;
 
 	if (! body.serial)
 		return END_ERROR (res, 400, "No 'serial' found in the body");
@@ -2868,8 +2869,8 @@ app.post("/auth/v1/acl/revert", (req, res) => {
 
 app.post("/auth/v1/audit/tokens", (req, res) => {
 
-	const body		= res.locals.body;
 	const id		= res.locals.email;
+	const body		= res.locals.body;
 
 	if (! body.hours)
 		return END_ERROR (res, 400, "No 'hours' found in the body");
@@ -3219,8 +3220,8 @@ app.post("/auth/v1/certificate-info", (req, res) => {
 app.post("/marketplace/v1/credit/info", (req, res) => {
 
 	const id		= res.locals.email;
-	const cert_class	= res.locals.cert_class;
 	const cert		= res.locals.cert;
+	const cert_class	= res.locals.cert_class;
 
 	let query		= "SELECT * FROM credit"			+
 					" WHERE id = $1::text"			+
@@ -3299,8 +3300,8 @@ app.post("/marketplace/v1/credit/topup", (req, res) => {
 
 	const id		= res.locals.email;
 	const body		= res.locals.body;
-	const cert_class	= res.locals.cert_class;
 	const cert		= res.locals.cert;
+	const cert_class	= res.locals.cert_class;
 
 	if (! body.amount)
 		return END_ERROR (res, 400, "No 'amount' found in the body");
@@ -3639,9 +3640,9 @@ app.get("/marketplace/topup-success", (req, res) => {
 app.post("/marketplace/v1/confirm-payment", (req, res) => {
 
 	const id	    	= res.locals.email;
+	const body	    	= res.locals.body;
 	const cert		= res.locals.cert;
 	const cert_class	= res.locals.cert_class;
-	const body	    	= res.locals.body;
 
 	if (! body.token)
 		return END_ERROR (res, 400, "No 'token' found in the body");
@@ -3726,6 +3727,149 @@ app.post("/marketplace/v1/confirm-payment", (req, res) => {
 			});
 		}
 	);
+});
+
+app.post("/marketplace/v1/audit/credits", (req, res) => {
+
+	const id	    	= res.locals.email;
+	const body	    	= res.locals.body;
+	const cert		= res.locals.cert;
+	const cert_class	= res.locals.cert_class;
+
+	if (! body.hours)
+		return END_ERROR (res, 400, "No 'hours' found in the body");
+
+	const hours = parseInt (body.hours,10);
+
+	// 5 yrs max
+	if (isNaN(hours) || hours < 1 || hours > 43800) {
+		return END_ERROR (res, 400, "'hours' must be a positive number");
+	}
+
+	let serial;
+	let fingerprint;
+
+	if (cert_class > 2)
+	{
+		serial		= "*";
+		fingerprint	= "*";
+	}
+	else
+	{
+		serial		= cert.serialNumber.toLowerCase();
+		fingerprint	= cert.fingerprint.toLowerCase();
+	}
+
+	pool.query (
+
+		"SELECT amount,time,invoice_number"		+
+			" FROM topup_transaction"		+
+			" WHERE id = $1::text"			+
+			" AND cert_serial = $2::text" 		+
+			" AND cert_fingerprint = $3::text"	+
+			" AND paid = true"	 		+
+			" AND time >= (NOW() - $4::interval) ",
+		[
+			id,
+			serial,
+			fingerprint,
+			hours + " hours"
+		],
+	(error, results) =>
+	{
+		if (error)
+			return END_ERROR (res, 500, "Internal error!", error);
+
+		const as_consumer		= [];
+		const as_provider		= [];
+		const other_transactions	= [];
+
+		for (const row of results.rows)
+		{
+			as_consumer.push ({
+				"transaction"		: "topup",
+				"amount"		: row.amount,
+				"time"			: row.time,
+				"invoice-number"	: row.invoice_number,
+			});
+		}
+
+		if (cert_class < 3)
+		{
+			const response = {
+				"as-consumer" : as_consumer
+			};
+
+			return END_SUCCESS (res, response);
+		}
+
+		pool.query (
+			"SELECT * FROM topup_transaction"	+
+			" WHERE id = $1::text"			+
+			" AND paid = true"			+
+			" AND time >= (NOW() - $2::interval)"	+
+			" AND cert_serial != '*'"		+
+			" AND cert_fingerprint != '*'",	
+			[
+				id,
+				hours + " hours"
+			],
+
+		(error_1, results_1) =>
+		{
+			if (error_1)
+				return END_ERROR (res, 500, "Internal error!", error_1);
+
+			for (const row of results_1.rows)
+			{
+				other_transactions.push ({
+					"transaction"	: "topup",
+					"amount"	: row.amount,
+					"time"		: row.time,
+					"serial"	: row.cert_serial,
+					"fingerprint"	: row.cert_fingerprint
+				});
+			}
+
+			const email_domain	= id.split("@")[0].toLowerCase();
+			const sha1_of_email	= sha1(id);
+
+			const provider_id_hash	= email_domain + "/" + sha1_of_email;
+
+			pool.query (
+				"SELECT paid_at,"						+
+					" payment_info ->> providers ->> $1::text as money"	+
+					" FROM token"						+
+					" WHERE amount > 0.0"					+
+					" AND > payment_info ->>'amount'"			+
+					" AND paid = true",
+				[
+					provider_id_hash	
+				],
+			(error_2, results_2) =>
+			{
+				if (error_2)
+					return END_ERROR (res, 500, "Internal error!", error_2);
+
+				for (const row of results_2.rows)
+				{
+					as_provider.push ({
+						"transaction"	: "received",
+						"amount"	: row.money,
+						"time"		: row.paid_at
+					});
+				}
+
+				const response = {
+					"as-consumer"		: as_consumer,
+					"as-provider"		: as_consumer,
+					"other-transactions"	: other_transactions
+				};
+
+				return END_SUCCESS(res, response);
+			});
+		});
+	});
 });
 
 /* --- Invalid requests --- */
