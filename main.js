@@ -323,6 +323,71 @@ const topup_failure_2 = STATIC_PAGES.get("topup-failure-2.html");
 
 /* --- functions --- */
 
+function is_valid_token (token, user = null)
+{
+	if ((! is_string_safe(token)))
+		return false;
+
+	const split = token.split("/");
+
+	if (split.length !== 3)
+		return false;
+
+	const issued_by		= split[0];
+	const issued_to		= split[1];
+	const random_hex	= split[2];
+
+	if (issued_by !== SERVER_NAME)
+		return false;
+
+	if (random_hex.length !== TOKEN_LEN_HEX)
+		return false;
+
+	if (user && user !== issued_to)
+		return false;		// token was not issued to this user
+
+	if (! is_valid_email(issued_to))
+		return false;
+
+	return true;
+}
+
+function is_valid_tokenhash (token_hash)
+{
+	if (! is_string_safe(token_hash))
+		return false;
+
+	if (token_hash.length < MIN_TOKEN_HASH_LEN)
+		return false;
+
+	if (token_hash.length > MAX_TOKEN_HASH_LEN)
+		return false;
+
+	return true;
+}
+
+function is_valid_servertoken (server_token, hostname)
+{
+	if ((! is_string_safe(server_token)))
+		return false;
+
+	const split = server_token.split("/");
+
+	if (split.length !== 2)
+		return false;
+
+	const issued_to		= split[0];
+	const random_hex	= split[1];
+
+	if (issued_to !== hostname)
+		return false;
+
+	if (random_hex.length !== TOKEN_LEN_HEX)
+		return false;
+
+	return true;
+}
+
 function sha1 (string)
 {
 	return crypto
@@ -1798,7 +1863,8 @@ app.post("/auth/v1/token", (req, res) => {
 			return END_ERROR (
 				res, 402,
 					"Not enough balance in credits for : "	+
-					total_payment_amount
+					total_payment_amount			+
+					" Rupees"
 			);
 		}
 
@@ -1838,39 +1904,40 @@ app.post("/auth/v1/token", (req, res) => {
 
 	const paid = total_payment_amount > 0.0 ? false : true;
 
-	const query = "INSERT INTO token VALUES("			+
-			"$1::text,"					+
-			"$2::text,"					+
-			"NOW() + $3::interval,"				+
-			"$4::jsonb,"					+
-			"$5::text,"					+
-			"$6::text,"					+
-			"NOW(),"					+
-			"$7::jsonb,"					+
-			"false,"					+
-			"false,"					+
-			"$8::int,"					+
-			"$9::jsonb,"					+
-			"$10::jsonb,"					+
-			"$11::jsonb,"					+
-			"$12::jsonb,"					+
-			"$13::boolean"					+
+	const query = "INSERT INTO token VALUES("		+
+			"$1::text,"				+
+			"$2::text,"				+
+			"NOW() + $3::interval,"			+ // expiry
+			"$4::jsonb,"				+
+			"$5::text,"				+
+			"$6::text,"				+
+			"NOW(),"				+ // issued_at
+			"$7::jsonb,"				+
+			"false,"				+ // introspected
+			"false,"				+ // revoked
+			"$8::int,"				+
+			"$9::jsonb,"				+
+			"$10::jsonb,"				+
+			"$11::jsonb,"				+
+			"$12::jsonb,"				+
+			"$13::boolean,"				+
+			"NULL"					+ // paid_at
 	")";
 
 	const params = [
-		consumer_id,						//  1
-		sha256_of_token,					//  2
-		token_time + " seconds",				//  3
-		JSON.stringify(processed_request_array),		//  4
-		cert.serialNumber,					//  5
-		cert.fingerprint,					//  6
-		JSON.stringify(resource_id_dict),			//  7
-		cert_class,						//  8
-		JSON.stringify(sha256_of_resource_server_token),	//  9
-		JSON.stringify(providers),				// 10
-		JSON.stringify(geoip),					// 11
-		JSON.stringify(payment_info),				// 12
-		paid							// 13
+		consumer_id,					//  1
+		sha256_of_token,				//  2
+		token_time + " seconds",			//  3
+		JSON.stringify(processed_request_array),	//  4
+		cert.serialNumber,				//  5
+		cert.fingerprint,				//  6
+		JSON.stringify(resource_id_dict),		//  7
+		cert_class,					//  8
+		JSON.stringify(sha256_of_resource_server_token)	//  9
+		JSON.stringify(providers),			// 10
+		JSON.stringify(geoip),				// 11
+		JSON.stringify(payment_info),			// 12
+		paid						// 13
 	];
 
 	pool.query (query, params, (error,results) =>
@@ -1897,10 +1964,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	if (! body.token)
 		return END_ERROR (res, 400, "No 'token' found in the body");
 
-	if (! is_string_safe(body.token) || ! body.token.startsWith(SERVER_NAME + "/"))
-		return END_ERROR (res, 400, "Invalid 'token'");
-
-	if ((body.token.match(/\//g) || []).length !== 2)
+	if (! is_valid_token(body.token))
 		return END_ERROR (res, 400, "Invalid 'token'");
 
 	const token		= body.token.toLowerCase();
@@ -1912,21 +1976,9 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	}
 	else
 	{
-		if (! is_string_safe(server_token))
-			return END_ERROR (res, 400, "Invalid 'server-token'");
+		server_token = server_token.toLowerCase();
 
-		if ((server_token.match(/\//g) || []).length !== 1)
-			return END_ERROR (res, 400, "Invalid 'server-token'");
-
-		const split		= server_token.split("/");
-
-		const issued_to		= split[0];
-		const random_hex	= split[1];
-
-		if (issued_to !== hostname_in_certificate)
-			return END_ERROR (res, 400, "Invalid 'server-token'");
-
-		if (random_hex.length !== TOKEN_LEN_HEX)
+		if (! is_valid_servertoken(server_token, hostname_in_certificate))
 			return END_ERROR (res, 400, "Invalid 'server-token'");
 	}
 
@@ -1944,20 +1996,9 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 	}
 
 	const split		= token.split("/");
-
-	const issued_by		= split[0];
 	const issued_to		= split[1];
-	const random_hex	= split[2];
 
-	if (
-		(issued_by		!== SERVER_NAME)	||
-		(random_hex.length	!== TOKEN_LEN_HEX)	||
-		(! is_valid_email(issued_to))
-	) {
-		return END_ERROR (res, 400, "Invalid 'token'");
-	}
-
-	const sha256_of_token = sha256(token);
+	const sha256_of_token	= sha256(token);
 
 	pool.query (
 
@@ -2222,32 +2263,8 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 
 		for (const token of tokens)
 		{
-			if (
-				(! is_string_safe(token))		||
-				(! token.startsWith(SERVER_NAME + "/"))	||
-				((token.match(/\//g) || []).length !== 2)
-			)
+			if (! is_valid_token(token, id))
 			{
-				const error_response = {
-					"message"		: "Invalid 'token'",
-					"invalid-input"		: xss_safe(token),
-					"num-tokens-revoked"	: num_tokens_revoked
-				};
-
-				return END_ERROR (res, 400, error_response);
-			}
-
-			const split		= token.split("/");
-
-			const issued_by		= split[0];
-			const issued_to		= split[1];
-			const random_hex	= split[2];
-
-			if (
-				(issued_by		!== SERVER_NAME)	||
-				(issued_to		!== id)			||
-				(random_hex.length	!== TOKEN_LEN_HEX)
-			) {
 				const error_response = {
 					"message"		: "Invalid 'token'",
 					"invalid-input"		: xss_safe(token),
@@ -2313,11 +2330,7 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 
 		for (const token_hash of token_hashes)
 		{
-			if (
-				(! is_string_safe(token_hash))		||
-				(token_hash.length < MIN_TOKEN_HASH_LEN)||
-				(token_hash.length > MAX_TOKEN_HASH_LEN)
-			)
+			if (! is_valid_tokenhash(token_hash))
 			{
 				const error_response = {
 					"message"		: "Invalid 'token-hash'",
