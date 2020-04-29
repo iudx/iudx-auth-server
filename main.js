@@ -3635,6 +3635,107 @@ app.get("/marketplace/topup-success", (req, res) => {
 	});
 });
 
+app.post("/marketplace/v1/confirm-payment", (req, res) => {
+
+	const id	    	= res.locals.email;
+	const cert		= res.locals.cert;
+	const cert_class	= res.locals.cert_class;
+	const body	    	= res.locals.body;
+
+	if (! body.token)
+		return END_ERROR (res, 400, "No 'token' found in the body");
+
+	if (! is_valid_token(body.token,id))
+		return END_ERROR (res, 400, "Invalid 'token'");
+
+	const token		= body.token;
+	const sha256_of_token	= sha256(token);
+
+	const cert_serial	= cert.serialNumber.toLowerCase();
+	const cert_fingerprint	= cert.fingerprint.toLowerCase();
+
+	const result = pg.querySync(
+		"SELECT payment_info->>amount AS amount"		+
+		" FROM token"						+
+		" WHERE id = $1::text"					+
+		" AND token = $2::text"					+
+		" AND cert_serial = $3::text"				+
+		" AND cert_fingerprint = $4::text"			+
+		" AND amount > 0"					+
+		" AND expiry > NOW()"					+
+		" LIMIT 1",
+		[
+			id,
+			sha256_of_token,
+			cert_serial,
+			cert_fingerprint
+		]
+	);
+
+	if (result.length === 0)
+		return END_ERROR (res, 400, "Invalid 'token'");
+
+	const amount	= result[0].amount;
+
+	/*
+		The below serial and fingerprint variables
+		are from the "topup_transaction" table,
+		and may not be the real certificate's serial and fingerprint
+	*/
+
+	let serial	= cert_serial;
+	let fingerprint	= cert_fingerprint;
+
+	if (cert_class > 2)
+	{
+		serial		= "*";
+		fingerprint	= "*";
+	}
+
+	const query	= "UPDATE credit"				+ 
+				" SET amount = amount - $1::int"	+
+				" WHERE id = $2::text"			+
+				" AND cert_serial = $3::text"		+
+				" AND cert_fingerprint = $4::text"	+
+				" AND (amount - $5::int) > 0.0";
+
+	const params	= [
+				amount,					// 1
+				id,					// 2
+				serial,					// 3
+				fingerprint,				// 4
+				amount					// 5
+	];
+
+	pool.query(query, params, (error, results) =>
+	{
+		if (error)
+			return END_ERROR (res, 500, "Internal error!", error);
+
+		if (results.rowCount === 0)
+			return END_ERROR (res, 402, "Not enough balance!");
+
+		pool.query (
+			"UPDATE token"					+
+				" SET paid = true, paid_at = NOW()"	+
+				" WHERE id = $1::text"			+
+				" AND cert_serial = $2::text"		+
+				" AND cert_fingerprint = $3::text",
+				[
+					id,
+					cert_serial,
+					cert_fingerprint
+				],
+		(error_1, results_1) =>
+		{
+			if (error_1 || results_1.rowCount === 0)
+				return END_ERROR (res, 500, "Internal error!", error_1);
+
+			return END_SUCCESS (res);
+		});
+	});
+});
+
 /* --- Invalid requests --- */
 
 app.all("/*", (req, res) => {
