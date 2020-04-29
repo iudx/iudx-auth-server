@@ -26,7 +26,7 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE public.crl (
-    crl	jsonb	DEFAULT '[]'::jsonb	NOT NULL
+    crl	jsonb	NOT NULL
 );
 
 INSERT INTO public.crl VALUES('[]'::jsonb);
@@ -84,6 +84,7 @@ CREATE TABLE public.token (
     providers		jsonb				NOT NULL,
     geoip		jsonb				NOT NULL,
     payment_info	jsonb				NOT NULL,
+    paid		boolean				NOT NULL,
 
     PRIMARY KEY (id, token)
 );
@@ -94,7 +95,7 @@ CREATE TABLE public.credit (
 	id			character varying		NOT NULL,
 	cert_serial		character varying		NOT NULL,
 	cert_fingerprint	character varying		NOT NULL,
-	amount			numeric				NOT NULL DEFAULT 0 CHECK (amount >= 0),
+	amount			numeric				NOT NULL CHECK (amount >= 0),
 	last_updated		timestamp without time zone	NOT NULL,
 
 	CONSTRAINT "credit_pkey" PRIMARY KEY (id, cert_serial, cert_fingerprint)
@@ -104,7 +105,7 @@ CREATE TABLE public.topup_transaction (
 	id			character varying		NOT NULL,
 	cert_serial		character varying		NOT NULL,
 	cert_fingerprint	character varying		NOT NULL,
-	amount			numeric				NOT NULL,
+	amount			numeric				NOT NULL CHECK (amount >= 0),
 	time			timestamp without time zone	NOT NULL,
 	invoice_number		character varying		NOT NULL,
 	paid			boolean				NOT NULL,

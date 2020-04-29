@@ -47,6 +47,7 @@ const bodyParser		= require("body-parser");
 const compression		= require("compression");
 const http_request		= require("request");
 const pgNativeClient		= require("pg-native");
+
 const pg			= new pgNativeClient();
 
 const TOKEN_LEN			= 16;
@@ -275,7 +276,7 @@ const https_options = {
 
 const STATIC_PAGES = immutable.Map ({
 
-/* get end points */
+/* GET end points */
 
 	"/marketplace/topup.html":
 				fs.readFileSync (
@@ -737,7 +738,11 @@ function xss_safe (input)
 	if (typeof input === "string")
 		return input.replace(/[^-a-zA-Z0-9:/.@_]/g,"*");
 	else
+	{
+		// we can only change string variables
+
 		return input;
+	}
 }
 
 function is_string_safe (str, exceptions = "")
@@ -1398,6 +1403,15 @@ app.post("/auth/v1/token", (req, res) => {
 
 			resource = r.id;
 		}
+		else
+		{
+			const error_response = {
+				"message"	: "Invalid resource 'id' found in request",
+				"invalid-input"	: xss_safe(String(r)),
+			};
+
+			return END_ERROR (res, 400, error_response);
+		}
 
 		if (! is_string_safe(resource, "*_")) // allow some chars
 		{
@@ -1658,10 +1672,10 @@ app.post("/auth/v1/token", (req, res) => {
 						CTX
 					);
 
-					const token_time_in_policy	= result.expiry;
-					const payment_amount		= result.amount;
+					const token_time_in_policy	= result.expiry || 0;
+					const payment_amount		= result.amount || 0.0;
 
-					if (! token_time_in_policy || token_time_in_policy < 1 || payment_amount < 0)
+					if (token_time_in_policy < 1 || payment_amount < 0.0)
 					{
 						const error_response = {
 							"message"	: "Unauthorized",
@@ -1707,6 +1721,15 @@ app.post("/auth/v1/token", (req, res) => {
 
 		if (requested_token_time)
 			token_time = Math.min(requested_token_time,token_time);
+
+		if (token_time < 1)
+		{
+			const error_response = {
+				"message" : "token validity is less than 1 second"
+			};
+
+			return END_ERROR (res, 400, error_response);
+		}
 
 		processed_request_array.push ({
 			"id"		: resource,
@@ -1813,6 +1836,8 @@ app.post("/auth/v1/token", (req, res) => {
 	delete geoip.metro;
 	delete geoip.range;
 
+	const paid = total_payment_amount > 0.0 ? false : true;
+
 	const query = "INSERT INTO token VALUES("			+
 			"$1::text,"					+
 			"$2::text,"					+
@@ -1828,7 +1853,8 @@ app.post("/auth/v1/token", (req, res) => {
 			"$9::jsonb,"					+
 			"$10::jsonb,"					+
 			"$11::jsonb,"					+
-			"$12::jsonb"					+
+			"$12::jsonb,"					+
+			"$13::boolean"					+
 	")";
 
 	const params = [
@@ -1843,7 +1869,8 @@ app.post("/auth/v1/token", (req, res) => {
 		JSON.stringify(sha256_of_resource_server_token),	//  9
 		JSON.stringify(providers),				// 10
 		JSON.stringify(geoip),					// 11
-		JSON.stringify(payment_info)				// 12
+		JSON.stringify(payment_info),				// 12
+		paid							// 13
 	];
 
 	pool.query (query, params, (error,results) =>
@@ -1940,6 +1967,7 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 		" WHERE id = $1::text"			+
 		" AND token = $2::text"			+
 		" AND revoked = false"			+
+		" AND paid = true"			+
 		" AND expiry > NOW()"			+
 		" LIMIT 1",
 		[
@@ -2216,8 +2244,8 @@ app.post("/auth/v1/token/revoke", (req, res) => {
 			const random_hex	= split[2];
 
 			if (
-				(issued_by		!== SERVER_NAME)||
-				(issued_to		!== id)		||
+				(issued_by		!== SERVER_NAME)	||
+				(issued_to		!== id)			||
 				(random_hex.length	!== TOKEN_LEN_HEX)
 			) {
 				const error_response = {
@@ -2846,7 +2874,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 
 		"SELECT issued_at,expiry,request,cert_serial,"	+
 		" cert_fingerprint,introspected,revoked,"	+
-		" expiry < NOW() as expired,geoip"		+
+		" expiry < NOW() as expired,geoip,paid"		+
 		" FROM token"					+
 		" WHERE id = $1::text"				+
 		" AND issued_at >= (NOW() - $2::interval)"	+
@@ -2872,7 +2900,8 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 				"certificate-serial-number"	: row.cert_serial,
 				"certificate-fingerprint"	: row.cert_fingerprint,
 				"request"			: row.request,
-				"geoip"				: row.geoip
+				"geoip"				: row.geoip,
+				"paid"				: row.paid
 			});
 		}
 
@@ -2888,7 +2917,7 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 			" revoked,introspected,"			+
 			" providers-> $1::text"				+
 			" AS is_valid_token_for_provider,"		+
-			" expiry < NOW() as expired,geoip"		+
+			" expiry < NOW() as expired,geoip,paid"		+
 			" FROM token"					+
 			" WHERE providers-> $1::text"			+
 			" IS NOT NULL"					+
@@ -2925,7 +2954,8 @@ app.post("/auth/v1/audit/tokens", (req, res) => {
 					"certificate-serial-number"	: row.cert_serial,
 					"certificate-fingerprint"	: row.cert_fingerprint,
 					"request"			: row.request,
-					"geoip"				: row.geoip
+					"geoip"				: row.geoip,
+					"paid"				: row.paid
 				});
 			}
 

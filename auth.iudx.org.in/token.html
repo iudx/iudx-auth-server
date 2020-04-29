@@ -62,7 +62,6 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 		<span class="rainbow_p0">{</span>
 			<span class="Constant">&quot;request&quot;</span>  		: &lt;resource id<span class="rainbow_p1">(</span>s<span class="rainbow_p1">)</span> <span class="Statement">for</span> which access is requested&gt;		<span class="Comment">// required</span>
 			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;	<span class="Comment" style="color:#A3E7D6">// optional</span>
-			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;			<span class="Comment" style="color:#A3E7D6">// optional</span>
 		<span class="rainbow_p0">}</span>
 
 	<span class="Constant">2.</span> complex:
@@ -76,15 +75,11 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 			<span class="rainbow_p1">}</span><span class="rainbow_o0">,</span>
 
 			<span class="Constant">&quot;token-time&quot;</span>		: &lt;the time in seconds<span class="rainbow_o0">,</span> till which the token should be valid&gt;	<span class="Comment" style="color:#A3E7D6">// optional</span>
-			<span class="Constant">&quot;existing-token&quot;</span>	: &lt;a valid token a data consumer already has&gt;			<span class="Comment" style="color:#A3E7D6">// optional</span>
 		<span class="rainbow_p0">}</span>
 
 	<span class="Statement">Note</span>:
 
 	The <span class="Constant">&quot;request&quot;</span> field could also be an <span class="Constant">&quot;array&quot;</span> of strings/objects.
-
-	The <span class="Constant">&quot;existing-token&quot;</span> field is used to indicate that new token <span class="Constant">&quot;SHOULD NOT&quot;</span> be generated;
-	i.e. the existing-token will be used to access the new requested list of resource ids.
 
 	The <span class="Constant">&quot;request&quot;</span> fields are:
 
@@ -275,13 +270,6 @@ body { font-family: monospace; color: #ffffff; background-color: #000000; }
 					<span class="Constant">&quot;rs2.com&quot;</span> is <span class="Constant">&quot;rs2.com/52338cdfff3222699900&quot;</span>
 
 				The <span class="Constant">&quot;server-token&quot;</span> ensures that only a genuine resource server can access its token.
-
-				<span class="Statement">Important note</span>:
-
-					The <span class="Constant">&quot;server-token&quot;</span>s may change <span class="Statement">if</span> <span class="Constant">&quot;existing-token&quot;</span> is used with
-					multiple resource servers.
-
-					Hence, consumers must update their <span class="Constant">&quot;server-token&quot;</span>s as in the API response.
 
 <span class="Statement">See also</span>:
 
