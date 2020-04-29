@@ -7,6 +7,8 @@ from init import provider
 from init import untrusted
 from init import resource_server
 
+from init import expect_failure 
+
 from init import restricted_consumer
 
 import hashlib
@@ -94,10 +96,12 @@ bad_request = [
 ]
 
 assert resource_server.introspect_token (token,server_token,request)['success']			is True
-assert resource_server.introspect_token (token,server_token,bad_request)['success']		is False
 
+expect_failure(True)
+assert resource_server.introspect_token (token,server_token,bad_request)['success']		is False
 assert resource_server.introspect_token (token,'invalid-token-012345678901234567')['success']	is False
 assert resource_server.introspect_token (token)['success']					is False
+expect_failure(False)
 
 r = provider.audit_tokens(5)
 assert r["success"] is True

@@ -30,7 +30,6 @@ class Auth():
 			api_type = "/marketplace"
 			api = "/".join(api.split("/")[1:])
 
-
 		url = self.url + api_type + "/v1/" + api
 
 		response = requests.post (
@@ -43,22 +42,29 @@ class Auth():
 
 		if response.status_code != 200:
 		#
-			sys.stderr.write (
-				"WARNING: auth API failure  | "	+
-				url			+ " | "	+
-				response.reason 	+ " | "	+
-				response.text
-			)
+			if "EXPECTED_FAILURE" not in os.environ:
+			#
+				sys.stderr.write (
+					"WARNING: auth API failure  | "	+
+					url			+ " | "	+
+					response.reason 	+ " | "	+
+					response.text
+				)
+			#
 
 			ret = False
 		#
 
 		if response.headers['content-type'] == 'application/json':
+		#
+			assert "EXPECTED_FAILURE" not in os.environ
+
 			return {
 				"success"	: ret,
 				"response"	: json.loads(response.text),
 				"status_code"	: response.status_code
 			}
+		#
 		else:
 		#
 			sys.stderr.write (

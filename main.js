@@ -325,7 +325,7 @@ const topup_failure_2 = STATIC_PAGES.get("topup-failure-2.html");
 
 function is_valid_token (token, user = null)
 {
-	if ((! is_string_safe(token)))
+	if (! is_string_safe(token))
 		return false;
 
 	const split = token.split("/");
@@ -368,7 +368,7 @@ function is_valid_tokenhash (token_hash)
 
 function is_valid_servertoken (server_token, hostname)
 {
-	if ((! is_string_safe(server_token)))
+	if (! is_string_safe(server_token))
 		return false;
 
 	const split = server_token.split("/");

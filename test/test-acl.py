@@ -2,6 +2,8 @@
 
 from init import provider
 
+from init import expect_failure 
+
 rules = [
 	'x@x.com can access rs1.com/x/y/z/t/a/b/c for 2 days',
 	'x@x.com can access rs1.com/_x/y/z/t/a/b/c for 2 days if country = "IN" AND api = "/latest"',
@@ -43,14 +45,20 @@ assert len(reverted_policy) == 1
 assert reverted_policy[0] == policy
 
 # reverting twice should not work
+expect_failure(True)
+
 r = provider.revert_policy()
 assert r['success'] is False
+
+expect_failure(False)
 
 # RegEx should not work supported
 
 r = provider.get_policy()
 assert r['success'] is True
 policy = r['response']['policy']
+
+expect_failure(True)
 
 regex_policy = "x can access y if z like /someregex*/i"
 r = provider.set_policy(regex_policy)
@@ -59,6 +67,8 @@ assert r['success'] is False
 regex_policy = "x can access /fred(dy)?/i::regex"
 r = provider.set_policy(regex_policy)
 assert r['success'] is False
+
+expect_failure(False)
 
 r = provider.get_policy()
 assert r['success'] is True

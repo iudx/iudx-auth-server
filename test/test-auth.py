@@ -6,12 +6,15 @@ from init import consumer
 from init import provider
 from init import resource_server
 
+from init import expect_failure 
+
 RS = "iisc.iudx.org.in"
 
 r = consumer.get_policy()
 assert r['success']	is False
 assert r['status_code'] == 403
 
+expect_failure(True)
 policy = "x can access *" # dummy policy
 r = consumer.set_policy(policy)
 assert r['success']	is False
@@ -93,3 +96,4 @@ r = consumer.list_group("confidential")
 assert r['success']	is False
 assert r['status_code'] == 403
 
+expect_failure(False)

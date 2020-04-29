@@ -21,3 +21,9 @@ if "AUTH_SERVER" in os.environ and os.environ["AUTH_SERVER"] == "localhost":
 #
 
 resource_server		= Auth(home + "r-server.pem", home + "r-server.key.pem", auth_server)
+
+def expect_failure(b):
+	if b:
+		os.environ["EXPECT_FAILURE"] = "1"
+	else:
+		del os.environ["EXPECT_FAILURE"]

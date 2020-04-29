@@ -2,6 +2,7 @@
 
 from init import consumer
 from init import provider
+from init import expect_failure 
 from init import resource_server
 
 r                       = provider.delete_consumer_from_group("*","confidential")
@@ -62,4 +63,7 @@ assert 1		== len(r["response"])
 
 assert consumer.get_token(body)["success"] 							is True
 assert provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")["success"]	is True
+
+expect_failure(True)
 assert consumer.get_token(body)["success"]							is False
+expect_failure(False)
