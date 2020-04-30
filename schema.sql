@@ -250,8 +250,9 @@ $$
 
 		UPDATE token
 			SET
-				paid	= TRUE,
-				paid_at	= NOW()
+				paid		= TRUE,
+				paid_at		= NOW(),
+				expiry		= (expiry - issued_at + NOW())
 			WHERE
 				id			= in_id
 			AND

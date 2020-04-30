@@ -1258,7 +1258,7 @@ function ocsp_check (req, res, next)
 {
 	const cert = res.locals.cert;
 
-	// No ocsp check required if its IUDX certificate
+	// Skip ocsp check if an IUDX certificate was presented
 
 	if (res.locals.is_iudx_certificate)
 		return next();
@@ -3987,7 +3987,7 @@ app.post("/marketplace/v1/credit/transfer", (req, res) => {
 
 app.all("/*", (req, res) => {
 
-	const doc = " Please visit <http://auth.iudx.org.in> for documentation";
+	const doc = " Please visit <http://" + SERVER_NAME + "> for documentation";
 
 	if (req.method === "POST")
 	{
@@ -4027,7 +4027,7 @@ if (! is_openbsd)
 	dns.lookup("google.com", {all:true},
 		(error) => {
 			if (error)
-				log("red","DNS to google.com failed ");
+				log("yellow","DNS to google.com failed ");
 		}
 	);
 
