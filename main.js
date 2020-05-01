@@ -2164,10 +2164,14 @@ app.post("/auth/v1/token/introspect", (req, res) => {
 					if (! r1.body)
 						r1.body = null;
 
+					Object.freeze(r1);
+
 					let resource_found = false;
 
 					for (const r2 of request_for_resource_server)
 					{
+						Object.freeze(r2);
+
 						if (r1.id === r2.id)
 						{
 							if (! lodash.isEqual(r1,r2))
