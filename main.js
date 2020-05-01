@@ -1127,6 +1127,9 @@ function basic_security_check (req, res, next)
 			}
 
 			Object.freeze(res.locals);
+			Object.freeze(res.locals.body);
+			Object.freeze(res.locals.cert);
+
 			return next();
 		});
 	}
@@ -1190,6 +1193,9 @@ function basic_security_check (req, res, next)
 		}
 
 		Object.freeze(res.locals);
+		Object.freeze(res.locals.body);
+		Object.freeze(res.locals.cert);
+
 		return next();
 	}
 }
@@ -1732,6 +1738,9 @@ app.post("/auth/v1/token", (req, res) => {
 				}
 
 				CTX.conditions.method = method;
+
+				Object.freeze(CTX);
+				Object.freeze(CTX.conditions);
 
 				try
 				{
@@ -3484,7 +3493,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 			}
 		};
 
-		let response_mid =
+		const response_mid =
 			"<script>"					+
 				"jsonViewer.showJSON("			+
 					JSON.stringify(error_response)	+
@@ -3529,7 +3538,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 			}
 		};
 
-		let response_mid =
+		const response_mid =
 			"<script>"					+
 				"jsonViewer.showJSON("			+
 					JSON.stringify(error_response)	+
@@ -3575,7 +3584,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 				}
 			};
 
-			let response_mid =
+			const response_mid =
 				"<script>"					+
 					"jsonViewer.showJSON("			+
 						JSON.stringify(error_response)	+
@@ -3605,7 +3614,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 				}
 			};
 
-			let response_mid =
+			const response_mid =
 				"<script>"					+
 					"jsonViewer.showJSON("			+
 						JSON.stringify(error_response)	+
@@ -3631,7 +3640,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 			response[key] = details[key];
 		}
 
-		let response_mid =
+		const response_mid =
 				"<script>"					+
 					"jsonViewer.showJSON("			+
 						JSON.stringify(response)	+
