@@ -10,7 +10,6 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "geoip-lite": "^1.4.0",
-    "immutable": "^4.0.0-rc.12",
     "lodash": "^4.17.15",
     "logger": "0.0.1",
     "negotiator": "^0.6.2",

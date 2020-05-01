@@ -40,7 +40,6 @@ const cluster			= require("cluster");
 const express			= require("express");
 const timeout			= require("connect-timeout");
 const aperture			= require("./node-aperture");
-const immutable			= require("immutable");
 const safe_regex		= require("safe-regex");
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
@@ -68,7 +67,7 @@ const MAX_TOKEN_HASH_LEN	= 64;
 
 const MAX_SAFE_STRING_LEN	= 512;
 
-const MIN_CERT_CLASS_REQUIRED = immutable.Map ({
+const MIN_CERT_CLASS_REQUIRED	= Object.freeze ({
 
 /* resource server API */
 	"/auth/v1/token/introspect"		: 1,
@@ -278,7 +277,7 @@ const https_options = {
 
 /* --- static pages --- */
 
-const STATIC_PAGES = immutable.Map ({
+const STATIC_PAGES = Object.freeze ({
 
 /* GET end points */
 
@@ -313,17 +312,18 @@ const STATIC_PAGES = immutable.Map ({
 				),
 });
 
-const MIME_TYPE = immutable.Map({
+const MIME_TYPE = Object.freeze({
+
 	"js"	: "text/javascript",
 	"css"	: "text/css",
 	"html"	: "text/html"
 });
 
-const topup_success_1 = STATIC_PAGES.get("topup-success-1.html");
-const topup_success_2 = STATIC_PAGES.get("topup-success-2.html");
+const topup_success_1 = STATIC_PAGES["topup-success-1.html"];
+const topup_success_2 = STATIC_PAGES["topup-success-2.html"];
 
-const topup_failure_1 = STATIC_PAGES.get("topup-failure-1.html");
-const topup_failure_2 = STATIC_PAGES.get("topup-failure-2.html");
+const topup_failure_1 = STATIC_PAGES["topup-failure-1.html"];
+const topup_failure_2 = STATIC_PAGES["topup-failure-2.html"];
 
 /* --- functions --- */
 
@@ -447,7 +447,7 @@ function log(color, msg)
 function SERVE_HTML (req,res)
 {
 	const path	= url.parse(req.url).pathname;
-	const page	= STATIC_PAGES.get(path);
+	const page	= STATIC_PAGES[path];
 
 	if (! page)
 		return false;
@@ -455,7 +455,7 @@ function SERVE_HTML (req,res)
 	const split	= path.split(".");
 	const extension	= split[split.length - 1].toLowerCase();
 
-	const mime	= MIME_TYPE.get(extension) || "text/html";
+	const mime	= MIME_TYPE[extension] || "text/html";
 
 	res.setHeader("Content-Type", mime);
 	res.status(200).end(page);
@@ -920,7 +920,7 @@ function basic_security_check (req, res, next)
 	// TODO: convert /v[1-9]/ to /v1/
 
 	const api			= url.parse(req.url).pathname;
-	const min_class_required	= MIN_CERT_CLASS_REQUIRED.get(api);
+	const min_class_required	= MIN_CERT_CLASS_REQUIRED[api];
 
 	if (! min_class_required)
 	{
