@@ -1126,6 +1126,7 @@ function basic_security_check (req, res, next)
 				}
 			}
 
+			Object.freeze(res.locals);
 			return next();
 		});
 	}
@@ -1188,6 +1189,7 @@ function basic_security_check (req, res, next)
 			);
 		}
 
+		Object.freeze(res.locals);
 		return next();
 	}
 }
