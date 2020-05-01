@@ -1739,9 +1739,6 @@ app.post("/auth/v1/token", (req, res) => {
 
 				CTX.conditions.method = method;
 
-				Object.freeze(CTX);
-				Object.freeze(CTX.conditions);
-
 				try
 				{
 					// token expiry time as specified by
