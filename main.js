@@ -1402,8 +1402,17 @@ app.post("/auth/v1/token", (req, res) => {
 	}
 
 	const ip	= req.connection.remoteAddress;
-	const geoip	= geoip_lite.lookup(ip) || {ll:[]};
 	const issuer	= cert.issuer;
+
+	const geoip	= geoip_lite.lookup(ip) || {ll:[]};
+
+	// these fields are not nessary
+	delete geoip.eu;
+	delete geoip.area;
+	delete geoip.metro;
+	delete geoip.range;
+
+	Object.freeze(geoip);
 
 	const context = {
 
@@ -1907,12 +1916,6 @@ app.post("/auth/v1/token", (req, res) => {
 
 	response["server-token"]	= resource_server_token;
 	const sha256_of_token		= sha256(token);
-
-	// these fields are unnessary
-	delete geoip.eu;
-	delete geoip.area;
-	delete geoip.metro;
-	delete geoip.range;
 
 	const paid = total_payment_amount > 0.0 ? false : true;
 
