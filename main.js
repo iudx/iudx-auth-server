@@ -678,7 +678,10 @@ function is_secure (req, res, cert, validate_email = true)
 				.split(":")[0]	// remove port number
 		);
 
-		if (! origin_domain.endsWith(".iudx.org.in"))
+		if (
+			(! origin_domain.endsWith(".iudx.io"))		&&
+			(! origin_domain.endsWith(".iudx.org.in"))
+		)
 		{
 			return "Invalid 'origin' header; this website is not"	+
 				" whitelisted to call this API";
