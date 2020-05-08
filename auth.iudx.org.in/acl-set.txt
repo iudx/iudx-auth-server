@@ -18,12 +18,9 @@ Warning:
 
 	The "previous" policies will be "overwritten"!
 
-	The "previous" policy can be retrived by using the "acl/get" API.
+	The "acl/revert" API can be used to revert to "previous" policy.
 
-	Also, the "acl/revert" API can be used to revert to "previous" policy.
-
-	Please use the "acl/append" API instead to "acl/set" if you wish to
-	add a policy to the existing set of policies.
+	Please use the "acl/append" API instead to "acl/set" if you wish to add a policy to the existing set of policies.
 
 Methods:
 
