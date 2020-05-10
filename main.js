@@ -273,6 +273,10 @@ const https_options = {
 	ca			: trusted_CAs,
 	requestCert		: true,
 	rejectUnauthorized	: true,
+
+	spdy			: {
+		protocols	: ["h2", "http/1.1"]
+	}
 };
 
 /* --- static pages --- */
