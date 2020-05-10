@@ -920,7 +920,8 @@ function basic_security_check (req, res, next)
 		has_started_serving_apis = true;
 	}
 
-	const api			= url.parse(req.url).pathname.replace(/\/v[1-9]\//,"/v1/");
+	// replace all versions endpoints with "/v1/"
+	const api			= url.parse(req.url).pathname.replace(/\/v[1-2]\//,"/v1/");
 	const min_class_required	= MIN_CERT_CLASS_REQUIRED[api];
 
 	if (! min_class_required)
