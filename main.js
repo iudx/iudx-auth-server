@@ -683,8 +683,9 @@ function is_secure (req, res, cert, validate_email = true)
 		);
 
 		if (
-			(! origin_domain.endsWith(".iudx.io"))		&&
-			(! origin_domain.endsWith(".iudx.org.in"))
+			(! origin_domain.endsWith(".iudx.org.in"))	&&
+			(! origin_domain.endsWith(".datasetu.org"))	&&
+			(  origin_domain !== "datasetu.org"	)
 		)
 		{
 			return "Invalid 'origin' header; this website is not"	+
