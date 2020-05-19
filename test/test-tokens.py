@@ -291,6 +291,20 @@ r = consumer.get_token(body)
 assert r['success']	is False
 assert r['status_code']	== 402 # payment required
 
+amount = 20
+r = consumer.topup(amount)
+
+r = consumer.get_token(body)
+assert r['success']	is True
+
+access_token = r['response']
+token = access_token['token']
+r = consumer.confirm_payment(token)
+assert r['success']	is True
+
+r = consumer.confirm_payment(token)
+assert r['success']	is False
+
 body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
 r = untrusted.get_token(body)
 assert r['success']	is False

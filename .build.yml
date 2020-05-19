@@ -7,7 +7,7 @@ tasks:
 - build: |
     doas sh ftp-script.sh
 - test: |
-    doas pkg_add py-requests
+    doas pkg_add py-requests py-cryptography py-psycopg2
     cd /home/iudx-auth-server/test
     doas chmod 775 .
     export AUTH_SERVER='localhost'
