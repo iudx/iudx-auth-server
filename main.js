@@ -3682,13 +3682,13 @@ app.post("/marketplace/v[1-2]/confirm-payment", (req, res) => {
 
 	pool.query (
 
-		"SELECT payment_info->>amount AS amount"	+
+		"SELECT (payment_info->>'amount') AS amount"	+
 		" FROM token"					+
 		" WHERE id = $1::text"				+
 		" AND token = $2::text"				+
 		" AND cert_serial = $3::text"			+
 		" AND cert_fingerprint = $4::text"		+
-		" AND amount > 0"				+
+		" AND (payment_info->>'amount')::int > 0"	+
 		" AND paid = false"				+
 		" AND expiry > NOW()"				+
 		" LIMIT 1",
@@ -3700,10 +3700,11 @@ app.post("/marketplace/v[1-2]/confirm-payment", (req, res) => {
 		],
 		(error, results) =>
 		{
-			if (results.length === 0)
+
+			if (results.rowCount === 0)
 				return END_ERROR (res, 400, "Invalid 'token'");
 
-			const amount	= results[0].amount;
+			const amount	= results.rows[0].amount;
 
 			/*
 				The below serial and fingerprint variables
@@ -3723,8 +3724,11 @@ app.post("/marketplace/v[1-2]/confirm-payment", (req, res) => {
 
 			const query = "SELECT confirm_payment("		+
 					"$1::text,"			+
-					"$1::text,"			+
-					"$1::text,"			+
+					"$2::int,"			+
+					"$3::text,"			+
+					"$4::text,"			+
+					"$5::text,"			+
+					"$6::text"			+
 				") AS payment_confirmed";
 	
 			const params	= [

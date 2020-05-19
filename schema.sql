@@ -227,6 +227,8 @@ CREATE OR REPLACE FUNCTION public.confirm_payment (
 
 ) RETURNS boolean AS
 $$
+	DECLARE
+		my_num_rows_affected	numeric;
 	BEGIN
 		UPDATE credit
 			SET
@@ -238,7 +240,7 @@ $$
 			AND
 				cert_fingerprint	= in_fingerprint
 			AND
-				(amount - in_amount) > 0.0
+				(amount - in_amount) >= 0.0
 		;
 
 		GET DIAGNOSTICS my_num_rows_affected = ROW_COUNT;
