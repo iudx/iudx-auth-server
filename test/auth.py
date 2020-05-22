@@ -76,7 +76,7 @@ class Auth():
 		else:
 		#
 			sys.stderr.write (
-				"WARNING: auth did not send 'application/json'"
+				"WARNING: auth did not send 'application/json' : " + url  + "\n"
 			)
 
 			return {"success":ret, "response":None}
