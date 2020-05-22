@@ -26,7 +26,6 @@
 const fs			= require("fs");
 const os			= require("os");
 const dns			= require("dns");
-const url			= require("url");
 const cors			= require("cors");
 const ocsp			= require("ocsp");
 const Pool			= require("pg").Pool;
@@ -450,7 +449,7 @@ function log(color, msg)
 
 function SERVE_HTML (req,res)
 {
-	const path	= url.parse(req.url).pathname;
+	const path	= req.url;
 	const page	= STATIC_PAGES[path];
 
 	if (! page)
@@ -926,7 +925,7 @@ function basic_security_check (req, res, next)
 	}
 
 	// replace all versions endpoints with "/v1/"
-	const api			= url.parse(req.url).pathname.replace(/\/v[1-2]\//,"/v1/");
+	const api			= req.url.replace(/\/v[1-2]\//,"/v1/");
 	const min_class_required	= MIN_CERT_CLASS_REQUIRED[api];
 
 	if (! min_class_required)
