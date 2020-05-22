@@ -3723,7 +3723,7 @@ app.post("/marketplace/v[1-2]/confirm-payment", (req, res) => {
 
 			const query = "SELECT confirm_payment("		+
 					"$1::text,"			+
-					"$2::int,"			+
+					"$2::numeric,"			+
 					"$3::text,"			+
 					"$4::text,"			+
 					"$5::text,"			+

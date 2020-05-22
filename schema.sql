@@ -138,7 +138,7 @@ $$
 		my_cert_fingerprint	character varying;
 		my_time			timestamp without time zone;
 		my_amount		numeric;
-		my_num_rows_affected	numeric;
+		my_num_rows_affected	int;
 	BEGIN
 		UPDATE public.topup_transaction
 			SET
@@ -228,7 +228,7 @@ CREATE OR REPLACE FUNCTION public.confirm_payment (
 ) RETURNS boolean AS
 $$
 	DECLARE
-		my_num_rows_affected	numeric;
+		my_num_rows_affected	int;
 	BEGIN
 		UPDATE credit
 			SET
@@ -287,6 +287,8 @@ CREATE OR REPLACE FUNCTION public.transfer_credits (
 
 ) RETURNS boolean AS
 $$
+	DECLARE
+		my_num_rows_affected	int;
 	BEGIN
 		UPDATE credit
 			SET
