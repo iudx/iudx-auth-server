@@ -449,7 +449,7 @@ function log(color, msg)
 
 function SERVE_HTML (req,res)
 {
-	const path	= req.url;
+	const path	= req.url.split("?")[0];
 	const page	= STATIC_PAGES[path];
 
 	if (! page)
@@ -925,7 +925,7 @@ function basic_security_check (req, res, next)
 	}
 
 	// replace all versions endpoints with "/v1/"
-	const api			= req.url.replace(/\/v[1-2]\//,"/v1/");
+	const api			= req.url.split("?")[0].replace(/\/v[1-2]\//,"/v1/");
 	const min_class_required	= MIN_CERT_CLASS_REQUIRED[api];
 
 	if (! min_class_required)
