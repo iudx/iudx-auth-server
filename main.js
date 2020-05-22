@@ -3575,7 +3575,7 @@ app.get("/marketplace/topup-success", (req, res) => {
 
 	pool.query(query, params, (error, results) =>
 	{
-		if (error || results.rowCount == 0)
+		if (error || results.rowCount === 0)
 		{
 			log ("red",error);
 
