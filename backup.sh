@@ -2,19 +2,17 @@
 
 export PGPASSWORD=`cat /home/postgresql/admin.db.password`
 
-date=`date | tr ' ' '-'`
+/usr/local/bin/pg_dumpall -U postgres > /root/backups/postgresql.sql
 
-backup_file="/root/backups/postgresql/backup-$date.txt"
-zip_file="/root/backups/postgresql/backup-$date.tgz"
+/usr/local/bin/tarsnap -cf "$(uname -n)-$(date +%Y-%m-%d_%H-%M-%S)" /root/backups
 
-/usr/local/bin/pg_dumpall -U postgres > $backup_file
-cp $backup_file /root/backups/postgresql/backup.txt
-
-tar -cvzf $zip_file $backup_file 
-rm -rf $backup_file 
-
-if [ "$?" == "0" ]
+if [ "$?" != "0" ]
 then
-        rm -rf $zip_file
-        /usr/local/bin/tarsnap -cf "$(uname -n)-$(date +%Y-%m-%d_%H-%M-%S)" /root/backups/postgresql/backup.txt
+	# Tarsnap failed ... store a local zipped version of backup
+	# we will re-attempt sending it to tarsnap tomorrow 
+
+	date=`date | tr ' ' '-'`
+	tar -cvzf "/root/backups/postgresql.$date.tgz" /root/backups/postgresql.sql
 fi
+
+rm -rf /root/backups/postgresql.sql

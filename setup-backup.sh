@@ -1,4 +1,4 @@
-mkdir -p /root/backups/postgresql
+mkdir /root/backups
 
 cp backup.sh /root/
 echo /root/backup.sh >> /etc/daily.local

@@ -10,8 +10,8 @@ tasks:
     doas pkg_add py-requests py-cryptography py-psycopg2
     cd /home/iudx-auth-server/test
     doas chmod 775 .
-    doas chmod 400 ../passwords/auth.db.password
-    doas chmod 400 ../rzpay.key.secret
+    doas chmod 775 ../passwords/auth.db.password
+    doas chmod 775 ../rzpay.key.secret
     export AUTH_SERVER='localhost'
     doas /home/iudx-auth-server/test/set-local.sh
     ./run
