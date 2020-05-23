@@ -1,3 +1,5 @@
+#!/bin/sh
+
 mkdir /root/backups
 
 cp backup.sh /root/
