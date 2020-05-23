@@ -45,17 +45,25 @@ to find the tmux sessions to manage.
 
 Also, change the `/home/iudx-auth-server/https-certificate.pem` and `/home/iudx-auth-server/https-key.pem` with real TLS certificate and key.
 
-## 4. LICENSE
+## 4. Setup backups on tarsnap (as root)
+```bash
+cd /home/iudx-auth-server
+./setup-backup.sh
+```
+
+This will store backups on /root/backups
+
+## 5. LICENSE
 
 This project is released under [ISC license](https://opensource.org/licenses/ISC); and the [node-aperture](https://github.com/rbccps-iisc/node-aperture) is released under [Mozilla Public License 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 
-## 5. Database structure
+## 6. Database structure
 
 Below is the list of tables used. There are no join queries in the project.
 
 ![Alt text](https://raw.githubusercontent.com/iudx/iudx-auth-server/master/er.svg?sanitize=true)
 
-## 6. Project organization 
+## 7. Project organization 
 ```bash
 .
 |-- CCAIndia2014.cer		// CCA's 2014 certificate
