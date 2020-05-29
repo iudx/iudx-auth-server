@@ -9,8 +9,8 @@ IUDX-AAA is the Authentication, Authorization, and Accounting server for accessi
 Please visit [IUDX Auth server](http://auth.iudx.org.in) for APIs and flows.
 
 ## 2. Installation
-### 2.1 Install OpenBSD 6.6 (prerequisite)
-Please see [OpenBSD FAQ - Installation Guide](https://www.openbsd.org/faq/faq4.html). e.g. [INSTALLATION NOTES for OpenBSD/amd64 6.6](https://ftp.openbsd.org/pub/OpenBSD/6.6/amd64/INSTALL.amd64)
+### 2.1 Install OpenBSD 6.7 (prerequisite)
+Please see [OpenBSD FAQ - Installation Guide](https://www.openbsd.org/faq/faq4.html). e.g. [INSTALLATION NOTES for OpenBSD/amd64 6.7](https://ftp.openbsd.org/pub/OpenBSD/6.7/amd64/INSTALL.amd64)
 
 ### 2.2 Installation of IUDX Auth server (as root) 
 
