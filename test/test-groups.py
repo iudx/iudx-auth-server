@@ -68,6 +68,7 @@ assert provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")["s
 
 expect_failure(True)
 r       		= consumer.get_token(body)
+expect_failure(False)
+
 assert r["success"]     is False
 
-expect_failure(False)

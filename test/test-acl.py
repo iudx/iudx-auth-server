@@ -45,12 +45,12 @@ assert len(reverted_policy) == 1
 assert reverted_policy[0] == policy
 
 # reverting twice should not work
+
 expect_failure(True)
-
 r = provider.revert_policy()
-assert r['success'] is False
-
 expect_failure(False)
+
+assert r['success'] is False
 
 # RegEx should not work supported
 
@@ -61,14 +61,20 @@ policy = r['response']['policy']
 expect_failure(True)
 
 regex_policy = "x can access y if z like /someregex*/i"
+
+expect_failure(True)
 r = provider.set_policy(regex_policy)
+expect_failure(False)
+
 assert r['success'] is False
 
 regex_policy = "x can access /fred(dy)?/i::regex"
-r = provider.set_policy(regex_policy)
-assert r['success'] is False
 
+expect_failure(True)
+r = provider.set_policy(regex_policy)
 expect_failure(False)
+
+assert r['success'] is False
 
 r = provider.get_policy()
 assert r['success'] is True

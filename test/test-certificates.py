@@ -25,21 +25,31 @@ assert r["response"]["certificate-class"] == 3
 assert r["response"]["id"] == "arun.babu@rbccps.org"
 
 # delegated certificate cannot call any Auth API
+
 expect_failure(True)
 r = delegate.certificate_info()
+expect_failure(False)
+
 assert r["success"] is False
 assert r['status_code'] == 403
 
 # delegated certificate cannot call any Marketplace API
+
+expect_failure(True)
 r = delegate.topup(100)
+expect_failure(False)
+
 assert r["success"] is False
 assert r['status_code'] == 403
 
 # untrusted certificates cannot call any Marketplace API
+
+expect_failure(True)
 r = untrusted.topup(100)
+expect_failure(False)
+
 assert r["success"] is False
 assert r['status_code'] == 403
-expect_failure(False)
 
 r = example_dot_com.certificate_info()
 assert r["success"] is True

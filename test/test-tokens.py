@@ -260,7 +260,10 @@ body = [
 	}
 ]
 
+expect_failure(True)
 r = restricted_consumer.get_token(body)
+expect_failure(False)
+
 assert r['success']	is False
 assert r['status_code']	== 403
 
@@ -295,7 +298,11 @@ provider.set_policy(policy)
 assert r['success']			is True
 
 body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
+
+expect_failure(True)
 r = consumer.get_token(body)
+expect_failure(False)
+
 assert r['success']	is False
 assert r['status_code']	== 402 # payment required
 
@@ -311,10 +318,17 @@ token = access_token['token']
 r = consumer.confirm_payment(token)
 assert r['success']	is True
 
+expect_failure(True)
 r = consumer.confirm_payment(token)
+expect_failure(False)
+
 assert r['success']	is False
 
 body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
+
+expect_failure(True)
 r = untrusted.get_token(body)
+expect_failure(False)
+
 assert r['success']	is False
 assert r['status_code']	== 403

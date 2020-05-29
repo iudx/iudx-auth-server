@@ -50,7 +50,7 @@ class Auth():
 
 		if response.status_code != 200:
 		#
-			if "EXPECTED_FAILURE" not in os.environ:
+			if "EXPECT_FAILURE" not in os.environ:
 			#
 				sys.stderr.write (
 					"WARNING: auth API failure  | "	+
@@ -65,8 +65,6 @@ class Auth():
 
 		if response.headers['content-type'] == 'application/json':
 		#
-			assert "EXPECTED_FAILURE" not in os.environ
-
 			return {
 				"success"	: ret,
 				"response"	: json.loads(response.text),

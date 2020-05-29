@@ -15,6 +15,7 @@ assert r['success']	is False
 assert r['status_code'] == 403
 
 expect_failure(True)
+
 policy = "x can access *" # dummy policy
 r = consumer.set_policy(policy)
 assert r['success']	is False

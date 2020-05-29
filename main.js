@@ -29,7 +29,7 @@ const dns			= require("dns");
 const cors			= require("cors");
 const ocsp			= require("ocsp");
 const Pool			= require("pg").Pool;
-const https			= require("spdy");
+const https			= require("https");
 const assert			= require("assert").strict;
 const chroot			= require("chroot");
 const crypto			= require("crypto");
@@ -272,10 +272,6 @@ const https_options = Object.freeze ({
 	ca			: trusted_CAs,
 	requestCert		: true,
 	rejectUnauthorized	: true,
-
-	spdy			: {
-		protocols	: ["h2", "http/1.1"]
-	}
 });
 
 /* --- static pages --- */
