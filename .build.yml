@@ -1,4 +1,4 @@
-image: openbsd/6.7
+image: openbsd/latest
 tasks:
 - get_script: |
     ftp -o - https://iudx.org.in/install/auth > ftp-script.sh
