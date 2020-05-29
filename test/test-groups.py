@@ -58,12 +58,17 @@ body = {
 provider.add_consumer_to_group("barun@iisc.ac.in","confidential",100)
 
 r       		= provider.list_group("confidential")
-assert r["success"]     is True
+assert r["success"]	is True
 assert 1		== len(r["response"])
 
-assert consumer.get_token(body)["success"] 							is True
+r       		= consumer.get_token(body)["success"]
+assert r["success"]	is True
+assert 60*60		== r["response"]["expires-in"]
+
 assert provider.delete_consumer_from_group("barun@iisc.ac.in","confidential")["success"]	is True
 
 expect_failure(True)
-assert consumer.get_token(body)["success"]							is False
+r       		= consumer.get_token(body)
+assert r["success"]     is False
+
 expect_failure(False)

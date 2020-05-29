@@ -7,7 +7,7 @@ from init import provider
 from init import untrusted
 from init import resource_server
 
-from init import expect_failure 
+from init import expect_failure
 
 from init import restricted_consumer
 
@@ -56,7 +56,7 @@ access_token = r['response']
 
 assert r['success']     is True
 assert None             != access_token
-assert 7200             == access_token['expires-in']
+assert 60*60*2		== access_token['expires-in']
 
 token = access_token['token'],
 
@@ -151,7 +151,7 @@ access_token = r['response']
 
 assert r['success']     is True
 assert None             != access_token
-assert 7200             == access_token['expires-in']
+assert 60*60*2		== access_token['expires-in']
 
 token = access_token['token']
 
@@ -196,7 +196,7 @@ access_token = r['response']
 
 assert r['success']     is True
 assert None             != access_token
-assert 7200             == access_token['expires-in']
+assert 60*60*2		== access_token['expires-in']
 
 token = access_token['token']
 
@@ -232,7 +232,7 @@ for a in as_consumer:
 
 assert num_revoked_before < num_revoked_after
 
-new_policy  = "*@iisc.ac.in can access * for 1 hour"
+new_policy  = "*@iisc.ac.in can access * for 1 month"
 assert provider.set_policy(new_policy)['success'] is True
 
 body = [
@@ -247,8 +247,9 @@ body = [
 r = restricted_consumer.get_token(body)
 access_token = r['response']
 
-assert r['success']     is True
-assert None             != access_token
+assert r['success']     		is True
+assert None  		           	!= access_token
+assert r['response']['expires-in']	== 60*60*24*30*1
 
 body = [
 	{
@@ -265,26 +266,34 @@ assert r['status_code']	== 403
 
 # new api tests
 
+new_policy  = "*@iisc.ac.in can access * for 5 months"
+assert provider.set_policy(new_policy)['success'] is True
+
 body = [
 	"rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1",
 	"rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs2/r2"
 ]
+
 r = consumer.get_token(body)
-assert r['success']	is True
+assert r['success']			is True
+assert r['response']['expires-in']	== 60*60*24*30*5
 
 body = "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1";
 r = consumer.get_token(body)
-assert r['success']	is True
+assert r['success']			is True
+assert r['response']['expires-in']	== 60*60*24*30*5
 
 body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
 r = consumer.get_token(body)
-assert r['success']	is True
+assert r['success']			is True
+assert r['response']['expires-in']	== 60*60*24*30*5
 
 # payment related
 
-policy = "all can access anything @ 20 INR"
+policy = "all can access anything for 10 days @ 20 INR"
 provider.set_policy(policy)
-assert r['success']	is True
+assert r['success']			is True
+assert r['response']['expires-in']	== 60*60*24*10
 
 body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
 r = consumer.get_token(body)
@@ -295,7 +304,8 @@ amount = 20
 r = consumer.topup(amount)
 
 r = consumer.get_token(body)
-assert r['success']	is True
+assert r['success']			is True
+assert r['response']['expires-in']	== 60*60*24*10
 
 access_token = r['response']
 token = access_token['token']
