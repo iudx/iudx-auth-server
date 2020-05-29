@@ -165,7 +165,7 @@ pg.connectSync (
 	"postgresql://auth:"+ password.DB + "@" + DB_SERVER + ":5432/postgres",
 		(err) =>
 		{
-			if(err) {
+			if (err) {
 				throw err;
 			}
 		}
@@ -266,7 +266,7 @@ const trusted_CAs = [
 	fs.readFileSync("CCAIndia2014.cer")
 ];
 
-const https_options = {
+const https_options = Object.freeze ({
 	key			: fs.readFileSync("https-key.pem"),
 	cert			: fs.readFileSync("https-certificate.pem"),
 	ca			: trusted_CAs,
@@ -276,7 +276,7 @@ const https_options = {
 	spdy			: {
 		protocols	: ["h2", "http/1.1"]
 	}
-};
+});
 
 /* --- static pages --- */
 
@@ -1412,7 +1412,8 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 
 	const geoip	= geoip_lite.lookup(ip) || {ll:[]};
 
-	// these fields are not nessary
+	// these fields are not necessary 
+
 	delete geoip.eu;
 	delete geoip.area;
 	delete geoip.metro;
@@ -1465,7 +1466,7 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 		providers	: {}
 	};
 
-	const can_access_regex		= res.locals.can_access_regex;
+	const can_access_regex = res.locals.can_access_regex;
 
 	for (let r of request_array)
 	{
@@ -1521,7 +1522,7 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 		if (! r.methods)
 			r.methods = ["*"];
 
-		if ( ! (r.methods instanceof Array))
+		if (! (r.methods instanceof Array))
 		{
 			const error_response = {
 				"message"	: "'methods' must be a valid JSON array",
@@ -2014,6 +2015,8 @@ app.post("/auth/v[1-2]/token/introspect", (req, res) => {
 				"'request' must be an valid JSON array"
 			);
 		}
+
+		Object.freeze(consumer_request);
 	}
 
 	const split		= token.split("/");
@@ -2133,6 +2136,8 @@ app.post("/auth/v[1-2]/token/introspect", (req, res) => {
 						request_for_resource_server.push (r);
 				}
 			}
+
+			Object.freeze(request_for_resource_server);
 
 			if (request_for_resource_server.length === 0)
 				return END_ERROR (res, 403, "Invalid 'token'");
