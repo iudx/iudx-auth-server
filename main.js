@@ -1502,7 +1502,9 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 			return END_ERROR (res, 400, error_response);
 		}
 
-		if (! is_string_safe(resource, "*_")) // allow some chars
+		// allow some chars but not ".."
+
+		if (! is_string_safe(resource, "*_") || resource.indexOf("..") >= 0)
 		{
 			const error_response = {
 				"message"	: "'id' contains unsafe characters",
