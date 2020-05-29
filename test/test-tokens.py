@@ -293,7 +293,6 @@ assert r['response']['expires-in']	== 60*60*24*30*5
 policy = "all can access anything for 10 days @ 20 INR"
 provider.set_policy(policy)
 assert r['success']			is True
-assert r['response']['expires-in']	== 60*60*24*10
 
 body = { "id" : "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/rs1/r1"};
 r = consumer.get_token(body)
