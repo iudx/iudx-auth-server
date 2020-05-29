@@ -10,11 +10,11 @@ from init import expect_failure
 
 RS = "iisc.iudx.org.in"
 
+expect_failure(True)
+
 r = consumer.get_policy()
 assert r['success']	is False
 assert r['status_code'] == 403
-
-expect_failure(True)
 
 policy = "x can access *" # dummy policy
 r = consumer.set_policy(policy)
