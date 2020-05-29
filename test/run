@@ -1,5 +1,8 @@
 #!/bin/sh
 
+touch report
+chmod u=rw report
+
 echo "============ Tests started ===========\n" | tee report
 
 error_code=0
