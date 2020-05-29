@@ -16,5 +16,9 @@ then
 fi
 
 echo "Success"
+
+tmux kill-session -t crl
 tmux kill-session -t node
+
+./run.crl.tmux
 ./run.tmux
