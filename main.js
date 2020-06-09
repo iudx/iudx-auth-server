@@ -4133,7 +4133,7 @@ if (cluster.isMaster)
 	if (is_openbsd) // drop "rpath" and "dns"
 	{
 		pledge.init (
-			"error stdio tty prot_exec inet recvfd " +
+			"error stdio tty prot_exec inet dns recvfd " +
 			"sendfd exec proc"
 		);
 	}
