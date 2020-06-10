@@ -95,7 +95,8 @@ Body in JSON format:
 
 Checks before making the introspect API:
 
-	[ A ]	Make sure the requested "id"(s) are valid for the resource-server
+	[ A ]	Make sure the requested "id"(s) are valid for the resource-server.
+		i.e. They "exist" on the resource server and are servable.
 
 	[ B ]	A valid IUDX token consist of 3 fields (delimited by '/'):
 

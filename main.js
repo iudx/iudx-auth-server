@@ -107,6 +107,19 @@ const MIN_CERT_CLASS_REQUIRED	= Object.freeze ({
 	"/auth/v1/group/list"			: 3,
 });
 
+/* --- API statistics --- */
+
+const statistics = {
+
+	"start_time"	: 0,
+
+	"api"		: {
+		"count" : {
+			"invalid-api" : 0
+		}
+	}
+};
+
 /* --- environment variables--- */
 
 process.env.TZ = "Asia/Kolkata";
@@ -325,6 +338,28 @@ const topup_failure_1 = STATIC_PAGES["topup-failure-1.html"];
 const topup_failure_2 = STATIC_PAGES["topup-failure-2.html"];
 
 /* --- functions --- */
+
+function show_statistics ()
+{
+	console.clear();
+
+	console.log(new Date());
+
+	const now	= Math.floor (Date.now() / 1000);
+	const diff	= now - statistics.start_time;
+
+	console.log("----------------------------------------------------");
+	console.log("API".padEnd(35) + "Count".padEnd(10) + "Rate");
+	console.log("----------------------------------------------------");
+
+	for (const api in statistics.api.count)
+	{
+		const rate = (statistics.api.count[api]/diff).toFixed(3);
+		console.log(api.padEnd(35)+String(statistics.api.count[api]).padEnd(5)+"      " + String(rate));
+	}
+
+	console.log("----------------------------------------------------");
+}
 
 function is_valid_token (token, user = null)
 {
@@ -920,9 +955,13 @@ function basic_security_check (req, res, next)
 		has_started_serving_apis = true;
 	}
 
-	// replace all versions endpoints with "/v1/"
-	const api			= req.url.split("?")[0].replace(/\/v[1-2]\//,"/v1/");
+	// replace all version with "/v1/"
+
+	const endpoint			= req.url.split("?")[0];
+	const api			= endpoint.replace(/\/v[1-2]\//,"/v1/");
 	const min_class_required	= MIN_CERT_CLASS_REQUIRED[api];
+
+	process.send(endpoint);
 
 	if (! min_class_required)
 	{
@@ -1055,7 +1094,6 @@ function basic_security_check (req, res, next)
 					"Certificate has been revoked"
 				);
 			}
-
 
 			res.locals.cert		= cert;
 			res.locals.cert_class	= integer_cert_class;
@@ -1408,7 +1446,7 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 
 	const geoip	= geoip_lite.lookup(ip) || {ll:[]};
 
-	// these fields are not necessary 
+	// these fields are not necessary
 
 	delete geoip.eu;
 	delete geoip.area;
@@ -2245,7 +2283,7 @@ app.post("/auth/v[1-2]/token/introspect", (req, res) => {
 						return END_ERROR (
 							res, 500,
 							"Internal error!",
-							update_error	
+							update_error
 						);
 					}
 
@@ -2506,7 +2544,7 @@ app.post("/auth/v[1-2]/token/revoke-all", (req, res) => {
 						return END_ERROR (
 							res, 500,
 							"Internal error!",
-							update_error	
+							update_error
 						);
 					}
 
@@ -3472,7 +3510,7 @@ app.post("/marketplace/v[1-2]/credit/topup", (req, res) => {
 			if (insert_error || insert_results.rowCount === 0)
 			{
 				return END_ERROR (
-					res, 500, "Internal error!", insert_error 
+					res, 500, "Internal error!", insert_error
 				);
 			}
 
@@ -3732,7 +3770,7 @@ app.post("/marketplace/v[1-2]/confirm-payment", (req, res) => {
 					"$5::text,"			+
 					"$6::text"			+
 				") AS payment_confirmed";
-	
+
 			const params	= [
 				id,					// 1
 				amount,					// 2
@@ -3839,7 +3877,7 @@ app.post("/marketplace/v[1-2]/audit/credits", (req, res) => {
 			" AND paid = true"			+
 			" AND time >= (NOW() - $2::interval)"	+
 			" AND cert_serial != '*'"		+
-			" AND cert_fingerprint != '*'",	
+			" AND cert_fingerprint != '*'",
 			[
 				id,
 				hours + " hours"
@@ -3875,7 +3913,7 @@ app.post("/marketplace/v[1-2]/audit/credits", (req, res) => {
 					" AND > (payment_info->>'amount')"			+
 					" AND paid = true",
 				[
-					provider_id_hash	
+					provider_id_hash
 				],
 			(error_2, results_2) =>
 			{
@@ -3952,7 +3990,7 @@ app.post("/marketplace/v[1-2]/credit/transfer", (req, res) => {
 		[
 			id,
 			from_fingerprint,
-			amount	
+			amount
 		],
 		(error, results) =>
 		{
@@ -3996,7 +4034,7 @@ app.post("/marketplace/v[1-2]/credit/transfer", (req, res) => {
 						"Internal error!", error_1
 					);
 				}
-				
+
 				if (! results_1.credits_transfered)
 				{
 					return END_ERROR (
@@ -4006,7 +4044,7 @@ app.post("/marketplace/v[1-2]/credit/transfer", (req, res) => {
 				}
 
 				return END_SUCCESS (res);
-			}); 
+			});
 		}
 	);
 });
@@ -4119,24 +4157,43 @@ if (cluster.isMaster)
 
 	log("yellow","Master started with pid " + process.pid);
 
-	for (let i = 0; i < NUM_CPUS; i++) {
-		cluster.fork();
-	}
+	const ALL_END_POINTS	= Object.keys(MIN_CERT_CLASS_REQUIRED).sort();
 
-	cluster.on("exit", (worker) => {
+	for (const e of ALL_END_POINTS)
+		statistics.api.count[e] = 0;
+
+	statistics.start_time = Math.floor (Date.now() / 1000);
+
+	for (let i = 0; i < NUM_CPUS; i++)
+		cluster.fork();
+
+	cluster.on ("fork", (worker) => {
+		worker.on ("message", (endpoint) => {
+
+			if (ALL_END_POINTS.indexOf(endpoint) === -1)
+				endpoint = "invalid-api";
+
+			statistics.api.count[endpoint] += 1;
+		});
+	});
+
+	cluster.on ("exit", (worker) => {
 
 		log("red","Worker " + worker.process.pid + " died.");
 
 		cluster.fork();
 	});
 
-	if (is_openbsd) // drop "rpath" and "dns"
+	if (is_openbsd) // drop "rpath"
 	{
 		pledge.init (
 			"error stdio tty prot_exec inet dns recvfd " +
 			"sendfd exec proc"
 		);
 	}
+
+	show_statistics();
+	setInterval (show_statistics, 5000);
 }
 else
 {
