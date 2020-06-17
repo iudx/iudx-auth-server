@@ -99,6 +99,7 @@ rcctl disable sndiod slaacd smtpd xenodm
 
 echo boot > /etc/boot.conf
 
+echo ddb.panic=0		>> /etc/sysctl.conf
 echo kern.seminfo.semmsl=250	>> /etc/sysctl.conf 
 echo kern.seminfo.semmns=5000	>> /etc/sysctl.conf 
 echo kern.seminfo.semopm=100	>> /etc/sysctl.conf 
