@@ -52,11 +52,12 @@ CREATE INDEX idx_groups_id ON public.groups(id,group_name,valid_till);
 
 CREATE TABLE public.policy (
 
-    id			character varying		PRIMARY KEY,
-    policy		character varying(3145728)	NOT NULL,
-    policy_in_json	jsonb				NOT NULL,
-    previous_policy	character varying(3145728),
-    last_updated	timestamp without time zone	NOT NULL
+	id			character varying		PRIMARY KEY,
+	policy			character varying(3145728)	NOT NULL,
+	policy_in_json		jsonb				NOT NULL,
+	previous_policy		character varying(3145728),
+	last_updated		timestamp without time zone	NOT NULL,
+	api_called_from		character varying(512)
 
 );
 
@@ -92,6 +93,8 @@ CREATE TABLE public.token (
 	payment_info		jsonb				NOT NULL,
 	paid			boolean				NOT NULL,
 	paid_at			timestamp without time zone		,
+
+	api_called_from		character varying(512)			,
 
 	PRIMARY KEY (id, token)
 );

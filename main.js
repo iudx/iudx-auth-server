@@ -1979,7 +1979,8 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 			"$11::jsonb,"				+
 			"$12::jsonb,"				+
 			"$13::boolean,"				+
-			"NULL"					+ // paid_at
+			"NULL,"					+ // paid_at
+			"$14::text"				+ // api_called_from
 	")";
 
 	const params = [
@@ -1995,7 +1996,8 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 		JSON.stringify(providers),			// 10
 		JSON.stringify(geoip),				// 11
 		JSON.stringify(payment_info),			// 12
-		paid						// 13
+		paid,						// 13
+		req.headers.origin				// 14
 	];
 
 	pool.query (query, params, (error,results) =>
@@ -2625,24 +2627,33 @@ app.post("/auth/v[1-2]/acl/set", (req, res) => {
 					" SET policy = $1::text,"	+
 					" policy_in_json = $2::jsonb,"	+
 					" previous_policy = policy,"	+
-					" last_updated = NOW()"		+
-					" WHERE id = $3::text";
+					" last_updated = NOW(),"	+
+					" api_called_from = $3::text"	+
+					" WHERE id = $4::text";
 
 			params	= [
 				base64policy,				// 1
 				JSON.stringify(policy_in_json),		// 2
-				provider_id_hash			// 3
+				req.headers.origin,			// 3
+				provider_id_hash			// 4
 			];
 		}
 		else
 		{
-			query	= "INSERT INTO policy VALUES"		+
-					"($1::text, $2::text, $3::jsonb, NULL, NOW())";
+			query	= "INSERT INTO policy VALUES("	+
+					"$1::text,"		+
+					"$2::text,"		+
+					"$3::jsonb,"		+
+					"NULL,"			+
+					"NOW(),"		+
+					"$4::text"		+
+			")";
 
 			params	= [
 				provider_id_hash,			// 1
 				base64policy,				// 2
-				JSON.stringify(policy_in_json)		// 3
+				JSON.stringify(policy_in_json),		// 3
+				req.headers.origin			// 4
 			];
 		}
 
@@ -2758,13 +2769,15 @@ app.post("/auth/v[1-2]/acl/append", (req, res) => {
 					" SET policy = $1::text,"	+
 					" policy_in_json = $2::jsonb,"	+
 					" previous_policy = policy,"	+
-					" last_updated = NOW()"		+
-					" WHERE id = $3::text";
+					" last_updated = NOW(),"	+
+					" api_called_from = $3::text"	+
+					" WHERE id = $4::text";
 
 			params	= [
 					base64policy,			// 1
 					JSON.stringify(policy_in_json),	// 2
-					provider_id_hash		// 3
+					req.headers.origin,		// 3
+					provider_id_hash		// 4
 			];
 		}
 		else
@@ -2773,13 +2786,20 @@ app.post("/auth/v[1-2]/acl/append", (req, res) => {
 						.from(policy)
 						.toString("base64");
 
-			query	= "INSERT INTO policy VALUES"		+
-				"($1::text, $2::text, $3::jsonb, NULL, NOW())";
+			query	= "INSERT INTO policy VALUES("	+
+					"$1::text,"		+
+					"$2::text,"		+
+					"$3::jsonb,"		+
+					"NULL,"			+
+					"NOW(),"		+
+					"$4::text"		+
+			")";
 
 			params	= [
 				provider_id_hash,			// 1
 				base64policy,				// 2
-				JSON.stringify(policy_in_json)		// 3
+				JSON.stringify(policy_in_json),		// 3
+				req.headers.origin			// 4
 			];
 		}
 
@@ -2810,9 +2830,9 @@ app.post("/auth/v[1-2]/acl", (req, res) => {
 
 	pool.query (
 
-		"SELECT policy, previous_policy, last_updated"	+
-		" FROM policy"					+
-		" WHERE id = $1::text "				+
+		"SELECT policy, previous_policy, last_updated, api_called_from"	+
+		" FROM policy"							+
+		" WHERE id = $1::text "						+
 		" LIMIT 1",
 		[
 			provider_id_hash			// 1
@@ -2844,7 +2864,8 @@ app.post("/auth/v[1-2]/acl", (req, res) => {
 		const response = {
 			"policy"		: policy,
 			"previous-policy"	: previous_policy,
-			"last-updated"		: results.rows[0].last_updated
+			"last-updated"		: results.rows[0].last_updated,
+			"api-called-from"	: results.rows[0].api_called_from
 		};
 
 		return END_SUCCESS (res,response);
@@ -2907,11 +2928,13 @@ app.post("/auth/v[1-2]/acl/revert", (req, res) => {
 					" SET policy = previous_policy,"+
 					" policy_in_json = $1::jsonb,"	+
 					" previous_policy = NULL,"	+
-					" last_updated = NOW()"		+
-					" WHERE id = $2::text";
+					" last_updated = NOW(),"	+
+					" api_called_from = $2::text"	+
+					" WHERE id = $3::text";
 
 		const params	= [
-				JSON.stringify(policy_in_json),		// 2
+				JSON.stringify(policy_in_json),		// 1
+				req.headers.origin,			// 2
 				provider_id_hash			// 3
 		];
 
@@ -2953,7 +2976,8 @@ app.post("/auth/v[1-2]/audit/tokens", (req, res) => {
 
 		"SELECT issued_at,expiry,request,cert_serial,"	+
 		" cert_fingerprint,introspected,revoked,"	+
-		" expiry < NOW() as expired,geoip,paid"		+
+		" expiry < NOW() as expired,geoip,paid,"	+
+		" api_called_from"				+
 		" FROM token"					+
 		" WHERE id = $1::text"				+
 		" AND issued_at >= (NOW() - $2::interval)"	+
@@ -2980,7 +3004,8 @@ app.post("/auth/v[1-2]/audit/tokens", (req, res) => {
 				"certificate-fingerprint"	: row.cert_fingerprint,
 				"request"			: row.request,
 				"geoip"				: row.geoip,
-				"paid"				: row.paid
+				"paid"				: row.paid,
+				"api-called-from"		: row.api_called_from
 			});
 		}
 
@@ -2996,7 +3021,8 @@ app.post("/auth/v[1-2]/audit/tokens", (req, res) => {
 			" revoked,introspected,"			+
 			" providers-> $1::text"				+
 			" AS is_valid_token_for_provider,"		+
-			" expiry < NOW() as expired,geoip,paid"		+
+			" expiry < NOW() as expired,geoip,paid,"	+
+			" api_called_from"				+
 			" FROM token"					+
 			" WHERE providers-> $1::text"			+
 			" IS NOT NULL"					+
@@ -3034,7 +3060,8 @@ app.post("/auth/v[1-2]/audit/tokens", (req, res) => {
 					"certificate-fingerprint"	: row.cert_fingerprint,
 					"request"			: row.request,
 					"geoip"				: row.geoip,
-					"paid"				: row.paid
+					"paid"				: row.paid,
+					"api-called-from"		: row.api_called_from
 				});
 			}
 
@@ -4164,8 +4191,9 @@ if (cluster.isMaster)
 
 	statistics.start_time = Math.floor (Date.now() / 1000);
 
-	for (let i = 0; i < NUM_CPUS; i++)
+	for (let i = 0; i < NUM_CPUS; i++) {
 		cluster.fork();
+	}
 
 	cluster.on ("fork", (worker) => {
 		worker.on ("message", (endpoint) => {
