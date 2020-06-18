@@ -4098,16 +4098,15 @@ app.get("/auth/v[1-2]/totp", (req, res) => {
 
 	const options = {
 		name	: id,
-		issuer	: SERVER_NAME,
 		secret	: generate_totp_secret(),
 	};
 
 	const o = otp(options);
 
-	qrcode.toString(o.totpURL + "&issuer=auth.iudx.org.in",{type:'svg'},
+	qrcode.toString(o.totpURL + "&issuer=" + SERVER_NAME,{type:'svg'},
 		function (err, url)
 		{
-			// TODO INSERT or UPDATE totp (id,secret);
+			// TODO INSERT or UPDATE totp (id,options.secret);
 
 			url = url.replace("<svg ","<svg width=500 height=500 ");
 			res.setHeader("Content-Type", "text/html");
