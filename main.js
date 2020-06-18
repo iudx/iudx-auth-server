@@ -26,6 +26,7 @@
 const fs			= require("fs");
 const os			= require("os");
 const dns			= require("dns");
+const otp			= require("otp");
 const cors			= require("cors");
 const ocsp			= require("ocsp");
 const Pool			= require("pg").Pool;
@@ -34,6 +35,7 @@ const assert			= require("assert").strict;
 const chroot			= require("chroot");
 const crypto			= require("crypto");
 const logger			= require("node-color-log");
+const qrcode			= require("qrcode");
 const lodash			= require("lodash");
 const cluster			= require("cluster");
 const express			= require("express");
@@ -43,6 +45,7 @@ const safe_regex		= require("safe-regex");
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
 const compression		= require("compression");
+const base32Encode		= require('base32-encode')
 const http_request		= require("request");
 const pgNativeClient		= require("pg-native");
 
@@ -105,6 +108,9 @@ const MIN_CERT_CLASS_REQUIRED	= Object.freeze ({
 	"/auth/v1/group/add"			: 3,
 	"/auth/v1/group/delete"			: 3,
 	"/auth/v1/group/list"			: 3,
+
+/* totp APIs */
+	"/auth/v1/totp"				: 3,
 });
 
 /* --- API statistics --- */
@@ -338,6 +344,14 @@ const topup_failure_1 = STATIC_PAGES["topup-failure-1.html"];
 const topup_failure_2 = STATIC_PAGES["topup-failure-2.html"];
 
 /* --- functions --- */
+
+function generate_totp_secret()
+{
+	return base32Encode (
+		crypto.randomBytes(10),
+		"RFC4648"
+	);
+}
 
 function show_statistics ()
 {
@@ -4072,6 +4086,42 @@ app.post("/marketplace/v[1-2]/credit/transfer", (req, res) => {
 
 				return END_SUCCESS (res);
 			});
+		}
+	);
+});
+
+/* --- TOTP APIs --- */
+
+app.get("/auth/v[1-2]/totp", (req, res) => {
+
+	const id		= res.locals.email;
+
+	const options = {
+		name	: id,
+		issuer	: SERVER_NAME,
+		secret	: generate_totp_secret(),
+	};
+
+	const o = otp(options);
+
+	qrcode.toString(o.totpURL + "&issuer=auth.iudx.org.in",{type:'svg'},
+		function (err, url)
+		{
+			// TODO INSERT or UPDATE totp (id,secret);
+
+			url = url.replace("<svg ","<svg width=500 height=500 ");
+			res.setHeader("Content-Type", "text/html");
+			res.send(
+				`<html>
+					<body>
+						<center>
+							${url}
+						<br>
+						Please scan this QR code using google authenticator (for <a href="https://apps.apple.com/us/app/google-authenticator/id388497605">Apple IOS</a>, for <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en_IN">Android</a>)
+						</center>
+					</body>
+				</html>`
+			);
 		}
 	);
 });

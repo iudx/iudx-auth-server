@@ -124,6 +124,12 @@ CREATE TABLE public.topup_transaction (
 
 CREATE UNIQUE INDEX idx_topup_transaction ON public.topup_transaction (id,time);
 
+CREATE TABLE public.totp (
+
+	id			character varying		NOT NULL,
+	secret			character varying		NOT NULL,
+);
+
 --
 -- Functions
 --
@@ -354,6 +360,7 @@ GRANT SELECT,INSERT,UPDATE	ON TABLE public.groups				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.credit				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction		TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.totp				TO auth;
 
 GRANT UPDATE			ON TABLE public.crl				TO update_crl;
 
