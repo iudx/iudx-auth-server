@@ -45,7 +45,7 @@ const safe_regex		= require("safe-regex");
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
 const compression		= require("compression");
-const base32Encode		= require('base32-encode')
+const base32Encode		= require("base32-encode");
 const http_request		= require("request");
 const pgNativeClient		= require("pg-native");
 
