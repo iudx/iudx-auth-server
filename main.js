@@ -111,6 +111,10 @@ const MIN_CERT_CLASS_REQUIRED	= Object.freeze ({
 
 /* totp APIs */
 	"/auth/v1/totp"				: 3,
+
+/* telegram APIs */
+	"/auth/v1/register/telegram"	: 3,
+
 });
 
 /* --- API statistics --- */
@@ -461,6 +465,39 @@ function base64 (string)
 	return Buffer
 		.from(string)
 		.toString("base64");
+}
+
+function send_telegram_to_provider(consumer_id, provider_id, token_hash, access_request)
+{
+	pool.query ("SELECT chat_id FROM telegram WHERE id = $1::text LIMIT 1", [provider_id], (error,results) =>
+	{
+		if (error)
+			send_telegram("Failed to get chat_id for : " + provider_id);
+		else
+		{
+			const url = "https://api.telegram.org/bot" + telegram_apikey +
+				"/sendMessage?chat_id="	+ results[0].chat_id +
+				"&text=";
+
+			const message = "\"" + consumer_id + "\" wants to access "	+
+					access_request.id + "\n\nFull request is : " + JSON.stringify(access_request);
+
+			http_request ( url + "[ IUDX-AUTH ] : " + message,
+				(error_1, response, body) =>
+				{
+					if (error_1)
+					{
+						log ("yellow",
+							"Telegram failed ! response = " +
+								String(response)	+
+							" body = "			+
+								String(body)
+						);
+					}
+				}
+			);
+		}
+	});
 }
 
 function send_telegram (message)
@@ -1089,7 +1126,7 @@ function basic_security_check (req, res, next)
 		if (error !== "OK")
 			return END_ERROR (res, 403, error);
 
-		pool.query("SELECT crl FROM crl LIMIT 1", [], (error,results) =>
+		pool.query("SELECT crl FROM crl LIMIT 1", [], (error, results) =>
 		{
 			if (error || results.rows.length === 0)
 			{
@@ -1399,6 +1436,7 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 
 	const request_array			= to_array(body.request);
 	const processed_request_array		= [];
+	const manual_authorization_array	= [];
 
 	if (! request_array || request_array.length < 1)
 	{
@@ -1519,6 +1557,7 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 	for (let r of request_array)
 	{
 		let resource;
+		let requires_manual_authorization = false;
 
 		if (typeof r === "string")
 		{
@@ -1818,6 +1857,8 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 					const token_time_in_policy	= result.expiry || 0;
 					const payment_amount		= result.amount || 0.0;
 
+					requires_manual_authorization	= requires_manual_authorization || result["allowed-manually"];
+
 					if (token_time_in_policy < 1 || payment_amount < 0.0)
 					{
 						const error_response = {
@@ -1874,12 +1915,24 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 			return END_ERROR (res, 400, error_response);
 		}
 
-		processed_request_array.push ({
-			"id"		: resource,
-			"methods"	: r.methods,
-			"apis"		: r.apis,
-			"body"		: r.body,
-		});
+		if (requires_manual_authorization)
+		{
+			manual_authorization_array.push ({
+				"id"		: resource,
+				"methods"	: r.methods,
+				"apis"		: r.apis,
+				"body"		: r.body,
+			});
+		}
+		else
+		{
+			processed_request_array.push ({
+				"id"		: resource,
+				"methods"	: r.methods,
+				"apis"		: r.apis,
+				"body"		: r.body,
+			});
+		}
 
 		resource_id_dict[resource] = true;
 
@@ -1995,6 +2048,7 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 			"$13::boolean,"				+
 			"NULL,"					+ // paid_at
 			"$14::text"				+ // api_called_from
+			"$15::jsonb"				+ // manual_authorization_array
 	")";
 
 	const params = [
@@ -2011,7 +2065,8 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 		JSON.stringify(geoip),				// 11
 		JSON.stringify(payment_info),			// 12
 		paid,						// 13
-		req.headers.origin				// 14
+		req.headers.origin,				// 14
+		manual_authorization_array			// 15
 	];
 
 	pool.query (query, params, (error,results) =>
@@ -2021,6 +2076,19 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 			return END_ERROR (
 				res, 500,
 				"Internal error!", error
+			);
+		}
+
+		for (const m of manual_authorization_array)
+		{
+			const split		= m.id.split("/");
+			const provider_id	= split[0] + "/" + split[1];
+
+			send_telegram_to_provider (
+				consumer_id,
+				provider_id,
+				sha256_of_token,
+				m
 			);
 		}
 
@@ -2078,18 +2146,19 @@ app.post("/auth/v[1-2]/token/introspect", (req, res) => {
 
 	pool.query (
 
-		"SELECT expiry,request,cert_class,"	+
-		" server_token,providers"		+
-		" FROM token"				+
-		" WHERE id = $1::text"			+
-		" AND token = $2::text"			+
-		" AND revoked = false"			+
-		" AND paid = true"			+
-		" AND expiry > NOW()"			+
+		"SELECT expiry,request,cert_class,"		+
+		" server_token,providers"			+
+		" FROM token"					+
+		" WHERE id = $1::text"				+
+		" AND token = $2::text"				+
+		" AND revoked = false"				+
+		" AND paid = true"				+
+		" AND requires_manual_authorization = false"	+
+		" AND expiry > NOW()"				+
 		" LIMIT 1",
 		[
-			issued_to,			// 1
-			sha256_of_token			// 2
+			issued_to,				// 1
+			sha256_of_token				// 2
 		],
 
 		(error, results) =>
@@ -2286,6 +2355,7 @@ app.post("/auth/v[1-2]/token/introspect", (req, res) => {
 
 				"UPDATE token SET introspected = true"	+
 				" WHERE token = $1::text"		+
+				" AND introspected = false"		+
 				" AND revoked = false"			+
 				" AND expiry > NOW()",
 				[
@@ -4116,11 +4186,73 @@ app.get("/auth/v[1-2]/totp", (req, res) => {
 						<center>
 							${url}
 						<br>
-						Please scan this QR code using google authenticator (for <a href="https://apps.apple.com/us/app/google-authenticator/id388497605">Apple IOS</a>, for <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en_IN">Android</a>)
+						Please scan this QR code using Google Authenticator<br>(for <a href="https://apps.apple.com/us/app/google-authenticator/id388497605">Apple IOS</a>, for <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en_IN">Android</a>)
 						</center>
 					</body>
 				</html>`
 			);
+		}
+	);
+});
+
+/* --- Registration APIs --- */
+
+app.post("/auth/v[1-2]/register/telegram", (req, res) => {
+
+	const body    		= res.locals.body;
+	const provider_id	= res.locals.email;
+
+	const email_domain	= provider_id.split("@")[1];
+	const sha1_of_email	= sha1(provider_id);
+
+	const provider_id_hash	= email_domain + "/" + sha1_of_email;
+
+	if (! body["telegram-id"])
+		return END_ERROR (res, 400, "'telegram-id' field not found in body");
+
+	if (! is_string_safe(body["telegram-id"],"_"))
+		return END_ERROR (res, 400, "Invalid 'telegram-id'");
+
+	const telegram_id = body["telegram-id"];
+
+	pool.query ("SELECT 1 FROM telegram WHERE id = $1::text LIMIT 1", [provider_id_hash],
+
+		(error, results) => {
+
+			if (error)
+			{
+				return END_ERROR (
+					res, 500,
+					"Internal error!", error
+				);
+			}
+
+			let query;
+			let params;
+
+			if (results.rows.length === 0)
+			{
+				query	= "INSERT INTO telegram VALUES($1::text,$2::text,NULL)";
+				params	= [provider_id_hash, telegram_id];
+			}
+			else
+			{
+				query	= "UPDATE telegram SET telegram_id = $1::text WHERE id = $2::text";
+				params	= [telegram_id, provider_id_hash];
+			}
+
+			pool.query (query, params, (error_1, results_1) => {
+
+				if (error_1 || results_1.rows.length === 0)
+				{
+					return END_ERROR (
+						res, 500,
+						"Internal error!", error_1
+					);
+				}
+
+				return END_SUCCESS (res);
+			});
 		}
 	);
 });

@@ -69,32 +69,34 @@ CREATE UNIQUE INDEX idx_policy_id ON public.policy(id);
 
 CREATE TABLE public.token (
 
-	id			character varying		NOT NULL,
+	id				character varying		NOT NULL,
 
-	token			character varying		NOT NULL,
-	expiry			timestamp without time zone	NOT NULL,
-	request			jsonb				NOT NULL,
+	token				character varying		NOT NULL,
+	expiry				timestamp without time zone	NOT NULL,
+	request				jsonb				NOT NULL,
 
-	cert_serial		character varying		NOT NULL,
-	cert_fingerprint	character varying		NOT NULL,
+	cert_serial			character varying		NOT NULL,
+	cert_fingerprint		character varying		NOT NULL,
 
-	issued_at		timestamp without time zone	NOT NULL,
-	resource_ids		jsonb				NOT NULL,
+	issued_at			timestamp without time zone	NOT NULL,
+	resource_ids			jsonb				NOT NULL,
 
-	introspected		boolean				NOT NULL,
-	revoked			boolean				NOT NULL,
-	cert_class		integer				NOT NULL,
+	introspected			boolean				NOT NULL,
+	revoked				boolean				NOT NULL,
+	cert_class			integer				NOT NULL,
 
-	server_token		jsonb				NOT NULL,
-	providers		jsonb				NOT NULL,
+	server_token			jsonb				NOT NULL,
+	providers			jsonb				NOT NULL,
 
-	geoip			jsonb				NOT NULL,
+	geoip				jsonb				NOT NULL,
 
-	payment_info		jsonb				NOT NULL,
-	paid			boolean				NOT NULL,
-	paid_at			timestamp without time zone		,
+	payment_info			jsonb				NOT NULL,
+	paid				boolean				NOT NULL,
+	paid_at				timestamp without time zone		,
 
-	api_called_from		character varying(512)			,
+	api_called_from			character varying(512)			,
+
+	manual_authorization_array	jsonb				NOT NULL,
 
 	PRIMARY KEY (id, token)
 );
@@ -128,6 +130,13 @@ CREATE TABLE public.totp (
 
 	id			character varying		NOT NULL,
 	secret			character varying		NOT NULL,
+);
+
+CREATE TABLE public.telegram (
+
+	id			character varying		PRIMARY KEY,
+	telegram_id		character varying		NOT NULL,
+	chat_id			character varying		,
 );
 
 --
@@ -348,6 +357,8 @@ ALTER TABLE public.crl			OWNER TO postgres;
 ALTER TABLE public.token		OWNER TO postgres;
 ALTER TABLE public.credit		OWNER TO postgres;
 ALTER TABLE public.topup_transaction	OWNER TO postgres;
+ALTER TABLE public.totp			OWNER TO postgres;
+ALTER TABLE public.telegram		OWNER TO postgres;
 
 ALTER FUNCTION public.update_credit	OWNER TO postgres;
 
@@ -361,6 +372,7 @@ GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.credit				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction		TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.totp				TO auth;
+GRANT SELECT,INSERT,UPDATE	ON TABLE public.telegram			TO auth;
 
 GRANT UPDATE			ON TABLE public.crl				TO update_crl;
 
