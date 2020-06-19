@@ -146,10 +146,12 @@ dns.setServers ([
 
 /* --- telegram --- */
 
+const TELEGRAM		= "https://api.telegram.org";
+
 const telegram_apikey	= fs.readFileSync ("telegram.apikey","ascii").trim();
 const telegram_chat_id	= fs.readFileSync ("telegram.chatid","ascii").trim();
 
-const telegram_url	= "https://api.telegram.org/bot" + telegram_apikey +
+const telegram_url	= TELEGRAM + "/bot" + telegram_apikey +
 				"/sendMessage?chat_id="	+ telegram_chat_id +
 				"&text=";
 
@@ -475,18 +477,42 @@ function send_telegram_to_provider(consumer_id, provider_id, token_hash, access_
 			send_telegram("Failed to get chat_id for : " + provider_id);
 		else
 		{
-			const url = "https://api.telegram.org/bot" + telegram_apikey +
-				"/sendMessage?chat_id="	+ results[0].chat_id +
-				"&text=";
+			const url		= TELEGRAM + "/bot" + telegram_apikey + "/sendMessage";
 
-			const message = "\"" + consumer_id + "\" wants to access "	+
-					access_request.id + "\n\nFull request is : " + JSON.stringify(access_request);
+			const split		= access_request.id.split("/");
+			const resource		= split.slice(2).join("/");
 
-			http_request ( url + "[ IUDX-AUTH ] : " + message,
-				(error_1, response, body) =>
+			const telegram_message	= {
+
+				url		: url,
+				form		: {
+					chat_id		: results.rows[0].chat_id,
+
+					text		: '[ IUDX-AUTH ] # ' + token_hash  + '\n\n"'	+
+									consumer_id			+
+								'" wants to access "'			+
+									resource + '"',
+
+					reply_markup	: JSON.stringify ({
+						inline_keyboard	: [[
+							{
+								text		: "\u2714\ufe0f Allow",
+								callback_data	: "allow" 
+							},
+							{
+								text		: "\u2716\ufe0f Deny",
+								callback_data	: "deny"
+							}
+						]]
+					})
+				}
+			};
+
+			http_request.post (telegram_message, (error_1, response, body) =>
 				{
 					if (error_1)
 					{
+console.log(error_1);
 						log ("yellow",
 							"Telegram failed ! response = " +
 								String(response)	+
@@ -2047,7 +2073,7 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 			"$12::jsonb,"				+
 			"$13::boolean,"				+
 			"NULL,"					+ // paid_at
-			"$14::text"				+ // api_called_from
+			"$14::text,"				+ // api_called_from
 			"$15::jsonb"				+ // manual_authorization_array
 	")";
 
@@ -2066,7 +2092,7 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 		JSON.stringify(payment_info),			// 12
 		paid,						// 13
 		req.headers.origin,				// 14
-		manual_authorization_array			// 15
+		JSON.stringify(manual_authorization_array)	// 15
 	];
 
 	pool.query (query, params, (error,results) =>
@@ -2082,11 +2108,15 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 		for (const m of manual_authorization_array)
 		{
 			const split		= m.id.split("/");
-			const provider_id	= split[0] + "/" + split[1];
+
+			const email_domain	= split[0].toLowerCase();
+			const sha1_of_email	= split[1].toLowerCase();
+
+			const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
 			send_telegram_to_provider (
 				consumer_id,
-				provider_id,
+				provider_id_hash,
 				sha256_of_token,
 				m
 			);
@@ -4243,7 +4273,7 @@ app.post("/auth/v[1-2]/register/telegram", (req, res) => {
 
 			pool.query (query, params, (error_1, results_1) => {
 
-				if (error_1 || results_1.rows.length === 0)
+				if (error_1 || results_1.rowCount === 0)
 				{
 					return END_ERROR (
 						res, 500,

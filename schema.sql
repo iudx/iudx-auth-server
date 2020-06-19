@@ -129,14 +129,14 @@ CREATE UNIQUE INDEX idx_topup_transaction ON public.topup_transaction (id,time);
 CREATE TABLE public.totp (
 
 	id			character varying		NOT NULL,
-	secret			character varying		NOT NULL,
+	secret			character varying		NOT NULL
 );
 
 CREATE TABLE public.telegram (
 
 	id			character varying		PRIMARY KEY,
 	telegram_id		character varying		NOT NULL,
-	chat_id			character varying		,
+	chat_id			character varying
 );
 
 --
