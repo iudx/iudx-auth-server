@@ -2385,7 +2385,6 @@ app.post("/auth/v[1-2]/token/introspect", (req, res) => {
 
 				"UPDATE token SET introspected = true"	+
 				" WHERE token = $1::text"		+
-				" AND introspected = false"		+
 				" AND revoked = false"			+
 				" AND expiry > NOW()",
 				[
