@@ -2169,7 +2169,6 @@ app.post("/auth/v[1-2]/token/introspect", (req, res) => {
 		" AND token = $2::text"				+
 		" AND revoked = false"				+
 		" AND paid = true"				+
-		" AND requires_manual_authorization = false"	+
 		" AND expiry > NOW()"				+
 		" LIMIT 1",
 		[
