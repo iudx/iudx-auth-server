@@ -126,16 +126,9 @@ CREATE TABLE public.topup_transaction (
 
 CREATE UNIQUE INDEX idx_topup_transaction ON public.topup_transaction (id,time);
 
-CREATE TABLE public.totp (
-
-	id			character varying		NOT NULL,
-	secret			character varying		NOT NULL
-);
-
 CREATE TABLE public.telegram (
 
-	id			character varying		PRIMARY KEY,
-	telegram_id		character varying		NOT NULL,
+	telegram_id		character varying		PRIMARY KEY,
 	chat_id			character varying
 );
 
@@ -357,7 +350,6 @@ ALTER TABLE public.crl			OWNER TO postgres;
 ALTER TABLE public.token		OWNER TO postgres;
 ALTER TABLE public.credit		OWNER TO postgres;
 ALTER TABLE public.topup_transaction	OWNER TO postgres;
-ALTER TABLE public.totp			OWNER TO postgres;
 ALTER TABLE public.telegram		OWNER TO postgres;
 
 ALTER FUNCTION public.update_credit	OWNER TO postgres;
@@ -371,10 +363,8 @@ GRANT SELECT,INSERT,UPDATE	ON TABLE public.groups				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.policy				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.credit				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.topup_transaction		TO auth;
-GRANT SELECT,INSERT,UPDATE	ON TABLE public.totp				TO auth;
 GRANT SELECT,INSERT,UPDATE	ON TABLE public.telegram			TO auth;
 
 GRANT UPDATE			ON TABLE public.crl				TO update_crl;
 
 GRANT EXECUTE ON FUNCTION	public.update_credit(character varying,jsonb)	TO auth;
-

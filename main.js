@@ -26,7 +26,6 @@
 const fs			= require("fs");
 const os			= require("os");
 const dns			= require("dns");
-const otp			= require("otp");
 const cors			= require("cors");
 const ocsp			= require("ocsp");
 const Pool			= require("pg").Pool;
@@ -35,7 +34,6 @@ const assert			= require("assert").strict;
 const chroot			= require("chroot");
 const crypto			= require("crypto");
 const logger			= require("node-color-log");
-const qrcode			= require("qrcode");
 const lodash			= require("lodash");
 const cluster			= require("cluster");
 const express			= require("express");
@@ -45,7 +43,6 @@ const safe_regex		= require("safe-regex");
 const geoip_lite		= require("geoip-lite");
 const bodyParser		= require("body-parser");
 const compression		= require("compression");
-const base32Encode		= require("base32-encode");
 const http_request		= require("request");
 const pgNativeClient		= require("pg-native");
 
@@ -108,13 +105,6 @@ const MIN_CERT_CLASS_REQUIRED	= Object.freeze ({
 	"/auth/v1/group/add"			: 3,
 	"/auth/v1/group/delete"			: 3,
 	"/auth/v1/group/list"			: 3,
-
-/* totp APIs */
-	"/auth/v1/totp"				: 3,
-
-/* telegram APIs */
-	"/auth/v1/register/telegram"	: 3,
-
 });
 
 /* --- API statistics --- */
@@ -351,34 +341,26 @@ const topup_failure_2 = STATIC_PAGES["topup-failure-2.html"];
 
 /* --- functions --- */
 
-function generate_totp_secret()
-{
-	return base32Encode (
-		crypto.randomBytes(10),
-		"RFC4648"
-	);
-}
-
 function show_statistics ()
 {
 	console.clear();
 
-	console.log(new Date());
+	print (new Date());
 
 	const now	= Math.floor (Date.now() / 1000);
 	const diff	= now - statistics.start_time;
 
-	console.log("----------------------------------------------------");
-	console.log("API".padEnd(35) + "Count".padEnd(10) + "Rate");
-	console.log("----------------------------------------------------");
+	print ("---------------------------------------------------");
+	print ("API".padEnd(35) + "Count".padEnd(10) + "Rate");
+	print ("---------------------------------------------------");
 
 	for (const api in statistics.api.count)
 	{
 		const rate = (statistics.api.count[api]/diff).toFixed(3);
-		console.log(api.padEnd(35)+String(statistics.api.count[api]).padEnd(5)+"      " + String(rate));
+		print (api.padEnd(35)+String(statistics.api.count[api]).padEnd(5)+"      " + String(rate));
 	}
 
-	console.log("----------------------------------------------------");
+	print ("---------------------------------------------------");
 }
 
 function is_valid_token (token, user = null)
@@ -512,7 +494,6 @@ function send_telegram_to_provider(consumer_id, provider_id, token_hash, access_
 				{
 					if (error_1)
 					{
-console.log(error_1);
 						log ("yellow",
 							"Telegram failed ! response = " +
 								String(response)	+
@@ -542,6 +523,11 @@ function send_telegram (message)
 			}
 		}
 	);
+}
+
+function print(msg)
+{
+	logger.color("white").log(msg);
 }
 
 function log(color, msg)
@@ -2385,15 +2371,16 @@ app.post("/auth/v[1-2]/token/introspect", (req, res) => {
 
 				"UPDATE token SET introspected = true"	+
 				" WHERE token = $1::text"		+
+				" AND introspected = false"		+
 				" AND revoked = false"			+
 				" AND expiry > NOW()",
 				[
 					sha256_of_token,		// 1
 				],
 
-				(update_error, update_results) =>
+				(update_error) =>
 				{
-					if (update_error || update_results.rowCount === 0)
+					if (update_error)
 					{
 						return END_ERROR (
 							res, 500,
@@ -4180,103 +4167,6 @@ app.post("/marketplace/v[1-2]/credit/transfer", (req, res) => {
 					return END_ERROR (
 						res, 400,
 						"Could not transfer credits"
-					);
-				}
-
-				return END_SUCCESS (res);
-			});
-		}
-	);
-});
-
-/* --- TOTP APIs --- */
-
-app.get("/auth/v[1-2]/totp", (req, res) => {
-
-	const id		= res.locals.email;
-
-	const options = {
-		name	: id,
-		secret	: generate_totp_secret(),
-	};
-
-	const o = otp(options);
-
-	qrcode.toString(o.totpURL + "&issuer=" + SERVER_NAME,{type:'svg'},
-		function (err, url)
-		{
-			// TODO INSERT or UPDATE totp (id,options.secret);
-
-			url = url.replace("<svg ","<svg width=500 height=500 ");
-			res.setHeader("Content-Type", "text/html");
-			res.send(
-				`<html>
-					<body>
-						<center>
-							${url}
-						<br>
-						Please scan this QR code using Google Authenticator<br>(for <a href="https://apps.apple.com/us/app/google-authenticator/id388497605">Apple IOS</a>, for <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en_IN">Android</a>)
-						</center>
-					</body>
-				</html>`
-			);
-		}
-	);
-});
-
-/* --- Registration APIs --- */
-
-app.post("/auth/v[1-2]/register/telegram", (req, res) => {
-
-	const body    		= res.locals.body;
-	const provider_id	= res.locals.email;
-
-	const email_domain	= provider_id.split("@")[1];
-	const sha1_of_email	= sha1(provider_id);
-
-	const provider_id_hash	= email_domain + "/" + sha1_of_email;
-
-	if (! body["telegram-id"])
-		return END_ERROR (res, 400, "'telegram-id' field not found in body");
-
-	if (! is_string_safe(body["telegram-id"],"_"))
-		return END_ERROR (res, 400, "Invalid 'telegram-id'");
-
-	const telegram_id = body["telegram-id"];
-
-	pool.query ("SELECT 1 FROM telegram WHERE id = $1::text LIMIT 1", [provider_id_hash],
-
-		(error, results) => {
-
-			if (error)
-			{
-				return END_ERROR (
-					res, 500,
-					"Internal error!", error
-				);
-			}
-
-			let query;
-			let params;
-
-			if (results.rows.length === 0)
-			{
-				query	= "INSERT INTO telegram VALUES($1::text,$2::text,NULL)";
-				params	= [provider_id_hash, telegram_id];
-			}
-			else
-			{
-				query	= "UPDATE telegram SET telegram_id = $1::text WHERE id = $2::text";
-				params	= [telegram_id, provider_id_hash];
-			}
-
-			pool.query (query, params, (error_1, results_1) => {
-
-				if (error_1 || results_1.rowCount === 0)
-				{
-					return END_ERROR (
-						res, 500,
-						"Internal error!", error_1
 					);
 				}
 

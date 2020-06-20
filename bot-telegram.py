@@ -13,6 +13,7 @@ def on_chat(msg):
 
 	if content_type == 'text':
 		# TODO update the chat id of user
+		print(msg)
 		pass	
 
 def on_callback_query (msg):
