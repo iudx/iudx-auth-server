@@ -341,6 +341,11 @@ const topup_failure_2 = STATIC_PAGES["topup-failure-2.html"];
 
 /* --- functions --- */
 
+function print(msg)
+{
+	logger.color("white").log(msg);
+}
+
 function show_statistics ()
 {
 	console.clear();
@@ -357,7 +362,13 @@ function show_statistics ()
 	for (const api in statistics.api.count)
 	{
 		const rate = (statistics.api.count[api]/diff).toFixed(3);
-		print (api.padEnd(35)+String(statistics.api.count[api]).padEnd(5)+"      " + String(rate));
+
+		print (
+			api.padEnd(35)					+
+			String(statistics.api.count[api]).padEnd(5)	+
+			"      "					+
+			String(rate)
+		);
 	}
 
 	print ("---------------------------------------------------");
@@ -451,17 +462,17 @@ function base64 (string)
 		.toString("base64");
 }
 
-function send_telegram_to_provider(consumer_id, provider_id, token_hash, access_request)
+function send_telegram_to_provider (consumer_id, provider_id, telegram_id, token_hash, request)
 {
-	pool.query ("SELECT chat_id FROM telegram WHERE id = $1::text LIMIT 1", [provider_id], (error,results) =>
+	pool.query ("SELECT chat_id FROM telegram WHERE id = $1::text LIMIT 1", [telegram_id], (error,results) =>
 	{
 		if (error)
-			send_telegram("Failed to get chat_id for : " + provider_id);
+			send_telegram ("Failed to get chat_id for : " + telegram_id + " : provider " + provider_id);
 		else
 		{
 			const url		= TELEGRAM + "/bot" + telegram_apikey + "/sendMessage";
 
-			const split		= access_request.id.split("/");
+			const split		= request.id.split("/");
 			const resource		= split.slice(2).join("/");
 
 			const telegram_message	= {
@@ -470,10 +481,12 @@ function send_telegram_to_provider(consumer_id, provider_id, token_hash, access_
 				form		: {
 					chat_id		: results.rows[0].chat_id,
 
-					text		: '[ IUDX-AUTH ] # ' + token_hash  + '\n\n"'	+
-									consumer_id			+
-								'" wants to access "'			+
-									resource + '"',
+					text		: '[ IUDX-AUTH ] #' + token_hash  + '#\n\n"'		+
+									consumer_id				+
+								'" wants to access "'				+
+									resource + '"\n\n'			+
+								"Request details:\n\n"				+
+									JSON.stringify (request,null,"\t"),
 
 					reply_markup	: JSON.stringify ({
 						inline_keyboard	: [[
@@ -490,44 +503,36 @@ function send_telegram_to_provider(consumer_id, provider_id, token_hash, access_
 				}
 			};
 
-			http_request.post (telegram_message, (error_1, response, body) =>
+			http_request.post (telegram_message, (error_1, response, body) => {
+
+				if (error_1)
 				{
-					if (error_1)
-					{
-						log ("yellow",
-							"Telegram failed ! response = " +
-								String(response)	+
-							" body = "			+
-								String(body)
-						);
-					}
+					log ("yellow",
+						"Telegram failed ! response = " +
+							String(response)	+
+						" body = "			+
+							String(body)
+					);
 				}
-			);
+			});
 		}
 	});
 }
 
 function send_telegram (message)
 {
-	http_request ( telegram_url + "[ AUTH ] : " + message,
-		(error, response, body) =>
+	http_request ( telegram_url + "[ AUTH ] : " + message, (error, response, body) =>
+	{
+		if (error)
 		{
-			if (error)
-			{
-				log ("yellow",
-					"Telegram failed ! response = " +
-						String(response)	+
-					" body = "			+
-						String(body)
-				);
-			}
+			log ("yellow",
+				"Telegram failed ! response = " +
+					String(response)	+
+				" body = "			+
+					String(body)
+			);
 		}
-	);
-}
-
-function print(msg)
-{
-	logger.color("white").log(msg);
+	});
 }
 
 function log(color, msg)
@@ -1869,7 +1874,8 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 					const token_time_in_policy	= result.expiry || 0;
 					const payment_amount		= result.amount || 0.0;
 
-					requires_manual_authorization	= requires_manual_authorization || result["allowed-manually"];
+					requires_manual_authorization	= requires_manual_authorization	||
+										result["manual-authorization"];
 
 					if (token_time_in_policy < 1 || payment_amount < 0.0)
 					{
@@ -1930,19 +1936,20 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 		if (requires_manual_authorization)
 		{
 			manual_authorization_array.push ({
-				"id"		: resource,
-				"methods"	: r.methods,
-				"apis"		: r.apis,
-				"body"		: r.body,
+				"id"			: resource,
+				"methods"		: r.methods,
+				"apis"			: r.apis,
+				"body"			: r.body,
+				"manual-authorization"	: requires_manual_authorization,
 			});
 		}
 		else
 		{
 			processed_request_array.push ({
-				"id"		: resource,
-				"methods"	: r.methods,
-				"apis"		: r.apis,
-				"body"		: r.body,
+				"id"			: resource,
+				"methods"		: r.methods,
+				"apis"			: r.apis,
+				"body"			: r.body,
 			});
 		}
 
@@ -1966,15 +1973,24 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 
 	const response = {
 
-		"token"		: token,
-		"token-type"	: "IUDX",
-		"expires-in"	: token_time,
+		"token"			: token,
+		"token-type"		: "IUDX",
+		"expires-in"		: token_time,
+
+		"//"			: "",
+		"is_token_valid"	: true,
 
 		"payment-info"	: {
 			"amount"	: 0.0,
 			"currency"	: "INR",
 		},
 	};
+
+	if (manual_authorization_array.length > 0)
+	{
+		response["//"]		+= "This token requires manual authorization from the provider. ";
+		response.is_token_valid	= false;
+	}
 
 	const total_payment_amount = total_data_cost_per_second * token_time;
 
@@ -2013,6 +2029,10 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 
 		payment_info.amount		= total_payment_amount;
 		response["payment-info"].amount	= total_payment_amount;
+
+		response["//"]		+= "This token requires payment authorization;"	+
+						"please use the 'confirm-payment' API to approve";
+		response.is_token_valid	= false;
 	}
 
 	const num_resource_servers = Object
@@ -2100,9 +2120,12 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 
 			const provider_id_hash	= email_domain + "/" + sha1_of_email;
 
+			const telegram_id = m["manual-auth"].split("telegram:")[1];
+
 			send_telegram_to_provider (
 				consumer_id,
 				provider_id_hash,
+				telegram_id,
 				sha256_of_token,
 				m
 			);
