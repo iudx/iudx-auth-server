@@ -3913,7 +3913,7 @@ app.post("/marketplace/v[1-2]/confirm-payment", (req, res) => {
 
 			const query = "SELECT confirm_payment("		+
 					"$1::text,"			+
-					"$2::numeric,"			+
+					"$2::money,"			+
 					"$3::text,"			+
 					"$4::text,"			+
 					"$5::text,"			+
@@ -4135,7 +4135,7 @@ app.post("/marketplace/v[1-2]/credit/transfer", (req, res) => {
 		"SELECT amount FROM credit"	+
 		" WHERE id = $1::text" 		+
 		" AND cert_serial = $2::text"	+
-		" AND amount >=  $3::numeric",
+		" AND amount >=  $3::money",
 		[
 			id,
 			from_fingerprint,
@@ -4162,7 +4162,7 @@ app.post("/marketplace/v[1-2]/credit/transfer", (req, res) => {
 			pool.query (
 				"SELECT transfer_credits("	+
 					"$1::text,"		+
-					"$1::numeric,"		+
+					"$1::money,"		+
 					"$1::text,"		+
 					"$1::text"		+
 					"$1::text"		+
