@@ -107,7 +107,7 @@ CREATE TABLE public.credit (
 	id			character varying		NOT NULL,
 	cert_serial		character varying		NOT NULL,
 	cert_fingerprint	character varying		NOT NULL,
-	amount			money				NOT NULL CHECK (amount >= 0),
+	amount			numeric				NOT NULL CHECK (amount >= 0),
 	last_updated		timestamp without time zone	NOT NULL,
 
 	CONSTRAINT "credit_pkey" PRIMARY KEY (id, cert_serial, cert_fingerprint)
@@ -117,7 +117,7 @@ CREATE TABLE public.topup_transaction (
 	id			character varying		NOT NULL,
 	cert_serial		character varying		NOT NULL,
 	cert_fingerprint	character varying		NOT NULL,
-	amount			money				NOT NULL CHECK (amount >= 0),
+	amount			numeric				NOT NULL CHECK (amount >= 0),
 	time			timestamp without time zone	NOT NULL,
 	invoice_number		character varying		NOT NULL,
 	paid			boolean				NOT NULL,
@@ -148,7 +148,7 @@ $$
 		my_cert_serial		character varying;
 		my_cert_fingerprint	character varying;
 		my_time			timestamp without time zone;
-		my_amount		money;
+		my_amount		numeric;
 		my_num_rows_affected	int;
 	BEGIN
 		UPDATE public.topup_transaction
@@ -230,7 +230,7 @@ LANGUAGE PLPGSQL STRICT;
 CREATE OR REPLACE FUNCTION public.confirm_payment (
 
 	IN in_id		character varying,
-	IN in_amount		money,
+	IN in_amount		numeric,
 	IN in_cert_serial	character varying,
 	IN in_cert_fingerprint	character varying,
 	IN in_serial		character varying,
@@ -291,7 +291,7 @@ LANGUAGE PLPGSQL STRICT;
 CREATE OR REPLACE FUNCTION public.transfer_credits (
 
 	IN in_id		character varying,
-	IN in_amount		money,
+	IN in_amount		numeric,
 	IN in_from		character varying,
 	IN in_to		character varying,
 	IN in_to_serial		character varying
