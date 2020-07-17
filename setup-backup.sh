@@ -4,6 +4,7 @@ mkdir /root/backups
 
 cp backup.sh /root/
 echo /root/backup.sh >> /etc/daily.local
+chmod +x /root/backup.sh
 
 mkdir /root/tarsnap-install
 cd /root/tarsnap-install
@@ -21,4 +22,3 @@ cp /usr/local/etc/tarsnap.conf.sample /usr/local/etc/tarsnap.conf
 
 # TODO: please change the --user and --machine accordingly
 tarsnap-keygen --keyfile /root/tarsnap.key --user auth@iudx.org.in --machine auth.iudx.org.in 
-
