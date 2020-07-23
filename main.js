@@ -4210,13 +4210,15 @@ app.all("/*", (req, res) => {
 	}
 	else if (req.method === "GET")
 	{
-		const path = req.url.split("?")[0];
-
-		if (! MIN_CERT_CLASS_REQUIRED[path])
-			return END_ERROR (res, 405, "Method must be POST." + doc);
-
 		if (! SERVE_HTML(req,res))
-			return END_ERROR (res, 404, "Page not found." + doc);
+		{
+			const path = req.url.split("?")[0];
+
+			if (MIN_CERT_CLASS_REQUIRED[path])
+				return END_ERROR (res, 405, "Method must be POST." + doc);
+			else
+				return END_ERROR (res, 404, "Page not found." + doc);
+		}
 	}
 	else
 	{
