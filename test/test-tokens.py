@@ -125,7 +125,10 @@ for a in as_provider:
 
 assert token_hash_found	is True
 assert found['revoked'] is False
-assert provider.revoke_token_hashes(token_hash)['success'] is True
+
+r = provider.revoke_token_hashes(token_hash)
+assert r['success'] is True
+assert r["response"]["num-tokens-revoked"] >= 1
 
 # check if token was revoked
 r = provider.audit_tokens(5)
@@ -218,7 +221,9 @@ for a in as_consumer:
         if a['revoked'] is True:
                 num_revoked_before = num_revoked_before + 1
 
-assert provider.revoke_tokens(token)["success"] is True
+r = provider.revoke_tokens(token)
+assert r["success"] is True
+assert r["response"]["num-tokens-revoked"] >= 1
 
 r = provider.audit_tokens(5)
 assert r["success"] is True

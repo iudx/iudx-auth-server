@@ -2503,7 +2503,8 @@ app.post("/auth/v[1-2]/token/revoke", (req, res) => {
 				]
 			);
 
-			num_tokens_revoked += update_rows.length;
+			// querySync returns empty object for UPDATE
+			num_tokens_revoked += 1;
 		}
 	}
 	else
@@ -2572,7 +2573,8 @@ app.post("/auth/v[1-2]/token/revoke", (req, res) => {
 				]
 			);
 
-			num_tokens_revoked += update_rows.length;
+			// querySync returns empty object for UPDATE
+			num_tokens_revoked += 1;
 		}
 	}
 
