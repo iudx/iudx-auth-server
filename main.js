@@ -1045,7 +1045,8 @@ function basic_security_check (req, res, next)
 	const api			= endpoint.replace(/\/v[1-2]\//,"/v1/");
 	const min_class_required	= MIN_CERT_CLASS_REQUIRED[api];
 
-	process.send(endpoint);
+	if (LAUNCH_ADMIN_PANEL)
+		process.send(endpoint);
 
 	if (! min_class_required)
 	{
@@ -4345,7 +4346,7 @@ if (cluster.isMaster)
 
 	log("yellow","Master started with pid " + process.pid);
 
-	const ALL_END_POINTS	= Object.keys(MIN_CERT_CLASS_REQUIRED).sort();
+	const ALL_END_POINTS = Object.keys(MIN_CERT_CLASS_REQUIRED).sort();
 
 	for (const e of ALL_END_POINTS)
 		statistics.api.count[e] = 0;
@@ -4356,15 +4357,18 @@ if (cluster.isMaster)
 		cluster.fork();
 	}
 
-	cluster.on ("fork", (worker) => {
-		worker.on ("message", (endpoint) => {
+	if (LAUNCH_ADMIN_PANEL)
+	{
+		cluster.on ("fork", (worker) => {
+			worker.on ("message", (endpoint) => {
 
-			if (ALL_END_POINTS.indexOf(endpoint) === -1)
-				endpoint = "invalid-api";
+				if (ALL_END_POINTS.indexOf(endpoint) === -1)
+					endpoint = "invalid-api";
 
-			statistics.api.count[endpoint] += 1;
+				statistics.api.count[endpoint] += 1;
+			});
 		});
-	});
+	}
 
 	cluster.on ("exit", (worker) => {
 
