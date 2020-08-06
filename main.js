@@ -4385,6 +4385,11 @@ if (cluster.isMaster)
 		cluster.fork();
 	});
 
+	const stats_app = express();
+
+	stats_app.use(compression());
+	stats_app.use(bodyParser.raw({type:"*/*"}));
+
 	if (is_openbsd) // drop "rpath"
 	{
 		pledge.init (
@@ -4392,11 +4397,6 @@ if (cluster.isMaster)
 			"sendfd exec proc"
 		);
 	}
-
-	const stats_app = express();
-
-	stats_app.use(compression());
-	stats_app.use(bodyParser.raw({type:"*/*"}));
 
 	https.createServer(https_options,stats_app).listen(8443,"127.0.0.1");
 
