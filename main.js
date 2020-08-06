@@ -595,7 +595,7 @@ function show_statistics (req,res)
 		return END_ERROR (res, 403, error);
 
 	if (id !== "admin@" + SERVER_NAME)
-		END_ERROR(res, 403, "Unauthorized");
+		return END_ERROR(res, 403, "Unauthorized");
 
 	const now	= Math.floor (Date.now() / 1000);
 	const diff	= now - statistics.start_time;
@@ -619,8 +619,6 @@ function show_statistics (req,res)
 
 	res.status(200).end(JSON.stringify(response,null,"\t") + "\n");
 }
-
-
 
 function is_valid_email (email)
 {
