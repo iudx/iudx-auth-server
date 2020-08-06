@@ -57,7 +57,8 @@ const pledge			= is_openbsd ? require("node-pledge")	: null;
 const unveil			= is_openbsd ? require("openbsd-unveil"): null;
 
 const NUM_CPUS			= os.cpus().length;
-const SERVER_NAME		= "auth.iudx.org.in";
+const SERVER_NAME		= fs.readFileSync ("server.name","ascii").trim();  
+const DOCUMENTATION_LINK	= fs.readFileSync ("documentation.link","ascii").trim();  
 
 const MAX_TOKEN_TIME		= 31536000; // in seconds (1 year)
 
@@ -106,6 +107,9 @@ const MIN_CERT_CLASS_REQUIRED	= Object.freeze ({
 	"/auth/v1/group/delete"			: 3,
 	"/auth/v1/group/list"			: 3,
 });
+
+const WHITELISTED_DOMAINS	= fs.readFileSync("whitelist.domains","ascii").trim().split("\n"); 
+const WHITELISTED_ENDSWITH	= fs.readFileSync("whitelist.endswith","ascii").trim().split("\n"); 
 
 /* --- API statistics --- */
 
@@ -783,11 +787,30 @@ function is_secure (req, res, cert, validate_email = true)
 				.split(":")[0]	// remove port number
 		);
 
-		if (
-			(! origin_domain.endsWith(".iudx.org.in"))	&&
-			(! origin_domain.endsWith(".datasetu.org"))	&&
-			(  origin_domain !== "datasetu.org"	)
-		)
+		let whitelisted = false;
+
+		for (const w in WHITELISTED_DOMAINS)
+		{
+			if (origin_domain === w)
+			{
+				whitelisted = true;
+				break;
+			}
+		}
+
+		if (! whitelisted)
+		{
+			for (const w in WHITELISTED_ENDSWITH)
+			{
+				if (origin_domain.endsWith(w))
+				{
+					whitelisted = true;
+					break;
+				}
+			}
+		}
+		
+		if (! whitelisted)
 		{
 			return "Invalid 'origin' header; this website is not"	+
 				" whitelisted to call this API";
@@ -1039,7 +1062,7 @@ function basic_security_check (req, res, next)
 		return END_ERROR (
 			res, 404,
 				"No such page/API. Please visit : "	+
-				"<http://auth.iudx.org.in> for documentation."
+				DOCUMENTATION_LINK + " for documentation."
 		);
 	}
 
@@ -4225,7 +4248,7 @@ app.post("/marketplace/v[1-2]/credit/transfer", (req, res) => {
 
 app.all("/*", (req, res) => {
 
-	const doc = " Please visit <http://" + SERVER_NAME + "> for documentation";
+	const doc = " Please visit <" + DOCUMENTATION_LINK + "> for documentation";
 
 	if (req.method === "POST")
 	{
