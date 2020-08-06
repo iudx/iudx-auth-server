@@ -111,6 +111,8 @@ const MIN_CERT_CLASS_REQUIRED	= Object.freeze ({
 const WHITELISTED_DOMAINS	= fs.readFileSync("whitelist.domains","ascii").trim().split("\n");
 const WHITELISTED_ENDSWITH	= fs.readFileSync("whitelist.endswith","ascii").trim().split("\n");
 
+const LAUNCH_ADMIN_PANEL	= fs.readFileSync("admin.panel","ascii").trim() === "yes";
+
 /* --- API statistics --- */
 
 const statistics = {
@@ -4371,10 +4373,15 @@ if (cluster.isMaster)
 		cluster.fork();
 	});
 
-	const stats_app = express();
+	let stats_app; 
 
-	stats_app.use(compression());
-	stats_app.use(bodyParser.raw({type:"*/*"}));
+	if (LAUNCH_ADMIN_PANEL)
+	{
+		stats_app = express();
+
+		stats_app.use(compression());
+		stats_app.use(bodyParser.raw({type:"*/*"}));
+	}
 
 	if (is_openbsd) // drop "rpath"
 	{
@@ -4384,9 +4391,11 @@ if (cluster.isMaster)
 		);
 	}
 
-	https.createServer(https_options,stats_app).listen(8443,"127.0.0.1");
-
-	stats_app.all("/*",show_statistics);
+	if (LAUNCH_ADMIN_PANEL)
+	{
+		https.createServer(https_options,stats_app).listen(8443,"127.0.0.1");
+		stats_app.all("/*",show_statistics);
+	}
 }
 else
 {
