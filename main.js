@@ -2493,7 +2493,7 @@ app.post("/auth/v[1-2]/token/revoke", (req, res) => {
 				return END_ERROR (res, 400, error_response);
 			}
 
-			const update_rows = pg.querySync (
+			pg.querySync (
 
 				"UPDATE token SET revoked = true"	+
 				" WHERE id = $1::text"			+
@@ -2562,7 +2562,7 @@ app.post("/auth/v[1-2]/token/revoke", (req, res) => {
 			const provider_false = {};
 				provider_false[provider_id_hash] = false;
 
-			const update_rows = pg.querySync (
+			pg.querySync (
 
 				"UPDATE token SET"			+
 				" providers = providers || $1::jsonb"	+
