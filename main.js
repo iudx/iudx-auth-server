@@ -594,7 +594,11 @@ function show_statistics (req,res)
 	if (error !== "OK")
 		return END_ERROR (res, 403, error);
 
-	if (id !== "admin@" + SERVER_NAME)
+	// for "auth.iudx.org.in" admin is "auth@iudx.org.in"
+
+	const admin = SERVER_NAME.replace("auth.","auth@");
+
+	if (id !== admin)
 		return END_ERROR(res, 403, "Unauthorized");
 
 	const now	= Math.floor (Date.now() / 1000);
