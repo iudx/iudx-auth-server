@@ -4,6 +4,7 @@ import os
 
 from init import consumer
 from init import provider
+from init import alt_provider
 from init import untrusted
 from init import resource_server
 
@@ -125,7 +126,10 @@ for a in as_provider:
 
 assert token_hash_found	is True
 assert found['revoked'] is False
-assert provider.revoke_token_hashes(token_hash)['success'] is True
+
+r = provider.revoke_token_hashes(token_hash)
+assert r['success'] is True
+assert r["response"]["num-tokens-revoked"] >= 1
 
 # check if token was revoked
 r = provider.audit_tokens(5)
@@ -218,7 +222,9 @@ for a in as_consumer:
         if a['revoked'] is True:
                 num_revoked_before = num_revoked_before + 1
 
-assert provider.revoke_tokens(token)["success"] is True
+r = provider.revoke_tokens(token)
+assert r["success"] is True
+assert r["response"]["num-tokens-revoked"] >= 1
 
 r = provider.audit_tokens(5)
 assert r["success"] is True
@@ -332,3 +338,67 @@ expect_failure(False)
 
 assert r['success']	is False
 assert r['status_code']	== 403
+
+# test audit for multiple providers
+
+policy = "all can access abc.com/*"
+provider.set_policy(policy)
+
+policy = 'all can access example.com/test-providers'
+alt_provider.set_policy(policy)
+
+body = [
+	{
+		"id"	: "iisc.ac.in/2052f450ac2dde345335fb18b82e21da92e3388c/example.com/test-providers",
+	},
+	{
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/abc.com/ABC123"
+	},
+	{
+		"id"	: "rbccps.org/9cf2c2382cf661fc20a4776345a3be7a143a109c/abc.com/abc-xyz"
+	}
+]
+
+r = consumer.get_token(body)
+access_token = r['response']
+
+r = alt_provider.audit_tokens(5)
+assert r["success"] is True
+audit_report = r['response']
+as_provider = audit_report["as-provider"]
+
+token_hash = hashlib.sha256(access_token['token']).hexdigest()
+
+token_hash_found = False
+found = None
+
+for a in as_provider:
+	if a['token-hash'] == token_hash:
+                token_hash_found = True
+		found = a
+		break
+
+assert token_hash_found	is True
+assert found['revoked'] is False
+
+for r in found['request']:
+        assert r['id'].startswith('iisc.ac.in') is True
+
+# same test with rbccps.org provider
+r = provider.audit_tokens(5)
+assert r["success"] is True
+audit_report = r['response']
+as_provider = audit_report["as-provider"]
+
+found = None
+
+for a in as_provider:
+	if a['token-hash'] == token_hash:
+		found = a
+		break
+
+assert token_hash_found	is True
+assert found['revoked'] is False
+
+for r in found['request']:
+        assert r['id'].startswith('rbccps.org') is True

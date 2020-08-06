@@ -10,6 +10,8 @@ openssl req -new -key restricted.key.pem -out restricted.csr -sha256 -subj '/CN=
 # let provider certificate be of type RSA 
 openssl req -new -newkey rsa:2048 -nodes -out provider.csr -keyout provider.key.pem -subj "/CN=employee/emailAddress=arun.babu@rbccps.org/id-qt-unotice=class:3"
 
+openssl req -new -newkey rsa:2048 -nodes -out alt-provider.csr -keyout alt-provider.key.pem -subj "/CN=employee/emailAddress=abc.123@iisc.ac.in/id-qt-unotice=class:3"
+
 openssl req -new -newkey rsa:2048 -nodes -out delegated.csr -keyout delegated.key.pem -subj "/CN=employee/emailAddress=abc.xyz@rbccps.org/id-qt-unotice=class:3;delegated-by:arun.babu@rbccps.org"
 
 openssl req -new -newkey rsa:2048 -nodes -out untrusted.csr -keyout untrusted.key.pem -subj "/CN=employee/emailAddress=abc.xyz@rbccps.org/id-qt-unotice=class:3;untrusted:true"
@@ -24,6 +26,7 @@ openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in consumer.c
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in restricted.csr -req -days 365 -sha256 -out restricted.pem 
 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in provider.csr -req -days 365 -sha256 -out provider.pem 
+openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in alt-provider.csr -req -days 365 -sha256 -out alt-provider.pem 
 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in delegated.csr -req -days 365 -sha256 -out delegated.pem 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in untrusted.csr -req -days 365 -sha256 -out untrusted.pem 
@@ -33,4 +36,5 @@ openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in r-server.c
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in f-server.csr -req -days 365 -sha256 -out f-server.pem 
 openssl x509 -CA ca.iudx.org.in.crt -CAkey ca.key -CAcreateserial -in e-server.csr -req -days 365 -sha256 -out e-server.pem 
 
-cp *.pem /home/build/
+rm *.csr
+cp *.pem /home/build
