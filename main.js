@@ -341,37 +341,40 @@ const topup_failure_2 = STATIC_PAGES["topup-failure-2.html"];
 
 /* --- functions --- */
 
-function print(msg)
+function show_statistics (req,res)
 {
-	logger.color("white").log(msg);
-}
+	const id	= res.locals.email;
+	const cert	= res.locals.cert;
 
-function show_statistics ()
-{
-	console.clear();
+	const error	= is_secure(req,res,cert,true);
 
-	print (new Date());
+	if (error !== "OK")
+		return END_ERROR (res, 403, error);
+
+	if (id !== "admin@" + SERVER_NAME)
+		END_ERROR(res, 403, "Unauthorized");
 
 	const now	= Math.floor (Date.now() / 1000);
 	const diff	= now - statistics.start_time;
+	const time	= (new Date()).toJSON();
 
-	print ("---------------------------------------------------");
-	print ("API".padEnd(35) + "Count".padEnd(10) + "Rate");
-	print ("---------------------------------------------------");
+	const response = {
+		time		: time, 
+		statistics	: []
+	};
 
 	for (const api in statistics.api.count)
 	{
-		const rate = (statistics.api.count[api]/diff).toFixed(3);
+		const rate = statistics.api.count[api]/diff;
 
-		print (
-			api.padEnd(35)					+
-			String(statistics.api.count[api]).padEnd(5)	+
-			"      "					+
-			String(rate)
-		);
+		response.statistics.push ({
+			api	: api,
+			count	: statistics.api.count[api],
+			rate	: rate
+		});
 	}
 
-	print ("---------------------------------------------------");
+	res.status(200).end(JSON.stringify(response,null,"\t") + "\n");
 }
 
 function is_valid_token (token, user = null)
@@ -492,7 +495,7 @@ function send_telegram_to_provider (consumer_id, provider_id, telegram_id, token
 						inline_keyboard	: [[
 							{
 								text		: "\u2714\ufe0f Allow",
-								callback_data	: "allow" 
+								callback_data	: "allow"
 							},
 							{
 								text		: "\u2716\ufe0f Deny",
@@ -4347,8 +4350,14 @@ if (cluster.isMaster)
 		);
 	}
 
-	show_statistics();
-	setInterval (show_statistics, 5000);
+	const stats_app = express();
+
+	stats_app.use(compression());
+	stats_app.use(bodyParser.raw({type:"*/*"}));
+
+	https.createServer(https_options,stats_app).listen(8443,"127.0.0.1");
+
+	stats_app.all("/*",show_statistics);
 }
 else
 {
