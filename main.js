@@ -586,21 +586,6 @@ function END_ERROR (res, http_status, error, exception = null)
 
 function show_statistics (req,res)
 {
-	const id	= res.locals.email;
-	const cert	= res.locals.cert;
-
-	const error	= is_secure(req,res,cert,true);
-
-	if (error !== "OK")
-		return END_ERROR (res, 403, error);
-
-	// for "auth.iudx.org.in" admin is "auth@iudx.org.in"
-
-	const admin = SERVER_NAME.replace("auth.","auth@");
-
-	if (id !== admin)
-		return END_ERROR(res, 403, "Unauthorized");
-
 	const now	= Math.floor (Date.now() / 1000);
 	const diff	= now - statistics.start_time;
 	const time	= (new Date()).toJSON();
