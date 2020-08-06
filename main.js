@@ -57,8 +57,8 @@ const pledge			= is_openbsd ? require("node-pledge")	: null;
 const unveil			= is_openbsd ? require("openbsd-unveil"): null;
 
 const NUM_CPUS			= os.cpus().length;
-const SERVER_NAME		= fs.readFileSync ("server.name","ascii").trim();  
-const DOCUMENTATION_LINK	= fs.readFileSync ("documentation.link","ascii").trim();  
+const SERVER_NAME		= fs.readFileSync ("server.name","ascii").trim();
+const DOCUMENTATION_LINK	= fs.readFileSync ("documentation.link","ascii").trim();
 
 const MAX_TOKEN_TIME		= 31536000; // in seconds (1 year)
 
@@ -108,8 +108,8 @@ const MIN_CERT_CLASS_REQUIRED	= Object.freeze ({
 	"/auth/v1/group/list"			: 3,
 });
 
-const WHITELISTED_DOMAINS	= fs.readFileSync("whitelist.domains","ascii").trim().split("\n"); 
-const WHITELISTED_ENDSWITH	= fs.readFileSync("whitelist.endswith","ascii").trim().split("\n"); 
+const WHITELISTED_DOMAINS	= fs.readFileSync("whitelist.domains","ascii").trim().split("\n");
+const WHITELISTED_ENDSWITH	= fs.readFileSync("whitelist.endswith","ascii").trim().split("\n");
 
 /* --- API statistics --- */
 
@@ -344,43 +344,6 @@ const topup_failure_1 = STATIC_PAGES["topup-failure-1.html"];
 const topup_failure_2 = STATIC_PAGES["topup-failure-2.html"];
 
 /* --- functions --- */
-
-function show_statistics (req,res)
-{
-	const id	= res.locals.email;
-	const cert	= res.locals.cert;
-
-	const error	= is_secure(req,res,cert,true);
-
-	if (error !== "OK")
-		return END_ERROR (res, 403, error);
-
-	if (id !== "admin@" + SERVER_NAME)
-		END_ERROR(res, 403, "Unauthorized");
-
-	const now	= Math.floor (Date.now() / 1000);
-	const diff	= now - statistics.start_time;
-	const time	= (new Date()).toJSON();
-
-	const response = {
-		time		: time, 
-		statistics	: []
-	};
-
-	for (const api in statistics.api.count)
-	{
-		const rate = statistics.api.count[api]/diff;
-
-		response.statistics.push ({
-			api	: api,
-			count	: statistics.api.count[api],
-			rate	: rate
-		});
-	}
-
-	res.status(200).end(JSON.stringify(response,null,"\t") + "\n");
-}
-
 function is_valid_token (token, user = null)
 {
 	if (! is_string_safe(token))
@@ -621,6 +584,44 @@ function END_ERROR (res, http_status, error, exception = null)
 	delete res.locals;
 }
 
+function show_statistics (req,res)
+{
+	const id	= res.locals.email;
+	const cert	= res.locals.cert;
+
+	const error	= is_secure(req,res,cert,true);
+
+	if (error !== "OK")
+		return END_ERROR (res, 403, error);
+
+	if (id !== "admin@" + SERVER_NAME)
+		END_ERROR(res, 403, "Unauthorized");
+
+	const now	= Math.floor (Date.now() / 1000);
+	const diff	= now - statistics.start_time;
+	const time	= (new Date()).toJSON();
+
+	const response = {
+		time		: time,
+		statistics	: []
+	};
+
+	for (const api in statistics.api.count)
+	{
+		const rate = statistics.api.count[api]/diff;
+
+		response.statistics.push ({
+			api	: api,
+			count	: statistics.api.count[api],
+			rate	: rate
+		});
+	}
+
+	res.status(200).end(JSON.stringify(response,null,"\t") + "\n");
+}
+
+
+
 function is_valid_email (email)
 {
 	if (! email || typeof email !== "string")
@@ -809,7 +810,7 @@ function is_secure (req, res, cert, validate_email = true)
 				}
 			}
 		}
-		
+
 		if (! whitelisted)
 		{
 			return "Invalid 'origin' header; this website is not"	+
@@ -1987,17 +1988,15 @@ app.post("/auth/v[1-2]/token", (req, res) => {
 	if (num_rules_passed < 1 || num_rules_passed < request_array.length)
 		return END_ERROR (res, 403, "Unauthorized!");
 
-	let token;
-
 	const random_hex = crypto
 				.randomBytes(TOKEN_LEN)
 				.toString("hex");
 
 	/* Token format = issued-by / issued-to / random-hex-string */
 
-	token = SERVER_NAME + "/" + consumer_id + "/" + random_hex;
+	const token	= SERVER_NAME + "/" + consumer_id + "/" + random_hex;
 
-	const response = {
+	const response	= {
 
 		"token"			: token,
 		"token-type"		: "IUDX",
@@ -3758,9 +3757,9 @@ app.get("/marketplace/topup-success", (req, res) => {
 	].join("|");
 
 	const expected_signature = crypto
-					.createHmac('sha256',rzpay_key_secret)
+					.createHmac("sha256",rzpay_key_secret)
 					.update(payload)
-					.digest('hex');
+					.digest("hex");
 
 	if (req.query.razorpay_signature !== expected_signature)
 	{
