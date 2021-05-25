@@ -14,7 +14,7 @@
     "lodash": "^4.17.15",
     "logger": "0.0.1",
     "negotiator": "^0.6.2",
-    "node-color-log": "^4.0.0",
+    "node-color-log": "^5.3.0",
     "node-pledge": "^1.1.2",
     "ocsp": "^1.2.0",
     "openbsd-unveil": "^1.0.0",
